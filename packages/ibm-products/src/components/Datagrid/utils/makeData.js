@@ -8,7 +8,7 @@
 import React from 'react';
 import namor from 'namor';
 import { inlineEditSelectItems } from './getInlineEditColumns';
-import { ExampleSlug } from '../Extensions/Slug/Slug.stories';
+import { ExampleSlug } from './ExampleSlug';
 
 const getRandomInteger = (min, max, decimalPlaces) => {
   const roundedMin = Math.ceil(min);
@@ -93,6 +93,7 @@ const newPerson = (index, config) => {
   twoDaysAgoDate.setDate(twoDaysAgoDate.getDate() - 2);
 
   return {
+    disabledColumn: namor.generate({ words: 1, numbers: 0 }),
     firstName: namor.generate({ words: 1, numbers: 0 }),
     lastName: namor.generate({ words: 1, numbers: 0 }),
     age: Math.floor(Math.random() * 30),
