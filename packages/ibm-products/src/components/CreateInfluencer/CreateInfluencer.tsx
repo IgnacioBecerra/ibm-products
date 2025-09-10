@@ -9,7 +9,12 @@
 import React, { PropsWithChildren, ReactNode } from 'react';
 import PropTypes from 'prop-types';
 import cx from 'classnames';
-import { ProgressIndicator, ProgressStep } from '@carbon/react';
+import {
+  Heading,
+  ProgressIndicator,
+  ProgressStep,
+  Section,
+} from '@carbon/react';
 import '../../global/js/utils/props-helper';
 
 import { pkg } from '../../settings';
@@ -34,6 +39,10 @@ interface CreateInfluencerProps {
    */
   currentStep: number;
   /**
+   * onChange event for Progress Indicator
+   */
+  onClickStep?: (step: number) => void;
+  /**
    * Provide the Set Data.
    */
   stepData: Step[];
@@ -46,6 +55,7 @@ interface CreateInfluencerProps {
 export const CreateInfluencer = ({
   className,
   currentStep,
+  onClickStep,
   stepData,
   title,
 }: PropsWithChildren<CreateInfluencerProps>) => {
@@ -74,8 +84,8 @@ export const CreateInfluencer = ({
       0;
 
     return (
-      <div className={`${blockClass}__left-nav`}>
-        {title && <h3 className={`${blockClass}__title`}>{title}</h3>}
+      <Section className={`${blockClass}__left-nav`}>
+        {title && <Heading className={`${blockClass}__title`}>{title}</Heading>}
         {currentStep === 1 && stepData[0]?.introStep ? null : (
           <ProgressIndicator
             currentIndex={
@@ -86,11 +96,12 @@ export const CreateInfluencer = ({
             spaceEqually
             vertical
             className={cx(`${blockClass}__progress-indicator`)}
+            onChange={onClickStep}
           >
-            {progressSteps.map((step, stepIndex) => {
+            {progressSteps.map((step: Step, stepIndex: number) => {
               return (
                 <ProgressStep
-                  label={step.title}
+                  label={step?.title as string}
                   key={stepIndex}
                   secondaryLabel={step.secondaryLabel || undefined}
                   invalid={(step as any).invalid}
@@ -99,7 +110,7 @@ export const CreateInfluencer = ({
             })}
           </ProgressIndicator>
         )}
-      </div>
+      </Section>
     );
   };
 
@@ -121,6 +132,11 @@ CreateInfluencer.propTypes = {
    * Used to mark the current step on the ProgressIndicator component
    */
   currentStep: PropTypes.number.isRequired,
+
+  /**
+   * onChange event for Progress Indicator
+   */
+  onClickStep: PropTypes.func,
 
   /**
    * The step data that renders the progress items

@@ -27,7 +27,7 @@ import styles from './_storybook-styles.scss?inline';
 import DocsPage from './CreateModal.docs-page';
 
 export default {
-  title: 'IBM Products/Patterns/Create flows/CreateModal',
+  title: 'Patterns/Prebuilt patterns/Create flows/CreateModal',
   component: CreateModal,
   tags: ['autodocs'],
   parameters: {
@@ -151,13 +151,9 @@ const Template = (
   );
 };
 
-const TemplateWithFormValidation = ({
-  storyInitiallyOpen = false,
-  story,
-  ...args
-}) => {
+const TemplateWithFormValidation = ({ story, ...args }, context) => {
   const carbonPrefix = usePrefix();
-  const [open, setOpen] = useState(storyInitiallyOpen);
+  const [open, setOpen] = useState(context.viewMode !== 'docs');
   const [textInput, setTextInput] = useState('');
   const [invalid, setInvalid] = useState(false);
 

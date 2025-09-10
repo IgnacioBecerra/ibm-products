@@ -12,14 +12,13 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import cx from 'classnames';
 import { pkg } from '../../../settings';
-import uuidv4 from '../../../global/js/utils/uuidv4';
+import { useId } from '../../../global/js/utils/useId';
 
 // The block part of our conventional BEM class names (blockClass__E--M).
 const blockClass = `${pkg.prefix}--empty-state`;
 
 export const NoDataIllustration = ({ theme, size, alt, ...rest }) => {
-  const svgId = uuidv4();
-
+  const svgId = useId();
   return (
     <svg
       {...rest}
@@ -33,6 +32,7 @@ export const NoDataIllustration = ({ theme, size, alt, ...rest }) => {
         `${blockClass}__illustration--${size}`,
       ])}
       role="img"
+      aria-hidden="true"
     >
       <title>{alt}</title>
       {theme === 'dark' ? (
@@ -149,7 +149,6 @@ export const NoDataIllustration = ({ theme, size, alt, ...rest }) => {
               <stop offset={0} stopColor="#f4f4f4" />
               <stop offset={1} stopColor="#e0e0e0" />
             </linearGradient>
-            <style>{`.prefix__g_${svgId}{fill:#fff}`}</style>
           </defs>
           <path fill="none" d="M0 0h80v80H0z" />
           <path
@@ -173,7 +172,7 @@ export const NoDataIllustration = ({ theme, size, alt, ...rest }) => {
             d="M25.97 26.67l28.67-16.55-.42-.24-28.68 16.56.43.23z"
           />
           <path
-            className={`prefix__g_${svgId}`}
+            fill="#fff"
             d="M40 35.24L11.13 18.57v-.24l.21-.12 28.87 16.67-.21.11v.25zM21.49 33.33l-8.2-4.73.01-5.69 8.19 4.74v5.68z"
           />
         </>

@@ -5,14 +5,15 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+import { Button, IconButton } from '@carbon/react';
+import { CaretLeft, CaretRight, Close, Idea } from '@carbon/react/icons';
 // Import portions of React that are needed.
 import React, { ReactNode, useRef, useState } from 'react';
+import { blue90, purple70 } from '@carbon/colors';
+
+import { Carousel } from '../Carousel';
 import PropTypes from 'prop-types';
 import cx from 'classnames';
-import { blue90, purple70 } from '@carbon/colors';
-import { CaretLeft, CaretRight, Close, Idea } from '@carbon/react/icons';
-import { Button, IconButton } from '@carbon/react';
-import { Carousel } from '../Carousel';
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
 import { pkg } from '../../settings';
 import uuidv4 from '../../global/js/utils/uuidv4';
@@ -21,7 +22,7 @@ import uuidv4 from '../../global/js/utils/uuidv4';
 const blockClass = `${pkg.prefix}--guidebanner`;
 const componentName = 'Guidebanner';
 
-interface GuidebannerProps {
+export interface GuidebannerProps {
   /**
    * Provide the contents of the Guidebanner.
    * One or more GuidebannerElement components are required.
@@ -91,8 +92,8 @@ const defaults = {
  * to introduce foundational concepts related to the page's content.
  */
 export let Guidebanner = React.forwardRef<HTMLDivElement, GuidebannerProps>(
-  (
-    {
+  (props, ref) => {
+    const {
       children,
       className,
       collapsible = defaults.collapsible,
@@ -106,9 +107,7 @@ export let Guidebanner = React.forwardRef<HTMLDivElement, GuidebannerProps>(
       previousIconDescription = defaults.previousIconDescription,
       title,
       ...rest
-    },
-    ref
-  ) => {
+    } = props;
     const scrollRef = useRef<any>(null);
     const toggleRef = useRef<HTMLDivElement>(null);
     const [scrollPosition, setScrollPosition] = useState(0);
@@ -149,6 +148,7 @@ export let Guidebanner = React.forwardRef<HTMLDivElement, GuidebannerProps>(
           onScroll={(scrollPercent) => {
             setScrollPosition(scrollPercent);
           }}
+          isScrollMode={true}
         >
           {children}
         </Carousel>
@@ -220,7 +220,7 @@ export let Guidebanner = React.forwardRef<HTMLDivElement, GuidebannerProps>(
         {onClose && (
           <span className={`${blockClass}__close-button`}>
             <IconButton
-              align="bottom-right"
+              align="bottom-end"
               kind="ghost"
               label={closeIconDescription}
               onClick={onClose}
@@ -250,29 +250,7 @@ Guidebanner.propTypes = {
    * Provide the contents of the Guidebanner.
    * One or more GuidebannerElement components are required.
    */
-  children: (props, propName) => {
-    let error;
-    const prop = props[propName];
-    if (!prop) {
-      error = new Error(
-        '`Guidebanner` requires one or more children of type `GuidebannerElement`.'
-      );
-    }
-    React.Children.forEach(prop, (child) => {
-      if (child.type.displayName !== 'GuidebannerElement') {
-        // If child element is not `GuidebannerElement`, then show:
-        // Carbon Products component's `displayName` (child.type.displayName) or
-        // React component's `name` (child.type.name) or
-        // HTML element's tag name (child.type).
-        error = new Error(
-          `\`Guidebanner\` only accepts children of type \`GuidebannerElement\`, found \`${
-            child.type?.displayName || child.type?.name || child.type
-          }\` instead.`
-        );
-      }
-    });
-    return error;
-  },
+  children: PropTypes.node,
   /**
    * Provide an optional class to be applied to the containing node.
    */

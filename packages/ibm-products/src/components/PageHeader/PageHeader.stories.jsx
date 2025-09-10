@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 
 import {
   Button,
@@ -28,6 +28,8 @@ import {
   TableCell,
   usePrefix,
   TabList,
+  TabPanels,
+  TabPanel,
 } from '@carbon/react';
 import {
   CheckmarkFilled,
@@ -89,16 +91,7 @@ const makeBreadcrumb = (item, title) => ({
   key: `Breadcrumb ${item}`,
   label: typeof title === 'string' ? title : `Breadcrumb ${item}`,
 });
-const now = new Date();
-const m = now.getMonth();
-if (m === 0) {
-  now.setFullYear(now.getFullYear() - 1);
-  now.setMonth(11);
-} else {
-  now.setMonth(m - 1);
-}
-const ms = now.toLocaleString('default', { month: 'long' });
-const ys = now.toLocaleString('default', { year: 'numeric' });
+
 const breadcrumbs = {
   'No breadcrumb': null,
   'A single breadcrumb': [makeBreadcrumb(1, 'Home page')],
@@ -114,7 +107,7 @@ const breadcrumbs = {
   'Demo breadcrumbs': [
     makeBreadcrumb(1, 'Home page', '../../../homepage'),
     makeBreadcrumb(2, 'Reports', '../../Reports'),
-    makeBreadcrumb(3, `${ms} ${ys}`, `../${ms}{ys}`),
+    makeBreadcrumb(3, `January 2025`, `../January 2025`),
   ],
 };
 
@@ -131,7 +124,7 @@ const children = {
     <div style={{ display: 'flex' }}>
       <p
         style={{
-          // stylelint-disable-next-line carbon/layout-token-use
+          // stylelint-disable-next-line carbon/layout-use
           marginRight: '50px',
           maxWidth: '400px',
         }}
@@ -162,40 +155,18 @@ const children = {
 
 const navigation = {
   'No navigation': null,
-  'Four tabs': (
-    <Tabs>
-      <TabList aria-label="Tab list">
-        <Tab>Tab 1</Tab>
-        <Tab>Tab 2</Tab>
-        <Tab>Tab 3</Tab>
-        <Tab>Tab 4</Tab>
-      </TabList>
-    </Tabs>
-  ),
-  'Many tabs': (
-    <Tabs>
-      <TabList aria-label="Tab list">
-        <Tab>Tab 1</Tab>
-        <Tab>Tab 2</Tab>
-        <Tab>Tab 3</Tab>
-        <Tab>Tab 4</Tab>
-        <Tab>Tab 5</Tab>
-        <Tab>Tab 6</Tab>
-        <Tab>Tab 7</Tab>
-        <Tab>Tab 8</Tab>
-      </TabList>
-    </Tabs>
-  ),
-  'In context tabs': (
-    <Tabs>
-      <TabList aria-label="Tab list">
-        <Tab>Summary</Tab>
-        <Tab>Region 1</Tab>
-        <Tab>Region 2</Tab>
-        <Tab>Region 3</Tab>
-      </TabList>
-    </Tabs>
-  ),
+  'Four tabs': ['Tab 1', 'Tab 2', 'Tab 3', 'Tab 4'],
+  'Many tabs': [
+    'Tab 1',
+    'Tab 2',
+    'Tab 3',
+    'Tab 4',
+    'Tab 5',
+    'Tab 6',
+    'Tab 7',
+    'Tab 8',
+  ],
+  'In context tabs': ['Summary', 'Region 1', 'Region 2', 'Region 3'],
 };
 
 const pageActions = {
@@ -390,10 +361,17 @@ const fullWidthGrid = {
 };
 
 export default {
-  title: 'IBM Products/Components/Page header/PageHeader',
+  title: 'Components/PageHeader',
   component: PageHeader,
   tags: ['autodocs'],
-  parameters: { styles, layout: 'fullscreen' /* docs: { page: mdx } */ },
+  parameters: {
+    styles,
+    layout: 'fullscreen',
+    /* docs: { page: mdx } */
+    percy: {
+      waitForTimeout: 1000,
+    },
+  },
   decorators: [
     (story, { args }) => (
       <div
@@ -499,7 +477,7 @@ const pageActionsOverflowLabel = 'Page actions...';
 
 const subtitle = 'Optional subtitle if necessary';
 const longSubtitle =
-  'Optional subtitle if necessary, which is very long in this case, but will need to be handled somehow. It just keeps going on and on and on and on and on.';
+  'Optional subtitle if necessary, which is very long in this case, but will need to be handled somehow. It just keeps going on and on and on and on and on and on and on and on and on and on and on.';
 const demoSubtitle = 'This report details the monthly authentication failures';
 
 const dummyPageContent = (
@@ -566,10 +544,51 @@ const demoDummyPageContent = (
 const actionTitleChange = action('title onChange');
 const actionTitleSave = action('title onSave');
 const actionTitleCancel = action('title change cancelled');
+
+const getNavProps = (navigation) => {
+  if (navigation) {
+    return {
+      navigation: (
+        <TabList>
+          {navigation.map((nav) => (
+            <Tab key={nav}>{nav}</Tab>
+          ))}
+        </TabList>
+      ),
+    };
+  }
+};
+
+const ContainerDivOrTabs = ({ children, navigation, ...props }) => {
+  if (navigation) {
+    return (
+      <div className={props.className}>
+        <Tabs {...props}>{children}</Tabs>
+      </div>
+    );
+  }
+  return <div {...props}>{children}</div>;
+};
+
+const ChildrenMaybeTabPanels = ({ children, navigation, ...props }) =>
+  navigation ? (
+    <TabPanels {...props}>
+      {navigation.map((nav) => (
+        <TabPanel key={nav}>
+          <label>Panel for "{nav}"</label>
+          {children}
+        </TabPanel>
+      ))}
+    </TabPanels>
+  ) : (
+    children
+  );
+
 // Template.
 // eslint-disable-next-line react/prop-types
 const Template = ({
   children,
+  navigation,
   // eslint-disable-next-line no-unused-vars
   storyOptionWholePageScroll,
   title,
@@ -624,28 +643,37 @@ const Template = ({
   // }, [title]);
 
   // console.log(theTitle);
+
   return (
     <>
       <style>{`.${carbonPrefix}--modal { opacity: 0; }`};</style>
-      <div className={`${storyClass}__content-container`}>
-        <PageHeader
-          {...props}
-          title={
-            title?.onSave
-              ? {
-                  ...title,
-                  text: titleText,
-                  onChange: handleTitleChange,
-                  onSave: handleTitleSave,
-                  onCancel: handleTitleCancel,
-                }
-              : title
-          }
-        >
-          {children}
-        </PageHeader>
-        {dummyPageContent}
-      </div>
+      <ContainerDivOrTabs
+        className={`${storyClass}__content-container`}
+        navigation={navigation}
+      >
+        <main>
+          <PageHeader
+            {...props}
+            {...getNavProps(navigation)}
+            title={
+              title?.onSave
+                ? {
+                    ...title,
+                    text: titleText,
+                    onChange: handleTitleChange,
+                    onSave: handleTitleSave,
+                    onCancel: handleTitleCancel,
+                  }
+                : title
+            }
+          >
+            {children}
+          </PageHeader>
+        </main>
+        <ChildrenMaybeTabPanels navigation={navigation}>
+          {dummyPageContent}
+        </ChildrenMaybeTabPanels>
+      </ContainerDivOrTabs>
     </>
   );
 };
@@ -792,6 +820,7 @@ fullyLoadedAndSome.args = {
 // eslint-disable-next-line react/prop-types
 const TemplateDemo = ({
   children,
+  navigation,
   // eslint-disable-next-line no-unused-vars
   storyOptionWholePageScroll,
   ...props
@@ -821,7 +850,7 @@ const TemplateDemo = ({
         >
           <SideNavItems>
             <SideNavLink
-              href="https://pages.github.ibm.com/cdai-design/pal/"
+              href="https://pages.github.ibm.com/carbon/ibm-products/"
               target="_blank"
             >
               Sample link: Carbon for IBM Products
@@ -832,8 +861,19 @@ const TemplateDemo = ({
       <div
         className={`${storyClass}__content-container ${storyClass}__content-container--with-global-header`}
       >
-        <PageHeader {...props}>{children}</PageHeader>
-        {demoDummyPageContent}
+        <ContainerDivOrTabs
+          className={`${storyClass}__content-container`}
+          navigation={navigation}
+        >
+          <main>
+            <PageHeader {...props} {...getNavProps(navigation)}>
+              {children}
+            </PageHeader>
+            <ChildrenMaybeTabPanels navigation={navigation}>
+              {demoDummyPageContent}
+            </ChildrenMaybeTabPanels>
+          </main>
+        </ContainerDivOrTabs>
       </div>
     </>
   );

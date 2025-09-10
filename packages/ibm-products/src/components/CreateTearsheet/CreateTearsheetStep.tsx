@@ -1,5 +1,5 @@
 /**
- * Copyright IBM Corp. 2021, 2023
+ * Copyright IBM Corp. 2021, 2025
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
@@ -47,6 +47,10 @@ type fieldsetLegendTextProps =
        * Otherwise, use CSS to hide/remove this label text.
        */
       fieldsetLegendText?: string;
+      /**
+       * This is the required legend id that appears as the aria-labelledby of fieldset for accessibility purposes.
+       */
+      fieldsetLegendId?: React.ReactNode;
     }
   | {
       /**
@@ -61,6 +65,10 @@ type fieldsetLegendTextProps =
        * Otherwise, use CSS to hide/remove this label text.
        */
       fieldsetLegendText: string;
+      /**
+       * This is the required legend id that appears as the aria-labelledby of fieldset for accessibility purposes.
+       */
+      fieldsetLegendId: React.ReactNode;
     };
 
 interface CreateTearsheetStepBaseProps extends PropsWithChildren {
@@ -83,6 +91,11 @@ interface CreateTearsheetStepBaseProps extends PropsWithChildren {
    * This will conditionally disable the submit button in the multi step Tearsheet
    */
   disableSubmit?: boolean;
+
+  /**
+   * Configuration options for customizing the behavior of the experimentalSecondary submit button.
+   */
+  experimentalSecondarySubmit?: ExperimentalSecondarySubmit;
 
   /**
    * This prop is used to help track dynamic steps. If this value is `false` then the step is not included in the visible steps or the ProgressIndicator
@@ -139,6 +152,21 @@ interface PreviousStateProps {
 type CreateTearsheetStepProps = CreateTearsheetStepBaseProps &
   fieldsetLegendTextProps;
 
+/**
+ * Configuration options for customizing the behavior of the experimentalSecondary submit button.
+ *
+ * @property {string} [labelText] - Optional text to replace the default button text.
+ * @property {boolean} [disabled] - If true, the button will be disabled and not clickable.
+ * @property {boolean} [hideSecondarySubmit] - If true, the button will be hidden from view.
+ * @property {() => void} [onClick] - Optional click handler function to be executed when the button is clicked.
+ */
+export type ExperimentalSecondarySubmit = {
+  labelText?: string;
+  disabled?: boolean;
+  hideSecondarySubmit?: boolean;
+  onClick?: () => void;
+};
+
 export let CreateTearsheetStep = forwardRef(
   (
     {
@@ -148,7 +176,9 @@ export let CreateTearsheetStep = forwardRef(
       className,
       description,
       disableSubmit,
+      experimentalSecondarySubmit,
       fieldsetLegendText,
+      fieldsetLegendId,
       hasFieldset = defaults.hasFieldset,
       includeStep = defaults.includeStep,
       introStep,
@@ -194,8 +224,17 @@ export let CreateTearsheetStep = forwardRef(
         previousState?.currentStep !== stepsContext?.currentStep
       ) {
         stepsContext?.setOnMount(onMount);
+        stepsContext?.setExperimentalSecondarySubmit(
+          experimentalSecondarySubmit
+        );
       }
-    }, [onMount, stepsContext, stepNumber, previousState?.currentStep]);
+    }, [
+      onMount,
+      experimentalSecondarySubmit,
+      stepsContext,
+      stepNumber,
+      previousState?.currentStep,
+    ]);
 
     // Used to take the `includeStep` prop and use it as a local state value
     useEffect(() => {
@@ -234,6 +273,11 @@ export let CreateTearsheetStep = forwardRef(
         stepsContext.setIsDisabled(!!disableSubmit);
         stepsContext?.setOnNext(onNext); // needs to be updated here otherwise there could be stale state values from only initially setting onNext
         stepsContext?.setOnPrevious(onPrevious);
+
+        //Handle props for experimentalSecondarySubmit button, depending on state change
+        stepsContext?.setExperimentalSecondarySubmit(
+          experimentalSecondarySubmit
+        );
       }
     }, [
       stepsContext,
@@ -243,6 +287,7 @@ export let CreateTearsheetStep = forwardRef(
       onPrevious,
       stepRef,
       stepRefValue,
+      experimentalSecondarySubmit,
     ]);
 
     const renderDescription = () => {
@@ -277,7 +322,7 @@ export let CreateTearsheetStep = forwardRef(
             <h4 className={`${blockClass}--title`}>{title}</h4>
 
             {subtitle && (
-              <h6 className={`${blockClass}--subtitle`}>{subtitle}</h6>
+              <h5 className={`${blockClass}--subtitle`}>{subtitle}</h5>
             )}
 
             {renderDescription()}
@@ -288,6 +333,7 @@ export let CreateTearsheetStep = forwardRef(
               <FormGroup
                 legendText={fieldsetLegendText}
                 className={`${blockClass}--fieldset`}
+                legendId={fieldsetLegendId}
               >
                 {children}
               </FormGroup>
@@ -333,14 +379,34 @@ CreateTearsheetStep.propTypes = {
   disableSubmit: PropTypes.bool,
 
   /**
+   * Configuration options for customizing the behavior of the experimentalSecondary submit button.
+   *
+   * @property {string} [labelText] - Optional text to replace the default button text.
+   * @property {boolean} [disabled] - If true, the button will be disabled and not clickable.
+   * @property {boolean} [hideSecondarySubmit] - If true, the button will be hidden from view.
+   * @property {() => void} [onClick] - Optional click handler function to be executed when the button is clicked.
+   */
+  /**@ts-ignore*/
+  experimentalSecondarySubmit: PropTypes.shape({
+    labelText: PropTypes.string,
+    disabled: PropTypes.bool,
+    hideSecondarySubmit: PropTypes.bool,
+    onClick: PropTypes.func,
+  }),
+
+  /**
+   * This is the required legend id that appears as the aria-labelledby of fieldset for accessibility purposes.
+   */
+  /**@ts-ignore*/
+  fieldsetLegendId: PropTypes.node,
+
+  /**
    * This is the required legend text that appears above a fieldset html element for accessibility purposes.
    * You can set the `hasFieldset` prop to false if you have multiple fieldset elements or want to control the children of your Full Page's step content.
    * Otherwise, use CSS to hide/remove this label text.
    */
   /**@ts-ignore*/
-  fieldsetLegendText: PropTypes.string.isRequired.if(
-    ({ hasFieldset }) => !!hasFieldset
-  ),
+  fieldsetLegendText: PropTypes.string,
 
   /**
    * This optional prop will render your form content inside of a fieldset html element

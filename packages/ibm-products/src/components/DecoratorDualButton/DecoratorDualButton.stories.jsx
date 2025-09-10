@@ -6,11 +6,12 @@
  */
 
 import React from 'react';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 import { DecoratorDualButton } from '.';
 import mdx from './DecoratorDualButton.mdx';
 
 import styles from './_storybook-styles.scss?inline';
+import { Annotation } from '../../../.storybook/Annotation';
 
 const scoreOptions = {
   '-1 (less than 0 is 0)': -1,
@@ -30,7 +31,7 @@ const scoreOptions = {
 };
 
 export default {
-  title: 'IBM Products/Components/Decorators/DecoratorDualButton',
+  title: 'Deprecated/Decorators/DecoratorDualButton',
   component: DecoratorDualButton,
   tags: ['autodocs'],
   parameters: {
@@ -92,6 +93,21 @@ export default {
     theme: 0,
     truncateValue: 0,
   },
+  decorators: [
+    (story) => (
+      <Annotation
+        type="deprecation-notice"
+        text={
+          <div>
+            This component is deprecated and will be removed in the next major
+            version.
+          </div>
+        }
+      >
+        {story()}
+      </Annotation>
+    ),
+  ],
 };
 
 const Template = (args) => {

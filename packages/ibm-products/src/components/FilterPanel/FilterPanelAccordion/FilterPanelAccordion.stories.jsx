@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 
 import { FilterPanel, FilterPanelAccordionItem, FilterPanelCheckbox } from '..';
 import { FilterPanelAccordion } from '.';
@@ -14,11 +14,12 @@ import mdx from './FilterPanelAccordion.mdx';
 import uuidv4 from '../../../global/js/utils/uuidv4';
 
 import styles from '../_storybook-styles.scss?inline';
+import { Annotation } from '../../../../.storybook/Annotation';
 
 const storyClass = 'filter-panel-stories';
 
 export default {
-  title: 'IBM Products/Components/Filter panel/FilterPanelAccordion',
+  title: 'Deprecated/Filter panel/FilterPanelAccordion',
   component: FilterPanelAccordion,
   tags: ['autodocs'],
   parameters: {
@@ -74,6 +75,21 @@ export default {
     count: 1,
     labelText: 0,
   },
+  decorators: [
+    (story) => (
+      <Annotation
+        type="deprecation-notice"
+        text={
+          <div>
+            This component is deprecated and will be removed in the next major
+            version.
+          </div>
+        }
+      >
+        {story()}
+      </Annotation>
+    ),
+  ],
 };
 
 const Template = (args) => {

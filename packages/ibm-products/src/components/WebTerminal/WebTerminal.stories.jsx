@@ -10,7 +10,7 @@
 import React from 'react';
 // Carbon and package components we use.
 import { Code, Copy } from '@carbon/react/icons';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 import { Navigation } from './preview-components';
 import { WebTerminal } from '.';
 import { WebTerminalContentWrapper } from './WebTerminalContentWrapper';
@@ -62,6 +62,7 @@ export const Default = Template.bind({});
 Default.args = {
   documentationLinks,
   actions,
+  isInitiallyOpen: true,
   closeIconDescription: 'Close terminal',
   documentationLinksIconDescription: 'Show documentation links',
 };
@@ -70,17 +71,19 @@ export const WithDocumentationLinks = Template.bind({});
 WithDocumentationLinks.args = {
   documentationLinks,
   closeIconDescription: 'Close terminal',
+  isInitiallyOpen: true,
   documentationLinksIconDescription: 'Show documentation links',
 };
 
 export const WithActions = Template.bind({});
 WithActions.args = {
   actions,
+  isInitiallyOpen: true,
   closeIconDescription: 'Close terminal',
 };
 
 export default {
-  title: 'IBM Products/Patterns/Web terminal/WebTerminal',
+  title: 'Patterns/Prebuilt patterns/WebTerminal',
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',

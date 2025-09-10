@@ -1,3 +1,10 @@
+/**
+ * Copyright IBM Corp. 2024
+ *
+ * This source code is licensed under the Apache-2.0 license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 import React from 'react';
 import { StoryDocsPage } from '../../global/js/utils/StoryDocsPage';
 import * as stories from './CreateModal.stories';
@@ -5,7 +12,7 @@ import * as stories from './CreateModal.stories';
 const DocsPage = () => {
   return (
     <StoryDocsPage
-      altGuidelinesHref="https://pages.github.ibm.com/cdai-design/pal/patterns/creation-flows/usage#modal"
+      altGuidelinesHref="https://pages.github.ibm.com/carbon/ibm-products/patterns/create-flows/usage#modal"
       blocks={[
         {
           story: stories.Default,

@@ -1,5 +1,5 @@
 /**
- * Copyright IBM Corp. 2020, 2024
+ * Copyright IBM Corp. 2020, 2025
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
@@ -7,59 +7,45 @@
 
 import React from 'react';
 import cx from 'classnames';
-import { pkg, carbon } from '../../settings';
-import { Button } from '@carbon/react';
+import { pkg } from '../../settings';
+import { Button, usePrefix } from '@carbon/react';
 import { ArrowUp, ArrowDown, ArrowsVertical } from '@carbon/react/icons';
 import { SelectAll } from './Datagrid/DatagridSelectAll';
-import { DatagridSlug } from './Datagrid/addons/Slug/DatagridSlug';
+import { DatagridAILabel } from './Datagrid/addons/AiLabel/DatagridAiLabel';
 import { Hooks, TableInstance } from 'react-table';
 import { DataGridState } from './types';
 
+interface Order {
+  newOrder: 'ASC' | 'DESC' | 'NONE';
+  newSortDesc: undefined | boolean;
+}
+
 const blockClass = `${pkg.prefix}--datagrid`;
 
-const ordering = {
-  ASC: 'ASC',
-  DESC: 'DESC',
-  NONE: 'NONE',
-};
-
-export const getNewSortOrder = (sortOrder?: boolean | string) => {
-  const order = {
-    newSortDesc: false,
-    newOrder: ordering.NONE,
+export const getNewSortOrder = (currentOrder?: boolean | string) => {
+  const order: Order = {
+    newOrder: 'NONE',
+    newSortDesc: undefined,
   };
-  if (sortOrder === false || sortOrder === ordering.DESC) {
-    order.newOrder = ordering.DESC;
-    order.newSortDesc = true;
-  }
-  if (sortOrder === undefined || sortOrder === ordering.ASC) {
-    order.newOrder = ordering.ASC;
+
+  // NONE => ASC
+  if (currentOrder === undefined) {
+    order.newOrder = 'ASC';
     order.newSortDesc = false;
   }
-  return order;
-};
 
-const getAriaSortValue = (
-  col,
-  {
-    ascendingSortableLabelText,
-    descendingSortableLabelText,
-    defaultSortableLabelText,
+  // ACS => DESC
+  if (currentOrder === false || currentOrder === 'DESC') {
+    order.newOrder = 'DESC';
+    order.newSortDesc = true;
   }
-) => {
-  if (!col) {
-    return;
+
+  // DESC => NONE
+  if (currentOrder === true || currentOrder === 'ASC') {
+    order.newOrder = 'NONE';
+    order.newSortDesc = undefined;
   }
-  const { isSorted, isSortedDesc } = col;
-  if (!isSorted) {
-    return defaultSortableLabelText;
-  }
-  if (isSorted && !isSortedDesc) {
-    return ascendingSortableLabelText;
-  }
-  if (isSorted && isSortedDesc) {
-    return descendingSortableLabelText;
-  }
+  return order;
 };
 
 const getAriaPressedValue = (col) => {
@@ -74,19 +60,15 @@ const getAriaPressedValue = (col) => {
 };
 
 const useSortableColumns = (hooks: Hooks) => {
+  const carbonPrefix = usePrefix();
   const sortableVisibleColumns = (visibleColumns, { instance }) => {
-    const {
-      onSort,
-      ascendingSortableLabelText,
-      descendingSortableLabelText,
-      defaultSortableLabelText,
-    } = instance;
+    const { onSort } = instance;
     const onSortClick = (event, column) => {
-      const slug =
-        event.target.classList.contains(`${carbon.prefix}--slug`) ||
-        event.target.closest(`.${carbon.prefix}--slug`);
+      const aiLabel =
+        event.target.classList.contains(`${carbonPrefix}--slug`) ||
+        event.target.closest(`.${carbonPrefix}--slug`);
       // Do not continue with sorting if we find a slug
-      if (slug) {
+      if (aiLabel) {
         event.stopPropagation();
         return;
       }
@@ -103,7 +85,7 @@ const useSortableColumns = (hooks: Hooks) => {
         const iconProps = {
           size: 16,
           ...props,
-          className: `${blockClass}__sortable-icon ${carbon.prefix}--btn__icon`,
+          className: `${blockClass}__sortable-icon ${carbonPrefix}--btn__icon`,
         };
         if (col?.isSorted) {
           switch (col.isSortedDesc) {
@@ -117,6 +99,14 @@ const useSortableColumns = (hooks: Hooks) => {
         }
         return <ArrowsVertical {...iconProps} />;
       };
+
+      const handleKey = (e, columnId) => {
+        const { key } = e;
+        if (key === 'Enter') {
+          setTimeout(() => document.getElementById(columnId)?.focus(), 0);
+        }
+      };
+
       const Header = (headerProp) =>
         column.disableSortBy === true ||
         column.id === 'datagridSelection' ||
@@ -128,24 +118,24 @@ const useSortableColumns = (hooks: Hooks) => {
           )
         ) : (
           <Button
-            aria-sort={getAriaSortValue(headerProp?.column, {
-              ascendingSortableLabelText,
-              descendingSortableLabelText,
-              defaultSortableLabelText,
-            })}
             aria-pressed={getAriaPressedValue(headerProp?.column)}
             onClick={(event) => onSortClick(event, headerProp?.column)}
             kind="ghost"
             renderIcon={(props) => {
               return (
                 <>
-                  <DatagridSlug slug={headerProp?.column?.slug} />
+                  <DatagridAILabel
+                    aiLabel={
+                      headerProp?.column?.aiLabel || headerProp?.column?.slug
+                    }
+                  />
                   {icon(headerProp?.column, props)}
                 </>
               );
             }}
+            id={column?.id}
             className={cx(
-              `${carbon.prefix}--table-sort ${blockClass}--table-sort`,
+              `${carbonPrefix}--table-sort ${blockClass}--table-sort`,
               {
                 [`${blockClass}--table-sort--desc`]:
                   headerProp?.column.isSortedDesc,
@@ -153,6 +143,7 @@ const useSortableColumns = (hooks: Hooks) => {
                   headerProp?.column.isSortedDesc === false,
               }
             )}
+            onKeyDown={(event) => handleKey(event, column.id)}
           >
             {column.Header}
           </Button>
@@ -161,11 +152,8 @@ const useSortableColumns = (hooks: Hooks) => {
         ...column,
         Header,
         minWidth:
-          column.disableSortBy === true
-            ? 0
-            : column.minWidth
-            ? column.minWidth
-            : 90,
+          column.minWidth ??
+          (column.disableSortBy ? 50 : column.isAction ? 50 : 90),
       };
     });
     return instance.customizeColumnsProps?.isTearsheetOpen

@@ -5,53 +5,39 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+// Carbon and package components we use.
+import { Button, type ButtonProps } from '@carbon/react';
 // Import portions of React that are needed.
-import React, { ForwardedRef, PropsWithChildren, ReactNode } from 'react';
+import React, {
+  ForwardedRef,
+  PropsWithChildren,
+  ReactNode,
+  RefObject,
+} from 'react';
+import { TearsheetShell } from './TearsheetShell';
 
 // Other standard imports.
 import PropTypes from 'prop-types';
-
-import { getDevtoolsProps } from '../../global/js/utils/devtools';
-
 import { allPropTypes } from '../../global/js/utils/props-helper';
-
+import { getDevtoolsProps } from '../../global/js/utils/devtools';
 import { pkg } from '../../settings';
-
-// Carbon and package components we use.
-import { Button, ButtonProps } from '@carbon/react';
-import { ActionSet } from '../ActionSet';
-
-import { tearsheetHasCloseIcon, TearsheetShell } from './TearsheetShell';
-
 import { portalType } from './TearsheetShell';
 
 const componentName = 'Tearsheet';
 
 // NOTE: the component SCSS is not imported here: it is rolled up separately.
-
-/**
- * The accessibility title for the close icon (if shown).
- *
- * **Note:** This prop is only required if a close icon is shown, i.e. if
- * there are a no navigation actions and/or hasCloseIcon is true.
- */
-export type CloseIconDescriptionTypes =
-  | {
-      hasCloseIcon?: false;
-      closeIconDescription?: string;
-    }
-  | {
-      hasCloseIcon: true;
-      closeIconDescription: string;
-    };
-
 // The types and DocGen commentary for the component props,
 // in alphabetical order (for consistency).
 // See https://www.npmjs.com/package/prop-types#usage.
 
+export interface TearsheetAction extends ButtonProps<'button'> {
+  label?: string;
+  loading?: boolean;
+}
+
 // Note that the descriptions here should be kept in sync with those for the
 // corresponding props for TearsheetNarrow and TearsheetShell components.
-interface TearsheetProps extends PropsWithChildren {
+export interface TearsheetProps extends PropsWithChildren {
   /**
    * The navigation actions to be shown as buttons in the action area at the
    * bottom of the tearsheet. Each action is specified as an object with
@@ -65,7 +51,7 @@ interface TearsheetProps extends PropsWithChildren {
    *
    * See https://react.carbondesignsystem.com/?path=/docs/components-button--default#component-api
    */
-  actions: ButtonProps[];
+  actions?: TearsheetAction[];
 
   /**
    * The aria-label for the tearsheet, which is optional.
@@ -77,6 +63,12 @@ interface TearsheetProps extends PropsWithChildren {
    * An optional class or classes to be added to the outermost element.
    */
   className?: string;
+
+  /**
+   * The accessibility title for the close icon (if shown).
+   *
+   */
+  closeIconDescription?: string;
 
   /**
    * A description of the flow, displayed in the header area of the tearsheet.
@@ -92,6 +84,14 @@ interface TearsheetProps extends PropsWithChildren {
    * this prop to either true or false.
    */
   hasCloseIcon?: boolean;
+
+  /**
+   * The content for the header actions area, displayed alongside the title in
+   * the header area of the tearsheet. This is typically a drop-down, or a set
+   * of small buttons, or similar. NB the headerActions is only applicable for
+   * wide tearsheets.
+   */
+  headerActions?: ReactNode;
 
   /**
    * The content for the influencer section of the tearsheet, displayed
@@ -119,6 +119,11 @@ interface TearsheetProps extends PropsWithChildren {
   label?: ReactNode;
 
   /**
+   * Provide a ref to return focus to once the tearsheet is closed.
+   */
+  launcherButtonRef?: RefObject<any>;
+
+  /**
    * Navigation content, such as a set of tabs, to be displayed at the bottom
    * of the header area of the tearsheet.
    */
@@ -139,12 +144,20 @@ interface TearsheetProps extends PropsWithChildren {
   /**
    * The DOM element that the tearsheet should be rendered within. Defaults to document.body.
    */
-  portalTarget: ReactNode;
+  portalTarget?: HTMLElement;
 
   /**
-   * Specify a CSS selector that matches the DOM element that should be focused when the Modal opens
+   * Specify a CSS selector that matches the DOM element that should be
+   * focused when the Modal opens.
    */
   selectorPrimaryFocus?: string;
+
+  /**
+   * Specify the CSS selectors that match the floating menus.
+   *
+   * See https://react.carbondesignsystem.com/?path=/docs/components-composedmodal--overview#focus-management
+   */
+  selectorsFloatingMenus?: string[];
 
   /**
    * The main title of the tearsheet, displayed in the header area.
@@ -174,26 +187,29 @@ interface TearsheetProps extends PropsWithChildren {
  * panel on either the left or right side, the main content area, and a set of
  * action buttons.
  */
-export let Tearsheet = React.forwardRef(
-  (
-    {
+export let Tearsheet = React.forwardRef<HTMLDivElement, TearsheetProps>(
+  (props, ref) => {
+    const {
       influencerPosition = 'left',
       influencerWidth = 'narrow',
+      children,
       ...rest
-    }: TearsheetProps & CloseIconDescriptionTypes,
-    ref: ForwardedRef<HTMLDivElement>
-  ) => (
-    <TearsheetShell
-      {...{
-        ...getDevtoolsProps(componentName),
-        ...rest,
-        influencerPosition,
-        influencerWidth,
-        ref,
-        size: 'wide',
-      }}
-    />
-  )
+    } = props;
+    return (
+      <TearsheetShell
+        {...{
+          ...getDevtoolsProps(componentName),
+          ...rest,
+          influencerPosition,
+          influencerWidth,
+          ref,
+          size: 'wide',
+        }}
+      >
+        {children}
+      </TearsheetShell>
+    );
+  }
 );
 
 // Return a placeholder if not released and not enabled by feature flag
@@ -237,8 +253,6 @@ Tearsheet.propTypes = {
    * See https://react.carbondesignsystem.com/?path=/docs/components-button--default#component-api
    */
   actions: allPropTypes([
-    /**@ts-ignore */
-    ActionSet.validateActions(() => '2xl'),
     PropTypes.arrayOf(
       PropTypes.shape({
         ...Button.propTypes,
@@ -252,6 +266,7 @@ Tearsheet.propTypes = {
         label: PropTypes.string,
         loading: PropTypes.bool,
         // we duplicate this Button prop to improve the DocGen here
+        /**@ts-ignore*/
         onClick: Button.propTypes.onClick,
       })
     ),
@@ -271,13 +286,8 @@ Tearsheet.propTypes = {
   /**
    * The accessibility title for the close icon (if shown).
    *
-   * **Note:** This prop is only required if a close icon is shown, i.e. if
-   * there are a no navigation actions and/or hasCloseIcon is true.
    */
-  /**@ts-ignore */
-  closeIconDescription: PropTypes.string.isRequired.if(
-    ({ actions, hasCloseIcon }) => tearsheetHasCloseIcon(actions, hasCloseIcon)
-  ),
+  closeIconDescription: PropTypes.string,
 
   /**
    * A description of the flow, displayed in the header area of the tearsheet.
@@ -292,8 +302,15 @@ Tearsheet.propTypes = {
    * tearsheet"), and that behavior can be overridden if required by setting
    * this prop to either true or false.
    */
-  /**@ts-ignore */
   hasCloseIcon: PropTypes.bool,
+
+  /**
+   * The content for the header actions area, displayed alongside the title in
+   * the header area of the tearsheet. This is typically a drop-down, or a set
+   * of small buttons, or similar. NB the headerActions is only applicable for
+   * wide tearsheets.
+   */
+  headerActions: PropTypes.element,
 
   /**
    * The content for the influencer section of the tearsheet, displayed
@@ -350,9 +367,18 @@ Tearsheet.propTypes = {
   portalTarget: portalType,
 
   /**
-   * Specify a CSS selector that matches the DOM element that should be focused when the Modal opens
+   * Specify a CSS selector that matches the DOM element that should be
+   * focused when the Modal opens.
    */
   selectorPrimaryFocus: PropTypes.string,
+
+  /**
+   * Specify the CSS selectors that match the floating menus.
+   *
+   * See https://react.carbondesignsystem.com/?path=/docs/components-composedmodal--overview#focus-management
+   */
+  /**@ts-ignore*/
+  selectorsFloatingMenus: PropTypes.arrayOf(PropTypes.string),
 
   /**
    * The main title of the tearsheet, displayed in the header area.

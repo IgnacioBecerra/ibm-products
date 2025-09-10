@@ -5,9 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import cx from 'classnames';
-import { bool, node, string } from 'prop-types';
-
 import React, {
   PropsWithChildren,
   createContext,
@@ -17,15 +14,18 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { getDevtoolsProps } from '../../global/js/utils/devtools';
+import { bool, node, string } from 'prop-types';
+
 // cspell:words Focusable focusable
 import { getFocusableElements as _getFocusableElements } from '../../global/js/utils/getFocusableElements';
+import cx from 'classnames';
+import { getDevtoolsProps } from '../../global/js/utils/devtools';
 import { pkg } from '../../settings';
 
 const { checkComponentEnabled, prefix } = pkg;
 const blockClass = `${prefix}--toolbar`;
 
-interface ToolbarProps {
+export interface ToolbarProps {
   /** Provide an optional class to be applied to the containing node */
   className?: string;
 
@@ -45,7 +45,7 @@ let Toolbar = forwardRef(
     { children, className, vertical, ...rest }: PropsWithChildren<ToolbarProps>,
     r: React.Ref<HTMLDivElement>
   ) => {
-    const focusableElements = useRef<HTMLElement[] | undefined>();
+    const focusableElements = useRef<HTMLElement[] | undefined>(undefined);
 
     const getFocusableElements = useCallback(
       (): HTMLElement[] | undefined => focusableElements.current,
@@ -62,17 +62,20 @@ let Toolbar = forwardRef(
         ref?.['current']
       ) as HTMLElement[];
 
-      focus !== -1 &&
+      if (focus !== -1) {
         getFocusableElements()?.forEach((element, index) => {
           element[index !== focus ? 'setAttribute' : 'removeAttribute'](
             'tabindex',
             '-1'
           );
         });
+      }
     });
 
     useEffect(() => {
-      focus !== -1 && getFocusableElements()?.[focus].focus();
+      if (focus !== -1) {
+        getFocusableElements()?.[focus].focus();
+      }
     }, [focus, getFocusableElements]);
 
     const [arrowNext, arrowPrevious] = !vertical
@@ -82,13 +85,17 @@ let Toolbar = forwardRef(
     function onArrowDown(increment: number) {
       const nextFocus = focus + increment;
 
-      getFocusableElements()?.[nextFocus] && setFocus(nextFocus);
+      if (getFocusableElements()?.[nextFocus]) {
+        setFocus(nextFocus);
+      }
     }
 
     function onFocus({ target }) {
       const elements = getFocusableElements();
 
-      elements?.includes(target) && setFocus(elements.indexOf(target));
+      if (elements?.includes(target)) {
+        setFocus(elements.indexOf(target));
+      }
     }
 
     function onKeyDown({ key, target }) {

@@ -1,3 +1,10 @@
+/**
+ * Copyright IBM Corp. 2024
+ *
+ * This source code is licensed under the Apache-2.0 license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 import React from 'react';
 import { StoryDocsPage } from '../../../../global/js/utils/StoryDocsPage';
 import {
@@ -173,6 +180,19 @@ const MyInlineEditDatagrid = () => {
           `,
         },
         story: InlineEditUsageStory,
+      },
+      {
+        title: 'Opt out of editing at cell level',
+        description: `In some cases you may want to disable editing per cell. This is possible by providing the following structure for the cell value within your row data:`,
+        source: {
+          code: `
+{
+  value: '\u2014', // Value displayed for static cell
+  isStaticCell: true,
+  columnId: 'lastName',
+}
+          `,
+        },
       },
     ]}
   />

@@ -1,5 +1,5 @@
 /**
- * Copyright IBM Corp. 2024, 2024
+ * Copyright IBM Corp. 2024, 2025
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
@@ -14,16 +14,15 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { pkg } from '../../settings';
 
+// Carbon and package components we use.
+import { Button, usePrefix } from '@carbon/react';
 // Other standard imports.
 import PropTypes from 'prop-types';
 import cx from 'classnames';
-
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
-import { pkg, carbon } from '../../settings';
-
-// Carbon and package components we use.
-import { Button } from '@carbon/react';
+import { useIsomorphicEffect } from '../../global/js/hooks';
 
 // The block part of our conventional BEM class names (blockClass__E--M).
 const blockClass = `${pkg.prefix}--truncated-list`;
@@ -38,7 +37,7 @@ const defaults = {
   viewMoreLabel: (value) => `View more (${value})`,
 };
 
-interface TruncatedListProps extends PropsWithChildren {
+export interface TruncatedListProps extends PropsWithChildren {
   as?: React.ElementType | string;
   /**
    * Optional class name for expand/collapse button.
@@ -74,7 +73,7 @@ interface TruncatedListProps extends PropsWithChildren {
   /**
    * Callback function for building the label when the list is collapsed.
    */
-  viewMoreLabel?: (value: any) => void;
+  viewMoreLabel?: (value: any) => ReactNode;
 }
 /**
  * The `TruncatedList` allows consumers to control how many items are
@@ -109,7 +108,8 @@ export let TruncatedList = React.forwardRef<HTMLDivElement, TruncatedListProps>(
     // guesstimate the initial height to reduce animation distance.
     //   (difference of the guessed height to rendered height - a few pixels)
     const [listHeight, setListHeight] = useState(minItems * 16);
-    const listRef = useRef<HTMLElement>();
+    const listRef = useRef<HTMLElement | undefined>(undefined);
+    const carbonPrefix = usePrefix();
 
     const handleToggle = () => {
       setIsCollapsed((prev) => !prev);
@@ -142,6 +142,12 @@ export let TruncatedList = React.forwardRef<HTMLDivElement, TruncatedListProps>(
       }
     }, [childrenArray, minItems, maxItems, isCollapsed, listRef]);
 
+    useIsomorphicEffect(() => {
+      if (listRef.current) {
+        listRef.current.style.height = `${listHeight}px`;
+      }
+    }, [listHeight]);
+
     return (
       <div
         {...rest}
@@ -158,11 +164,7 @@ export let TruncatedList = React.forwardRef<HTMLDivElement, TruncatedListProps>(
         ref={ref}
         {...getDevtoolsProps(componentName)}
       >
-        <List
-          className={`${blockClass}__list`}
-          ref={listRef}
-          style={{ height: listHeight }}
-        >
+        <List className={`${blockClass}__list`} ref={listRef}>
           {isCollapsed ? childrenArray.slice(0, minItems) : children}
         </List>
 
@@ -170,7 +172,7 @@ export let TruncatedList = React.forwardRef<HTMLDivElement, TruncatedListProps>(
           <Button
             className={cx(
               `${blockClass}__button`,
-              `${carbon.prefix}--link`,
+              `${carbonPrefix}--link`,
               buttonClassName
             )}
             kind="ghost"

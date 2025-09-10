@@ -7,25 +7,31 @@
 
 // Import portions of React that are needed.
 import React, {
+  ReactNode,
+  useCallback,
   useEffect,
   useRef,
   useState,
-  useCallback,
-  ReactNode,
 } from 'react';
 
-// Other standard imports.
-import PropTypes from 'prop-types';
-import cx from 'classnames';
-
-import { getDevtoolsProps } from '../../global/js/utils/devtools';
-import { pkg /*, carbon */ } from '../../settings';
-
-import { createPortal } from 'react-dom';
+import { COACHMARK_OVERLAY_KIND } from '../Coachmark/utils/enums';
+import {
+  CoachmarkContext,
+  CoachmarkContextType,
+} from '../Coachmark/utils/context';
 import { CoachmarkOverlay } from '../Coachmark/CoachmarkOverlay';
 import { CoachmarkTagline } from '../Coachmark/CoachmarkTagline';
-import { CoachmarkContext } from '../Coachmark/utils/context';
-import { COACHMARK_OVERLAY_KIND } from '../Coachmark/utils/enums';
+// Other standard imports.
+import PropTypes from 'prop-types';
+import { createPortal } from 'react-dom';
+import cx from 'classnames';
+import { getDevtoolsProps } from '../../global/js/utils/devtools';
+import { pkg } from '../../settings';
+import {
+  useIsomorphicEffect,
+  usePrefersReducedMotion,
+} from '../../global/js/hooks';
+
 // Carbon and package components we use.
 /* TODO: @import(s) of carbon components and other package components. */
 
@@ -35,7 +41,7 @@ const blockClass = `${coachmarkClass}-fixed`;
 const overlayBlockClass = `${coachmarkClass}-overlay`;
 const componentName = 'CoachmarkFixed';
 
-interface CoachmarkFixedProps {
+export interface CoachmarkFixedProps {
   /**
    * CoachmarkFixed should use a single CoachmarkOverlayElements component as a child.
    */
@@ -67,6 +73,10 @@ interface CoachmarkFixedProps {
    * Determines the theme of the component.
    */
   theme?: 'light' | 'dark';
+  /**
+   * Tooltip text and aria label for the Close button icon.
+   */
+  closeIconDescription?: string;
 }
 
 const defaults = {
@@ -93,37 +103,37 @@ export let CoachmarkFixed = React.forwardRef<
       portalTarget,
       tagline = defaults.tagline,
       theme = defaults.theme,
+      closeIconDescription,
       // Collect any other property values passed in.
       ...rest
     },
     ref
   ) => {
     const overlayRef = useRef<HTMLDivElement>(null);
-    const portalNode = portalTarget
-      ? document.querySelector(portalTarget) ?? document.querySelector('body')
-      : document.querySelector('body');
+    const portalNode = useRef<Element | DocumentFragment | null>(null);
     const [isOpen, setIsOpen] = useState(false);
     const [shouldResetPosition, setShouldResetPosition] = useState(false);
     const [targetRect, setTargetRect] = useState();
     const [targetOffset, setTargetOffset] = useState({ x: 0, y: 0 });
     const [fixedIsVisible, setFixedIsVisible] = useState(false);
-    const prefersReducedMotion = window.matchMedia(
-      '(prefers-reduced-motion: reduce)'
-    );
+    const shouldReduceMotion = usePrefersReducedMotion();
+
+    useIsomorphicEffect(() => {
+      portalNode.current = portalTarget
+        ? (document?.querySelector(portalTarget) ??
+          document?.querySelector('body'))
+        : document?.querySelector('body');
+    }, [portalTarget]);
+
     const handleClose = useCallback(() => {
-      console.log('HANDLING CLOSE HERE...');
-      if (prefersReducedMotion.matches) {
+      if (shouldReduceMotion) {
         setIsOpen(false);
       } else {
         setFixedIsVisible(false);
       }
-    }, [prefersReducedMotion.matches]);
+    }, [shouldReduceMotion]);
 
-    const handleTransitionEnd = (e) => {
-      console.log(
-        'Here at transition end... ',
-        e.propertyName === 'transform' && !fixedIsVisible
-      );
+    const handleTransitionEnd = (e: TransitionEvent) => {
       if (e.propertyName === 'transform' && !fixedIsVisible) {
         setIsOpen(false);
         onClose();
@@ -155,7 +165,7 @@ export let CoachmarkFixed = React.forwardRef<
       };
     }, [escFunction]);
 
-    const contextValue = {
+    const contextValue: CoachmarkContextType = {
       buttonProps: {
         'aria-expanded': isOpen,
         tabIndex: 0,
@@ -170,7 +180,7 @@ export let CoachmarkFixed = React.forwardRef<
       targetRect: targetRect,
       targetOffset: targetOffset,
       isOpen: isOpen,
-      tacos: 'tacos',
+      closeIconDescription,
     };
 
     // instead of toggling on/off,
@@ -214,6 +224,7 @@ export let CoachmarkFixed = React.forwardRef<
         >
           <CoachmarkTagline title={tagline} onClose={onClose} />
           {isOpen &&
+            portalNode?.current &&
             createPortal(
               <CoachmarkOverlay
                 ref={overlayRef}
@@ -230,7 +241,7 @@ export let CoachmarkFixed = React.forwardRef<
                 {children}
               </CoachmarkOverlay>,
               // Default to `document.body` when `portalNode` is `null`
-              portalNode || document.body
+              portalNode?.current
             )}
         </div>
       </CoachmarkContext.Provider>
@@ -259,6 +270,10 @@ CoachmarkFixed.propTypes = {
    */
   className: PropTypes.string,
   /**
+   * Tooltip text and aria label for the Close button icon.
+   */
+  closeIconDescription: PropTypes.string,
+  /**
    * Function to call when the Coachmark closes.
    */
   onClose: PropTypes.func,
@@ -273,11 +288,11 @@ CoachmarkFixed.propTypes = {
    * element is hidden or component is unmounted, the Coachmark will disappear.
    */
   portalTarget: PropTypes.string,
+
   /**
    * The tagline title which will be fixed to the bottom right of the window and will serve as the display trigger.
    */
   tagline: PropTypes.string.isRequired,
-
   /**
    * Determines the theme of the component.
    */

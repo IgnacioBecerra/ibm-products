@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 import React, { useState } from 'react';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 import { usePrefix, Link } from '@carbon/react';
 import { CreateFullPage } from '.';
 import { CreateFullPageStep } from './CreateFullPageStep';
@@ -47,7 +47,7 @@ const breadcrumbs = {
 };
 
 export default {
-  title: 'IBM Products/Patterns/Create flows/CreateFullPage',
+  title: 'Patterns/Prebuilt patterns/Create flows/CreateFullPage',
   component: CreateFullPage,
   tags: ['autodocs'],
   parameters: {
@@ -55,7 +55,11 @@ export default {
     layout: 'fullscreen',
     docs: { page: DocsPage },
     controls: { sort: 'requiredFirst' },
+    percy: {
+      waitForSelector: `button.${blockClass}__create-button`,
+    },
   },
+
   decorators: [
     (story) => <div className={`${storyClass}__viewport`}>{story()}</div>,
   ],
@@ -85,6 +89,7 @@ const defaultFullPageProps = {
     "If you cancel, the information you have entered won't be saved.",
   modalDangerButtonText: 'Cancel partition',
   modalSecondaryButtonText: 'Return to form',
+  onClickInfluencerStep: (step) => console.log('Step: ', step),
   onRequestSubmit: action('Submit handler called'),
   onClose: action('Close handler called'),
 };
@@ -172,6 +177,8 @@ const Template = ({ ...args }) => {
                   </DefinitionTooltip>
                 </div>
                 <Toggle
+                  labelText="Simulate error"
+                  hideLabel
                   id="simulated-error-toggle"
                   size="sm"
                   onToggle={(event) => setShouldReject(event)}
@@ -192,17 +199,20 @@ const Template = ({ ...args }) => {
           title="Dynamic step"
           description="Example dynamic step"
           includeStep={shouldIncludeAdditionalStep}
+          onPrevious={() => console.log('custom onPrevious handler')}
         />
         <CreateFullPageStep
           title="Empty"
           secondaryLabel="Optional"
           description="Empty step for demonstration purposes"
+          onPrevious={() => console.log('custom onPrevious handler')}
         />
         <CreateFullPageStep
           className={`${storyClass}__step-fieldset--no-label`}
           title="Core configuration"
           description="Here is an example description for the 'Core configuration' step."
           secondaryLabel="Optional"
+          onPrevious={() => console.log('custom onPrevious handler')}
         >
           <Grid>
             <Column xlg={5} lg={5} md={4} sm={4}>
@@ -257,6 +267,7 @@ const Template = ({ ...args }) => {
           title="Message retention"
           subtitle="This is how many copies of a topic will be made for high availability"
           description="The partitions of each topic can be replicated across a configurable number of brokers"
+          onPrevious={() => console.log('custom onPrevious handler')}
         >
           <Grid>
             <Column span={100}>
@@ -368,6 +379,8 @@ const TemplateWithSections = ({ ...args }) => {
                     </DefinitionTooltip>
                   </div>
                   <Toggle
+                    labelText="Simulate error"
+                    hideLabel
                     id="simulated-error-toggle"
                     size="sm"
                     onToggle={(event) => setShouldReject(event)}
@@ -564,6 +577,7 @@ createFullPageWithHeader.args = {
     { key: '3', label: 'Breadcrumb 4', isCurrentPage: true },
   ],
   maxVisibleBreadcrumbs: 3,
+  breadcrumbOverflowTooltipAlign: 'right',
 };
 
 export const createFullPageWithStepInErrorState = TemplateWithError.bind({});
@@ -605,7 +619,7 @@ const TemplateWithGlobalHeader = ({ ...args }) => {
         >
           <SideNavItems>
             <SideNavLink
-              href="https://pages.github.ibm.com/cdai-design/pal/"
+              href="https://pages.github.ibm.com/carbon/ibm-products/"
               target="_blank"
             >
               Sample link: Carbon for IBM Products
@@ -679,6 +693,8 @@ const TemplateWithGlobalHeader = ({ ...args }) => {
                     </DefinitionTooltip>
                   </div>
                   <Toggle
+                    labelText="Simulate error"
+                    hideLabel
                     id="simulated-error-toggle"
                     size="sm"
                     onToggle={(event) => setShouldReject(event)}
@@ -812,4 +828,5 @@ createFullPageWithGlobalHeader.args = {
     { key: '3', label: 'Breadcrumb 4', isCurrentPage: true },
   ],
   maxVisibleBreadcrumbs: 3,
+  breadcrumbOverflowTooltipAlign: 'right',
 };

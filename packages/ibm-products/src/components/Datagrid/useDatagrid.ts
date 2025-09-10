@@ -1,10 +1,10 @@
-/*
- * Licensed Materials - Property of IBM
- * 5724-Q36
- * (c) Copyright IBM Corp. 2020 - 2021
- * US Government Users Restricted Rights - Use, duplication or disclosure
- * restricted by GSA ADP Schedule Contract with IBM Corp.
+/**
+ * Copyright IBM Corp. 2024
+ *
+ * This source code is licensed under the Apache-2.0 license found in the
+ * LICENSE file in the root directory of this source tree.
  */
+
 import { useMemo } from 'react';
 import {
   useTable,
@@ -17,8 +17,8 @@ import {
   useFilters,
   usePagination,
   TableInstance,
+  PluginHook,
 } from 'react-table';
-import uniqueId from 'lodash/uniqueId';
 import useSkeletonRows from './useSkeletonRows';
 import useDefaultStringRenderer from './useDefaultStringRenderer';
 import useRowRenderer from './useRowRenderer';
@@ -27,6 +27,7 @@ import useHeaderRow from './Datagrid/DatagridHeaderRow';
 import useFlexResize from './useFlexResize';
 import useFloatingScroll from './useFloatingScroll';
 import { stateReducer } from './Datagrid/addons/stateReducer';
+import uuidv4 from '../../global/js/utils/uuidv4';
 
 const useDatagrid = (params, ...plugins): TableInstance => {
   const defaultPlugins = [
@@ -41,7 +42,7 @@ const useDatagrid = (params, ...plugins): TableInstance => {
     useGlobalFilter,
     useSortBy,
     useExpanded,
-  ];
+  ] as PluginHook<object>[];
 
   // Disable resizing
   if (params.disableResizing) {
@@ -62,7 +63,7 @@ const useDatagrid = (params, ...plugins): TableInstance => {
     minWidth: 50,
   };
 
-  const tableId = useMemo(() => uniqueId('datagrid-table-id'), []);
+  const tableId = useMemo(() => uuidv4('datagrid-table-id'), []);
   const tableState = useTable(
     { tableId, ...params, stateReducer, defaultColumn },
     ...defaultPlugins,

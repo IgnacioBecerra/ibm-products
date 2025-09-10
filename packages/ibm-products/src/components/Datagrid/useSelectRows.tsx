@@ -1,22 +1,29 @@
 /**
- * Copyright IBM Corp. 2020, 2023
+ * Copyright IBM Corp. 2020, 2025
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
  */
 
-import React, { useLayoutEffect, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useState } from 'react';
 import cx from 'classnames';
-import { TableSelectRow } from '@carbon/react';
+import { TableSelectRow, usePrefix } from '@carbon/react';
 import { SelectAll } from './Datagrid/DatagridSelectAll';
 import { selectionColumnId } from './common-column-ids';
-import { pkg, carbon } from '../../settings';
+import { pkg } from '../../settings';
 import { handleToggleRowSelected } from './Datagrid/addons/stateReducer';
 import { ColumnInstance, Hooks, TableInstance } from 'react-table';
 import { DataGridState } from './types';
 
 const blockClass = `${pkg.prefix}--datagrid`;
 const checkboxClass = `${pkg.prefix}--datagrid__checkbox-cell`;
+
+const renderSelectAll = (gridState: DataGridState) => (
+  <SelectAll {...gridState} />
+);
+const renderSelectCell = (gridState: DataGridState) => (
+  <SelectRow {...gridState} />
+);
 
 const useSelectRows = (hooks: Hooks) => {
   useHighlightSelection(hooks);
@@ -48,8 +55,8 @@ const useSelectRows = (hooks: Hooks) => {
         : []),
       {
         id: selectionColumnId,
-        Header: (gridState: DataGridState<any>) => <SelectAll {...gridState} />,
-        Cell: (gridState) => <SelectRow {...gridState} />,
+        Header: renderSelectAll,
+        Cell: renderSelectCell,
       },
       ...newColOrder,
     ] as ColumnInstance[];
@@ -57,6 +64,7 @@ const useSelectRows = (hooks: Hooks) => {
 };
 
 const useHighlightSelection = (hooks) => {
+  const carbonPrefix = usePrefix();
   const getRowProps = (props, { row }) => {
     const { checked } = row.getToggleRowSelectedProps();
     return [
@@ -65,7 +73,7 @@ const useHighlightSelection = (hooks) => {
         className: cx([
           `${blockClass}__carbon-row`,
           {
-            [`${carbon.prefix}--data-table--selected`]: checked,
+            [`${carbonPrefix}--data-table--selected`]: checked,
             [`${blockClass}__active-row`]: checked,
           },
         ]),
@@ -91,35 +99,16 @@ const SelectRow = (datagridState) => {
     getRowId,
   } = datagridState;
 
-  const [windowSize, setWindowSize] = useState(
-    typeof window !== 'undefined' ? window.innerWidth : ''
-  );
+  const [windowSize, setWindowSize] = useState<number>();
+
   useLayoutEffect(() => {
+    setWindowSize(window.innerWidth);
     function updateSize() {
       setWindowSize(window.innerWidth);
     }
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
   }, []);
-
-  const onSelectHandler = (event) => {
-    event.stopPropagation(); // avoid triggering onRowClick
-    if (radio) {
-      toggleAllRowsSelected(false);
-      if (onRadioSelect) {
-        onRadioSelect(row);
-      }
-    }
-    onChange(event);
-    onRowSelect?.(row, event);
-    handleToggleRowSelected({
-      dispatch,
-      rowData: row,
-      isChecked: event.target.checked,
-      getRowId,
-      selectAll: null,
-    });
-  };
 
   const selectDisabled = isFetching || row.getRowProps().disabled;
   const { onChange, title, ...selectProps } = row.getToggleRowSelectedProps();
@@ -128,6 +117,37 @@ const SelectRow = (datagridState) => {
     columns[0]?.sticky === 'left' && withStickyColumn;
   const rowId = `${tableId}-${row.id}-${row.index}`;
   const { key, _cellProps } = cellProps;
+
+  const onSelectHandler = useCallback(
+    (event) => {
+      event.stopPropagation(); // avoid triggering onRowClick
+      if (radio) {
+        toggleAllRowsSelected(false);
+        if (onRadioSelect) {
+          onRadioSelect(row);
+        }
+      }
+      onChange(event);
+      onRowSelect?.(row, event);
+      handleToggleRowSelected({
+        dispatch,
+        rowData: row,
+        isChecked: event.target.checked,
+        getRowId,
+        selectAll: null,
+      });
+    },
+    [
+      dispatch,
+      getRowId,
+      onChange,
+      onRadioSelect,
+      onRowSelect,
+      radio,
+      row,
+      toggleAllRowsSelected,
+    ]
+  );
 
   return (
     <TableSelectRow
@@ -146,7 +166,7 @@ const SelectRow = (datagridState) => {
             isFirstColumnStickyLeft && Number(windowSize) > 671,
         },
       ])}
-      ariaLabel={title}
+      aria-label={title}
       disabled={selectDisabled}
     />
   );

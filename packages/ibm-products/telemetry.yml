@@ -2,7 +2,7 @@
 
 version: 1
 projectId: 495342db-5046-4ecf-85ea-9ffceb6f8cdf
-endpoint: https://collector-prod.1am6wm210aow.us-south.codeengine.appdomain.cloud/v1/metrics
+endpoint: https://www-api.ibm.com/ibm-telemetry/v1/metrics
 collect:
   jsx:
     elements:
@@ -15,9 +15,11 @@ collect:
         - activeCellCoordinates
         - activeHref
         - addConditionSubGroupHandler
+        - aiLabel
         - align
         - allPageRowsLabel
         - allRowsLabel
+        - allTagsModalAriaLabel
         - allTagsModalSearchLabel
         - allTagsModalSearchPlaceholderText
         - allTagsModalSearchThreshold
@@ -32,14 +34,18 @@ collect:
         - assistiveText
         - assistiveTextDisabledInstructionsLabel
         - assistiveTextInstructionsLabel
+        - autoAlign
         - backButtonText
         - backgroundColor
         - batchActionMenuButtonLabel
         - batchActions
         - body
+        - border
+        - breadcrumbOverflowTooltipAlign
         - breadcrumbs
         - button
         - cancelButtonText
+        - caret
         - cellSize
         - children
         - className
@@ -47,18 +53,21 @@ collect:
         - clickZone
         - closeButtonLabel
         - closeIconDescription
+        - closePopover
         - collapseButtonLabel
         - collapsible
+        - column
         - columnInputPlaceholder
         - columns
         - condition
-        - conditionBuilderRef
         - conditionState
         - config
         - containingElementRef
         - count
         - currentMatcher
         - currentStep
+        - CustomizeColumnsButton
+        - customizeColumnsProps
         - CustomizeColumnsTearsheet
         - customizeTearsheetHeadingLabel
         - data
@@ -66,14 +75,18 @@ collect:
         - DatagridBatchActions
         - DatagridPagination
         - datagridState
+        - decorator
         - defaultColumn
         - defaultEmptyRowCount
         - description
+        - disableColumnSwapping
         - disabled
         - disabledCell
         - disableSubmit
         - displayMetalPanel
+        - downloadLinkLabel
         - draggableClass
+        - dropShadow
         - element
         - emptyStateAction
         - emptyStateDescription
@@ -81,6 +94,7 @@ collect:
         - emptyStateSize
         - emptyStateTitle
         - emptyStateType
+        - enableSpacerColumn
         - error
         - errorCodeLabel
         - errorMessage
@@ -89,6 +103,7 @@ collect:
         - ExpandedRowContentComponent
         - expandedRowIds
         - fetchMoreData
+        - fieldsetLegendId
         - fieldsetLegendText
         - filterByLabel
         - filterProps
@@ -100,6 +115,8 @@ collect:
         - formDescription
         - formTitle
         - fullHeightDatagrid
+        - getActionsState
+        - getAsyncSubRows
         - getConditionState
         - getFilterFlyoutProps
         - getOptions
@@ -121,15 +138,20 @@ collect:
         - handleResize
         - hasActions
         - hasCloseIcon
+        - hasCustomRowHeader
+        - hasError
         - hasFieldset
+        - headerActions
         - headerGroups
         - HeaderRow
         - headers
+        - headingAs
         - headRef
         - hideConditionPreviewHandler
         - hideConditionSubGroupPreviewHandler
         - hideIcon
         - hideSelectAll
+        - highContrast
         - href
         - icon
         - iconDescription
@@ -170,6 +192,7 @@ collect:
         - labelText
         - launcherButtonRef
         - legendText
+        - lines
         - link
         - links
         - listRef
@@ -198,8 +221,10 @@ collect:
         - noSelectionTitle
         - noTrailingSlash
         - onActiveCellChange
+        - onAddItem
         - onAllRowSelect
         - onApply
+        - onBlur
         - onCancel
         - onChange
         - onClick
@@ -212,9 +237,15 @@ collect:
         - onContextMenuLabel
         - onContextMenuValue
         - onDataUpdate
+        - onFocus
+        - onKeyDown
         - onMount
+        - onMouseEnter
+        - onMouseLeave
         - onNext
+        - onOverflowClick
         - onOverflowTagChange
+        - onPrevious
         - onPrimaryButtonClick
         - onRemove
         - onRequestClose
@@ -238,9 +269,12 @@ collect:
         - overflowActions
         - overflowAlign
         - overflowAriaLabel
+        - overflowAutoAlign
         - overflowClassName
         - overflowTags
+        - overflowTooltipAlign
         - overflowType
+        - pageActions
         - parentId
         - path
         - pictogram
@@ -261,11 +295,17 @@ collect:
         - productive
         - radio
         - reactTableFiltersState
+        - readOnly
+        - readOnlyTable
         - renderIcon
+        - renderMedia
+        - renderRowHeader
+        - renderRowHeaderDirection
         - resetToDefaultLabel
         - resizerAriaLabel
         - rightAlign
         - row
+        - rowActions
         - rows
         - rowSize
         - score
@@ -284,10 +324,12 @@ collect:
         - selectAllLabel
         - selectAllToggle
         - selected
+        - selectedHeaderReorderActive
         - selectedOption
         - selectionAreas
         - selectorPageContent
         - selectorPrimaryFocus
+        - selectorsFloatingMenus
         - sequence
         - setActiveCellCoordinates
         - setAllFilters
@@ -301,6 +343,7 @@ collect:
         - setMouseOverRowIndex
         - setMultiSelection
         - setPopoverOpen
+        - setSelectedHeaderReorderActive
         - setSelectionAreaData
         - setSelectionAreas
         - showAllTagsLabel
@@ -316,6 +359,7 @@ collect:
         - sortByLabel
         - startConditionLabel
         - state
+        - statementConfigCustom
         - status
         - style
         - submitButtonText
@@ -325,14 +369,19 @@ collect:
         - tableId
         - tagline
         - tags
+        - target
         - theme
         - title
         - titleSize
         - toolbarBatchActions
+        - toolbarBatchActionsDisplayMin
+        - tooltipAlign
         - tooltipAlignment
         - tooltipText
         - totalVisibleColumns
+        - translateWithId
         - translateWithIdBatchActions
+        - triggerButtonRef
         - truncate
         - truncateValue
         - type
@@ -366,6 +415,7 @@ collect:
         - version
         # ActionBar
         - overflowItems
+        - overflowMenuRef
         # Actions
         - searchText
         - setSearchText
@@ -422,14 +472,17 @@ collect:
         - editButtonText
         - editing
         - editSuccess
+        - editSuccessMessage
         - editSuccessTitle
         - errorText
         - generateButtonText
         - generateSuccessBody
+        - generateSuccessMessage
         - generateSuccessTitle
         - generateTitle
         - hasAPIKeyVisibilityToggle
         - hasDownloadLink
+        - helperText
         - hideAPIKeyLabel
         - loadingText
         - modalLabel
@@ -443,7 +496,7 @@ collect:
         - onRequestGenerate
         - previousStepButtonText
         - showAPIKeyLabel
-        # BigNumbers
+        # BigNumber
         - forceShowTotal
         - fractionDigits
         - iconButton
@@ -452,8 +505,6 @@ collect:
         - tooltipDescription
         - total
         - trending
-        # BreadcrumbWithOverflow
-        - overflowTooltipAlign
         # ButtonMenu
         - menuAriaLabel
         # ButtonSetWithOverflow
@@ -466,7 +517,6 @@ collect:
         - componentName
         # Card
         - getStarted
-        - onKeyDown
         # CardFooter
         - hasButton
         # CardHeader
@@ -475,6 +525,7 @@ collect:
         # Carousel
         - disableArrowScroll
         - fadedEdgeColor
+        - isScrollMode
         - onChangeIsScrollable
         # Checklist
         - chartLabel
@@ -487,11 +538,15 @@ collect:
         - toggleLabel
         - toggleLabelAlign
         # Coachmark
+        - floating
+        - isOpenByDefault
         - overlayClassName
         - overlayKind
         - overlayRef
+        - position
         - positionTune
-        - target
+        # CoachmarkBeacon
+        - buttonProps
         # CoachmarkDragbar
         - a11yKeyboardHandler
         - onDrag
@@ -499,6 +554,7 @@ collect:
         - fixedIsVisible
         # CoachmarkOverlayElements
         - isVisible
+        - onBack
         # CoachmarkStackHome
         - onClickNavItem
         # Columns
@@ -520,20 +576,27 @@ collect:
         - enableSubGroup
         # ConditionBuilderButton
         - hideLabel
-        - onBlur
-        - onFocus
-        - onMouseEnter
-        - onMouseLeave
-        - tooltipAlign
+        - isInvalid
+        - wrapperClassName
         - wrapperProps
-        # ConditionBuilderContent
-        - getActionsState
         # ConditionBuilderItem
         - popOverClassName
+        - renderChildren
+        # ConditionBuilderItemDate
+        - parentRef
+        # ConditionBuilderProvider
+        - actionState
+        - conditionBuilderRef
+        - rootState
+        - setActionState
+        - setRootState
         # ConditionConnector
         - operator
         # ConditionPreview
+        - colorIndex
         - previewType
+        # ContentHeader
+        - dragIconDescription
         # CreateFullPage
         - breadcrumbsOverflowAriaLabel
         - maxVisibleBreadcrumbs
@@ -541,17 +604,22 @@ collect:
         - modalDescription
         - modalSecondaryButtonText
         - modalTitle
+        - onClickInfluencerStep
         - secondaryTitle
         # CreateInfluencer
+        - onClickStep
         - stepData
+        # CreateTearsheet
+        - experimentalSecondarySubmitText
         # CreateTearsheetStep
-        - onPrevious
+        - experimentalSecondarySubmit
         # CustomizeColumnsTearsheet
         - columnDefinitions
         - onSaveColumnPrefs
         - primaryButtonTextLabel
         - secondaryButtonTextLabel
         # DataSpreadsheet
+        - onColDrag
         - spreadsheetAriaLabel
         # DataSpreadsheetBody
         - activeCellRef
@@ -563,6 +631,7 @@ collect:
         - setClickAndHoldActive
         - setColumnOrder
         - setContainerHasFocus
+        - setCurrentColumns
         - totalColumnsWidth
         # DataSpreadsheetHeader
         - headerCellHoldActive
@@ -571,10 +640,9 @@ collect:
         - magnitude
         # DelimitedList
         - delimiter
-        # DescriptionList
-        - border
         # DraggableElement
         - classList
+        - elementId
         - isSticky
         # DraggableItemsList
         - moveElement
@@ -619,6 +687,13 @@ collect:
         - successMessage
         - validExtensions
         # FeatureFlags
+        - defaultPortalTargetBody
+        - enableDatagridUseCustomizeColumns
+        - enableDatagridUseEditableCell
+        - enableDatagridUseInlineEdit
+        - enableSidepanelResizer
+        - enableTestFlagA
+        - enableTestFlagB
         - flags
         # FilterFlyout
         - flyoutIconDescription
@@ -677,18 +752,23 @@ collect:
         - narrow
         - tertiaryButtonLabel
         # InterstitialScreen
-        - domainName
-        - headerClassName
-        - headerTitle
-        - hideProgressIndicator
-        - interstitialAriaLabel
         - isFullScreen
+        # InterstitialScreenBody
+        - contentRenderer
+        # InterstitialScreenFooter
+        - actionButtonRenderer
         - nextButtonLabel
-        - productName
+        - onAction
         - skipButtonLabel
         - startButtonLabel
+        # InterstitialScreenHeader
+        - headerSubTitle
+        - headerTitle
+        - hideProgressIndicator
         # InterstitialScreenView
         - stepTitle
+        # InterstitialScreenViewModule
+        - disableActionButton
         # Item
         - attributes
         - dragOverlay
@@ -709,6 +789,8 @@ collect:
         # NonLinearReading
         - definition
         # NotificationsPanel
+        - dateTimeLocale
+        - dateTimeStyle
         - daysAgoText
         - dismissAllLabel
         - dismissSingleNotificationIconDescription
@@ -748,7 +830,6 @@ collect:
         - warnText
         # OverflowCheckboxes
         - applyFilters
-        - column
         - components
         - filtersState
         - setFiltersState
@@ -756,8 +837,8 @@ collect:
         - actionBarItems
         - actionBarMenuOptionsClass
         - actionBarOverflowAriaLabel
+        - breadcrumbLabel
         - breadcrumbOverflowAriaLabel
-        - breadcrumbOverflowTooltipAlign
         - collapseHeader
         - collapseHeaderIconDescription
         - collapseTitle
@@ -768,10 +849,24 @@ collect:
         - hasBackgroundAlways
         - hasCollapseHeaderToggle
         - narrowGrid
-        - pageActions
         - pageActionsMenuOptionsClass
         - pageActionsOverflowLabel
         - withoutBackground
+        # PageHeaderBreadcrumbBar
+        - contentActions
+        - contentActionsFlush
+        - pageActionsFlush
+        # PageHeaderBreadcrumbOverflow
+        - renderOverflowBreadcrumb
+        # PageHeaderContent
+        - contextualActions
+        # PageHeaderContentPageActions
+        - menuButtonLabel
+        # PageHeaderScrollButton
+        - collapseText
+        - expandText
+        # PageHeaderTabBar
+        - scroller
         # PageHeaderTitle
         - blockClass
         - hasBreadcrumbRow
@@ -779,6 +874,7 @@ collect:
         - inputInvalidText
         - inputLabelText
         - inputPlaceholderText
+        - primaryDangerDescription
         - resourceName
         - textConfirmation
         # RowSizeDropdown
@@ -814,19 +910,18 @@ collect:
         - sortItems
         - submitLabel
         - titleText
-        - translateWithId
         # SelectAllWithToggle
         - getToggleAllPageRowsSelectedProps
         - getToggleAllRowsSelectedProps
         - isAllRowsSelected
-        # SidePanel
+        # SidePanelBase
         - actionToolbarButtons
         - animateTitle
+        - closeIconTooltipAlignment
         - condensedActions
+        - hideCloseButton
         - includeOverlay
         - navigationBackIconDescription
-        - onNavigationBack
-        - onUnmount
         # SingleAddSelect
         - searchResultsLabel
         # Sortable
@@ -841,27 +936,22 @@ collect:
         - onRetry
         - retryLabel
         - showRetry
-        # SteppedAnimatedMedia
-        - filePaths
-        - playStep
         # StringFormatter
-        - lines
         - tooltipDirection
         - width
         # TagOverflow
         - tagComponent
-        # TearsheetShell
-        - headerActions
         # Toolbar
         - vertical
-        # ToolbarButton
-        - caret
         # TruncatedList
         - as
         - buttonClassName
         - collapsedItemsLimit
         - expandedItemsLimit
         - viewMoreLabel
+        # TruncatedText
+        - collapseLabel
+        - expandLabel
         # Underlay
         - activeId
         # UserAvatar
@@ -960,11 +1050,6 @@ collect:
         - group
         - in-progress
         - info
-        - Kinds.checked
-        - Kinds.disabled
-        - Kinds.error
-        - Kinds.indeterminate
-        - Kinds.unchecked
         - link
         - major-warning
         - minor-warning
@@ -1010,6 +1095,9 @@ collect:
         # General - primaryButtonPlacement
         - bottom
         - top
+        # General - renderRowHeaderDirection
+        - left
+        - right
         # General - rowSize
         - lg
         - md
@@ -1022,13 +1110,8 @@ collect:
         - bottom
         - top
         # General - size
-        - '"default"'
-        - '"lg"'
-        - '"md"'
-        - '"sm"'
-        - '"xl"'
-        - '"xs"'
         - 2xl
+        - default
         - lg
         - md
         - narrow
@@ -1050,11 +1133,12 @@ collect:
         # General - theme
         - dark
         - light
-        - Themes.dark
-        - Themes.light
         # General - titleSize
         - default
         - large
+        # General - tooltipAlign
+        - bottom
+        - top
         # General - tooltipAlignment
         - bottom
         - bottom-left
@@ -1071,14 +1155,20 @@ collect:
         - auto
         - checkbox
         - date
+        - expand
         - manual
         - number
         - radio
         - selection
         - text
+        - textarea
+        - tooltip
         # General - updateMethod
         - batch
         - instant
+        # General - variant
+        - Hierarchical
+        - Non-Hierarchical
         # General - verticalPosition
         - lower
         - normal
@@ -1101,6 +1191,9 @@ collect:
         - floating
         - stacked
         - tooltip
+        # ConditionBlock - conjunction
+        - and
+        - or
         # ConditionPreview - previewType
         - condition
         - newGroup
@@ -1121,23 +1214,17 @@ collect:
         # ExportModal - inputType
         - password
         - text
+        # NotificationsPanel - dateTimeStyle
+        - long
+        - narrow
+        - short
         # PageHeader - fullWidthGrid
         - xl
-        # StringFormatter - tooltipDirection
-        - '"bottom-left"'
-        - '"bottom-right"'
-        - '"bottom"'
-        - '"left-bottom"'
-        - '"left-top"'
-        - '"left"'
-        - '"right-bottom"'
-        - '"right-top"'
-        - '"right"'
-        - '"top-left"'
-        - '"top-right"'
-        - '"top"'
   npm:
     dependencies: null
+  js:
+    functions: {}
+    tokens: null
   js:
     functions: {}
     tokens: null

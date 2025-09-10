@@ -30,7 +30,7 @@ const blockClass = `${pkg.prefix}--tag-set`;
 const blockClassModal = `${blockClass}-modal`;
 
 export default {
-  title: 'IBM Products/Components/Tag overflow/TagOverflow',
+  title: 'Utilities/TagOverflow',
   component: TagOverflow,
   tags: ['autodocs'],
   parameters: {
@@ -75,6 +75,7 @@ export const TagsWithOverflowCount = Template.bind({});
 TagsWithOverflowCount.args = {
   containerWidth: 250,
   items: fiveTags,
+  onOverflowTagChange: (items) => console.log(items),
 };
 
 export const TagsWithTruncation = Template.bind({});
@@ -137,7 +138,7 @@ const TemplateWithClose = (argsIn) => {
     setLiveTags((prev) => prev.filter((item) => item.label !== key));
   };
 
-  const ref = useRef();
+  const ref = useRef(undefined);
   return (
     <div style={{ width: containerWidth }} ref={ref}>
       <TagOverflow

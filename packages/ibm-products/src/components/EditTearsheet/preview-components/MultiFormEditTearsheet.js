@@ -21,7 +21,7 @@ import cx from 'classnames';
 import { pkg } from '../../../settings';
 import { EditTearsheet } from '../EditTearsheet';
 import { EditTearsheetForm } from '../EditTearsheetForm';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 import { SlugSample } from '../../../global/js/story-parts/slug';
 
 const blockClass = `${pkg.prefix}--tearsheet-edit-multi-form`;
@@ -68,7 +68,9 @@ export const MultiFormEditTearsheet = ({
     action('onClose')();
   };
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
+    //emulate submit processing time
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     setOpen(false);
     action('onSubmit')();
   };

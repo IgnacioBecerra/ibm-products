@@ -7,7 +7,7 @@
 
 import React from 'react';
 // TODO: import action to handle events if required.
-// import { action } from '@storybook/addon-actions';
+// import { action } from 'storybook/actions';
 import { Link as CarbonLink } from '@carbon/react';
 import { getSelectedCarbonTheme } from '../../global/js/utils/story-helper';
 
@@ -19,15 +19,12 @@ import mdx from './CoachmarkStack.mdx';
 import styles from './_storybook-styles.scss?inline';
 
 export default {
-  title: 'IBM Products/Onboarding/Coachmark/CoachmarkStack',
+  title: 'Experimental/Onboarding/Coachmark/CoachmarkStack',
   component: CoachmarkStack,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'Onboarding'],
   // TODO: Define argTypes for props not represented by standard JS types.
   argTypes: {
     children: {
-      control: { type: null },
-    },
-    media: {
       control: { type: null },
     },
     portalTarget: {
@@ -158,4 +155,5 @@ coachmarkStack.args = {
   onClose: () => console.log('CLOSE'),
   tagline: 'Why are there two types of severity scores?',
   portalTarget: '#root:not([hidden="true"]) .preview-position-fix',
+  closeIconDescription: 'Close',
 };

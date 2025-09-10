@@ -8,9 +8,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { makeData } from './utils/makeData';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 import { Activity, Add } from '@carbon/react/icons';
-import { TableBatchAction, TableBatchActions } from '@carbon/react';
+import { TableBatchAction, TableBatchActions, Tooltip } from '@carbon/react';
 import { Edit, TrashCan } from '@carbon/react/icons';
 import {
   Datagrid,
@@ -23,6 +23,8 @@ import {
   useStickyColumn,
   useActionsColumn,
   getAutoSizedColumnWidth,
+  useColumnRightAlign,
+  useColumnCenterAlign,
 } from '.';
 
 // import mdx from './Datagrid.mdx';
@@ -33,9 +35,11 @@ import { DatagridPagination } from './utils/DatagridPagination';
 import { Wrapper } from './utils/Wrapper';
 import DocsPage from './Datagrid.docs-page';
 import { getBatchActions } from './utils/getBatchActions';
+import { StatusIcon } from '../StatusIcon';
+import { Annotation } from '../../../.storybook/Annotation';
 
 export default {
-  title: 'IBM Products/Components/Datagrid',
+  title: 'Deprecated/Datagrid',
   component: Datagrid,
   tags: ['autodocs'],
   parameters: {
@@ -53,6 +57,27 @@ export default {
     },
   },
   excludeStories: ['getBatchActions'],
+  decorators: [
+    (story) => (
+      <div>
+        <Annotation
+          type="deprecation-notice"
+          text={
+            <div>
+              This component is deprecated and will be moving to an
+              example-based approach. For more information, please refer to the{' '}
+              <a href="https://github.com/carbon-design-system/tanstack-carbon">
+                migration documentation
+              </a>
+              .
+            </div>
+          }
+        >
+          {story()}
+        </Annotation>
+      </div>
+    ),
+  ],
 };
 
 const getColumns = (rows) => {
@@ -147,7 +172,7 @@ export const BasicUsage = () => {
       console.log(currentColumn, allColumns),
   });
 
-  return <Datagrid datagridState={datagridState} title="Basic usage" />;
+  return <Datagrid datagridState={datagridState} />;
 };
 
 export const EmptyState = () => {
@@ -254,6 +279,45 @@ export const InfiniteScroll = () => {
   );
 };
 
+export const InfiniteScrollWithSelection = () => {
+  const [data, setData] = useState(makeData(0));
+  const columns = React.useMemo(() => getColumns(data), []);
+
+  const [isFetching, setIsFetching] = useState(false);
+  const fetchData = () =>
+    new Promise((resolve) => {
+      setIsFetching(true);
+      setTimeout(() => {
+        setData(data.concat(makeData(30, 5, 2)));
+        setIsFetching(false);
+        resolve();
+      }, 1000);
+    });
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const datagridState = useDatagrid(
+    {
+      columns,
+      data,
+      isFetching,
+      fetchMoreData: fetchData,
+      virtualHeight: 540,
+      emptyStateTitle: 'Empty state title',
+      emptyStateDescription: 'Description explaining why the table is empty',
+    },
+    useInfiniteScroll,
+    useSelectRows
+  );
+
+  return (
+    <Wrapper>
+      <Datagrid datagridState={{ ...datagridState }} />
+    </Wrapper>
+  );
+};
+
 export const WithVirtualizedData = () => {
   const [data] = useState(makeData(10000));
   const columns = React.useMemo(() => getColumns(data), []);
@@ -308,6 +372,94 @@ export const SelectableRow = () => {
   );
 
   return <Datagrid datagridState={{ ...datagridState }} />;
+};
+
+export const Header = () => {
+  const [data] = useState(makeData(10));
+  const columns = React.useMemo(() => getColumns(data), []);
+  const emptyStateTitle = 'Empty state title';
+  const emptyStateDescription = 'Description explaining why the table is empty';
+  const datagridState = useDatagrid({
+    columns,
+    data,
+    DatagridActions,
+    emptyStateTitle,
+    emptyStateDescription,
+    gridTitle: 'Data table title',
+    gridDescription: 'Additional information if needed',
+  });
+
+  return <Datagrid datagridState={{ ...datagridState }} />;
+};
+
+export const ColumnAlignment = () => {
+  const [data] = useState(makeData(10));
+  const rows = React.useMemo(() => data, [data]);
+  const columns = React.useMemo(
+    () => [
+      {
+        Header: 'First Name',
+        accessor: 'firstName',
+      },
+      {
+        Header: 'Last Name',
+        accessor: 'lastName',
+        width: getAutoSizedColumnWidth(rows, 'lastName', 'Last name'),
+      },
+      {
+        Header: 'Age',
+        accessor: 'age',
+        width: getAutoSizedColumnWidth(rows, 'age', 'Age'),
+        rightAlignedColumn: true,
+      },
+      {
+        Header: 'Visits',
+        accessor: 'visits',
+        width: getAutoSizedColumnWidth(rows, 'visits', 'Visits'),
+        rightAlignedColumn: true,
+      },
+      {
+        Header: 'Status',
+        accessor: 'status',
+        width: getAutoSizedColumnWidth(rows, 'status', 'Status'),
+      },
+      {
+        Header: 'Password strength',
+        accessor: 'passwordStrength',
+        filter: 'checkbox',
+        width: 160,
+        centerAlignedColumn: true,
+        Cell: ({ cell: { value } }) => {
+          const iconProps = {
+            size: 'sm',
+            theme: 'light',
+            kind: value,
+            iconDescription: value,
+          };
+          return (
+            <Tooltip label={iconProps.iconDescription}>
+              <button type="button" className="sb--tooltip-trigger">
+                <StatusIcon {...iconProps} />
+              </button>
+            </Tooltip>
+          );
+        },
+      },
+    ],
+    []
+  );
+
+  const datagridState = useDatagrid(
+    {
+      columns,
+      data: rows,
+      enableSpacerColumn: true,
+    },
+    useColumnRightAlign,
+    useColumnCenterAlign
+  );
+
+  return <Datagrid datagridState={datagridState} />;
 };
 
 export const RadioSelect = () => {
@@ -463,6 +615,7 @@ export const BatchActions = () => {
       toolbarBatchActions: getBatchActions(),
       DatagridActions,
       DatagridBatchActions,
+      toolbarBatchActionsDisplayMin: 3,
       rowActions: getRowActions(),
       onRowSelect: (row, event) => console.log('onRowClick: ', row, event),
       onAllRowSelect: (rows, event) =>
@@ -587,6 +740,44 @@ export const Skeleton = () => {
     emptyStateDescription,
     emptyStateTitle,
   });
+
+  return <Datagrid datagridState={datagridState} />;
+};
+
+export const SpacerColumn = () => {
+  const [data] = useState(makeData(10));
+  const rows = React.useMemo(() => data, [data]);
+  const columns = React.useMemo(
+    () => [
+      {
+        Header: 'First Name',
+        accessor: 'firstName',
+        rightAlignedColumn: true,
+      },
+      {
+        Header: 'Last Name',
+        accessor: 'lastName',
+        width: getAutoSizedColumnWidth(rows, 'lastName', 'Last name'),
+        rightAlignedColumn: true,
+      },
+      {
+        Header: 'Someone 11',
+        accessor: 'someone11',
+        multiLineWrap: true, //If `multiLineWrap` is required only for specific columns
+        rightAlignedColumn: true,
+      },
+    ],
+    []
+  );
+
+  const datagridState = useDatagrid(
+    {
+      columns,
+      data: rows,
+      enableSpacerColumn: true,
+    },
+    useColumnRightAlign
+  );
 
   return <Datagrid datagridState={datagridState} />;
 };

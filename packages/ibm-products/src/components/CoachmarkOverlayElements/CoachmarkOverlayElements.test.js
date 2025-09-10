@@ -22,12 +22,18 @@ const children = `hello, world (${uuidv4()})`;
 const dataTestId = uuidv4();
 const className = `class-${uuidv4()}`;
 
-const childrenContent = (
+const childrenContent = [
   <CoachmarkOverlayElement
+    key="element1"
     title="Hello World"
     description="this is a description test"
-  />
-);
+  />,
+  <CoachmarkOverlayElement
+    key="element2"
+    title="Hello World"
+    description="this is a another description test"
+  />,
+];
 
 const renderCoachmarkWithOverlayElements = (
   { ...rest } = {},
@@ -38,6 +44,7 @@ const renderCoachmarkWithOverlayElements = (
       theme={'dark'}
       align={'bottom'}
       positionTune={{ x: 0, y: 0 }}
+      closeIconDescription="Close"
       target={
         <CoachmarkBeacon label="Show information" kind={BEACON_KIND.DEFAULT} />
       }
@@ -47,6 +54,9 @@ const renderCoachmarkWithOverlayElements = (
   );
 
 describe(componentName, () => {
+  beforeEach(() => {
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
   it('renders a component CoachmarkOverlayElements', async () => {
     const user = userEvent.setup();
     renderCoachmarkWithOverlayElements({ 'data-testid': dataTestId });
@@ -138,5 +148,37 @@ describe(componentName, () => {
     expect(screen.getByTestId(dataTestId)).toHaveDevtoolsAttribute(
       componentName
     );
+  });
+
+  it(`renders an image`, async () => {
+    const user = userEvent.setup();
+    renderCoachmarkWithOverlayElements({
+      'data-testid': dataTestId,
+      renderMedia: () => <img alt="img" />,
+    });
+    const beaconOrButton = screen.getByRole('button', {
+      name: 'Show information',
+    });
+    await act(() => user.click(beaconOrButton));
+
+    expect(screen.getByRole('img')).toBeInTheDocument();
+  });
+
+  it('calls onNext', async () => {
+    const user = userEvent.setup();
+    const onNext = jest.fn();
+    renderCoachmarkWithOverlayElements({
+      'data-testid': dataTestId,
+      onNext,
+    });
+    const beaconOrButton = screen.getByRole('button', {
+      name: 'Show information',
+    });
+    await act(() => user.click(beaconOrButton));
+    const nextButton = screen.getByRole('button', {
+      name: 'Next',
+    });
+    await act(() => user.click(nextButton));
+    await expect(onNext).toHaveBeenCalled();
   });
 });

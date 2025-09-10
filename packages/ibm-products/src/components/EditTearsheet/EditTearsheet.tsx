@@ -17,19 +17,31 @@ import React, {
 import PropTypes from 'prop-types';
 import cx from 'classnames';
 // @ts-ignore
-import { Form, SideNav, SideNavItems, SideNavMenuItem } from '@carbon/react';
+import {
+  ButtonProps,
+  Form,
+  SideNav,
+  SideNavItems,
+  SideNavMenuItem,
+} from '@carbon/react';
 import { pkg } from '../../settings';
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
 import { TearsheetShell } from '../Tearsheet/TearsheetShell';
 import { prepareProps } from '../../global/js/utils/props-helper';
+import { TearsheetAction } from '../Tearsheet/Tearsheet';
 
 const componentName = 'EditTearsheet';
 const blockClass = `${pkg.prefix}--tearsheet-edit`;
 
+export type FormContextType = {
+  currentForm: number;
+  setFormTitle: () => void;
+};
+
 // This is a general context for the forms container
 // containing information about the state of the container
 // and providing some callback methods for forms to use
-export const FormContext = createContext(null);
+export const FormContext = createContext<FormContextType | null>(null);
 
 // This is a context supplied separately to each form in the container
 // to let it know what number it is in the sequence of forms
@@ -92,7 +104,8 @@ interface EditTearsheetProps extends PropsWithChildren {
   onFormChange?: (formIndex: number) => number;
 
   /**
-   * Specify a handler for submitting the tearsheet.
+   * Specify a handler for submitting the tearsheet. Throughout its execution
+   * the submit button will be disabled and include a loading indicator.
    */
   onRequestSubmit: () => void;
 
@@ -126,8 +139,14 @@ interface EditTearsheetProps extends PropsWithChildren {
   verticalPosition?: 'normal' | 'lower';
 }
 
+interface EditAction extends TearsheetAction {
+  loading?: boolean;
+}
+
 /**
+ * **This component is deprecated.** <br>
  * Use Tearsheet with medium to complex edits. See usage guidance for further information.
+ * @deprecated
  */
 export let EditTearsheet = forwardRef(
   (
@@ -153,11 +172,24 @@ export let EditTearsheet = forwardRef(
     }: EditTearsheetProps,
     ref: ForwardedRef<HTMLDivElement>
   ) => {
-    const actions = [
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleOnRequestSubmit = async () => {
+      setIsSubmitting(true);
+      try {
+        await onRequestSubmit();
+      } catch (error) {
+        console.warn(`${componentName} submit error: ${error}`);
+      }
+      setIsSubmitting(false);
+    };
+
+    const actions: EditAction[] = [
       {
         key: 'edit-action-button-submit',
         label: submitButtonText,
-        onClick: onRequestSubmit,
+        onClick: () => handleOnRequestSubmit(),
+        loading: isSubmitting,
         kind: 'primary',
       },
       {
@@ -251,6 +283,12 @@ export let EditTearsheet = forwardRef(
     );
   }
 );
+
+/**@ts-ignore*/
+EditTearsheet.deprecated = {
+  level: 'warn',
+  details: `This component is deprecated and will be removed in the next major version.`,
+};
 
 // Return a placeholder if not released and not enabled by feature flag
 EditTearsheet = pkg.checkComponentEnabled(EditTearsheet, componentName);

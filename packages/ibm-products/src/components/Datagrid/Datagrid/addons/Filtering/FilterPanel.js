@@ -6,14 +6,21 @@
  */
 
 import { Accordion, AccordionItem, Button, Layer, Search } from '@carbon/react';
-import { BATCH, CLEAR_FILTERS, INSTANT, PANEL } from './constants';
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  actionSetVariants,
-  innerContainerVariants,
-  panelVariants,
-} from './motion/variants';
-import { motion, useReducedMotion } from 'framer-motion';
+  BATCH,
+  CLEAR_FILTERS,
+  INSTANT,
+  PANEL,
+  SAVED_FILTERS,
+} from './constants';
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   useFilters,
   useShouldDisableButtons,
@@ -27,11 +34,13 @@ import PropTypes from 'prop-types';
 import cx from 'classnames';
 import { pkg } from '../../../../../settings';
 import { rem } from '@carbon/layout';
-
+import {
+  useIsomorphicEffect,
+  usePrefersReducedMotion,
+  usePresence,
+} from '../../../../../global/js/hooks';
 const blockClass = `${pkg.prefix}--datagrid`;
 export const componentClass = `${blockClass}-filter-panel`;
-
-const MotionActionSet = motion(ActionSet);
 
 const defaults = {
   title: 'Filter',
@@ -41,6 +50,9 @@ const defaults = {
   searchLabelText: 'Filter search',
   searchPlaceholder: 'Find filters',
 };
+
+// Use same empty array every time, for benefit of useEffect() etc. dependency checking.
+const emptyArray = [];
 
 const FilterPanel = ({
   title = defaults.title,
@@ -58,7 +70,7 @@ const FilterPanel = ({
   secondaryActionLabel = defaults.secondaryActionLabel,
   searchLabelText = defaults.searchLabelText,
   searchPlaceholder = defaults.searchPlaceholder,
-  reactTableFiltersState = [],
+  reactTableFiltersState = emptyArray,
   autoHideFilters = false,
   isFetching = false,
 }) => {
@@ -66,7 +78,11 @@ const FilterPanel = ({
   const [showDividerLine, setShowDividerLine] = useState(false);
 
   /** Context */
-  const { panelOpen, setPanelOpen } = useContext(FilterContext);
+  const {
+    panelOpen,
+    setPanelOpen,
+    dispatch: localDispatch,
+  } = useContext(FilterContext);
 
   const {
     filtersState,
@@ -90,11 +106,11 @@ const FilterPanel = ({
   });
 
   /** Refs */
-  const filterPanelRef = useRef();
-  const filterHeadingRef = useRef();
-  const filterSearchRef = useRef();
-  const actionSetRef = useRef();
-
+  const filterPanelRef = useRef(undefined);
+  const filterHeadingRef = useRef(undefined);
+  const filterSearchRef = useRef(undefined);
+  const actionSetRef = useRef(undefined);
+  const innerContainerRef = useRef(undefined);
   /** State from hooks */
   const [shouldDisableButtons, setShouldDisableButtons] =
     useShouldDisableButtons({
@@ -103,7 +119,19 @@ const FilterPanel = ({
       prevFiltersRef,
     });
 
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = usePrefersReducedMotion();
+
+  const exitAnimationName = shouldReduceMotion
+    ? 'filter-panel-exit-reduced'
+    : 'filter-panel-exit-left';
+
+  const { shouldRender } = usePresence(
+    panelOpen,
+    filterPanelRef,
+    exitAnimationName
+  );
+
+  const [animationComplete, setAnimationComplete] = useState(false);
 
   /** Memos */
   const showActionSet = useMemo(() => updateMethod === BATCH, [updateMethod]);
@@ -112,6 +140,22 @@ const FilterPanel = ({
   const closePanel = () => {
     cancel();
     setPanelOpen(false);
+  };
+
+  // Set the internal state `animationComplete` to true if
+  // prefers reduced motion is true
+  useEffect(() => {
+    if (shouldReduceMotion) {
+      setAnimationComplete(true);
+    }
+  }, [shouldReduceMotion]);
+
+  // initializes the side panel to open
+  const onAnimationStart = () => {
+    setAnimationComplete(false);
+  };
+  const onAnimationEnd = () => {
+    setAnimationComplete(!animationComplete);
   };
 
   const apply = () => {
@@ -131,12 +175,22 @@ const FilterPanel = ({
 
     // Update the last applied filters
     lastAppliedFilters.current = JSON.stringify(filtersObjectArray);
+
+    // Dispatch action from local filter context to track filters in order
+    // to keep history if `isFetching` becomes true. If so, react-table
+    // clears all filter history
+    localDispatch({
+      type: SAVED_FILTERS,
+      payload: {
+        savedFilters: filtersObjectArray,
+      },
+    });
   };
 
   const renderActionSet = () => {
     return (
       showActionSet && (
-        <MotionActionSet
+        <ActionSet
           actions={[
             {
               key: 1,
@@ -153,10 +207,10 @@ const FilterPanel = ({
               disabled: shouldDisableButtons,
             },
           ]}
-          className={`${componentClass}__action-set`}
+          className={cx(`${componentClass}__action-set`, {
+            [`${componentClass}__animationComplete`]: animationComplete,
+          })}
           ref={actionSetRef}
-          custom={shouldReduceMotion}
-          variants={actionSetVariants}
         />
       )
     );
@@ -189,12 +243,16 @@ const FilterPanel = ({
         rem(filterPanelMinHeight)
       );
     },
-    [filterPanelMinHeight]
+    [filterPanelMinHeight, shouldRender]
   );
 
-  useSubscribeToEventEmitter(CLEAR_FILTERS, reset);
+  // tableId is passed in from the event emitter from the FilterSummary component
+  // in DatagridContent
+  useSubscribeToEventEmitter(CLEAR_FILTERS, (tableId) => {
+    reset(tableId);
+  });
 
-  const getScrollableContainerHeight = () => {
+  const getScrollableContainerHeight = useCallback(() => {
     const filterHeadingHeight =
       filterHeadingRef.current?.getBoundingClientRect().height;
     const filterSearchHeight =
@@ -208,24 +266,46 @@ const FilterPanel = ({
           showFilterSearch ? filterSearchHeight : 0
         }px - ${updateMethod === BATCH ? actionSetHeight : 0}px)`
       : 0;
-
     return height;
-  };
+  }, [
+    filterHeadingRef,
+    filterSearchRef,
+    actionSetRef,
+    panelOpen,
+    showFilterSearch,
+    updateMethod,
+  ]);
 
-  return (
-    <motion.div
+  useIsomorphicEffect(() => {
+    const height = getScrollableContainerHeight();
+    if (
+      innerContainerRef.current &&
+      innerContainerRef.current.style &&
+      height
+    ) {
+      innerContainerRef.current.style.height = height;
+    }
+  }, [getScrollableContainerHeight, innerContainerRef, shouldRender]);
+
+  return shouldRender ? (
+    <div
       ref={filterPanelRef}
-      className={cx(componentClass, `${componentClass}__container`, {
-        [`${componentClass}--open`]: panelOpen,
-        [`${componentClass}--batch`]: showActionSet,
-        [`${componentClass}--instant`]: !showActionSet,
-      })}
-      initial={false}
-      animate={panelOpen ? 'visible' : 'hidden'}
-      custom={shouldReduceMotion}
-      variants={panelVariants}
+      onAnimationEnd={onAnimationEnd}
+      onAnimationStart={onAnimationStart}
+      className={cx(
+        componentClass,
+        `${componentClass}__container`,
+        `${componentClass}--left-placement`,
+        {
+          [`${componentClass}--open`]: panelOpen,
+          [`${componentClass}--closing`]: !panelOpen,
+          [`${componentClass}--reduced-motion`]: shouldReduceMotion,
+          [`${componentClass}--batch`]: showActionSet,
+          [`${componentClass}--instant`]: !showActionSet,
+        }
+      )}
     >
-      <motion.div custom={shouldReduceMotion} variants={innerContainerVariants}>
+      <div>
         <header
           ref={filterHeadingRef}
           className={cx(`${componentClass}__heading`, {
@@ -258,7 +338,7 @@ const FilterPanel = ({
 
         <div
           className={`${componentClass}__inner-container`}
-          style={{ height: getScrollableContainerHeight() }}
+          ref={innerContainerRef}
           onScroll={onInnerContainerScroll}
         >
           {filterSections.map(
@@ -290,9 +370,9 @@ const FilterPanel = ({
           )}
         </div>
         {renderActionSet()}
-      </motion.div>
-    </motion.div>
-  );
+      </div>
+    </div>
+  ) : null;
 };
 
 FilterPanel.propTypes = {

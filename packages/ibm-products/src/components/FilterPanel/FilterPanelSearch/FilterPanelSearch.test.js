@@ -1,5 +1,5 @@
 /**
- * Copyright IBM Corp. FULL_YEAR, FULL_YEAR
+ * Copyright IBM Corp. 2024
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
@@ -33,6 +33,9 @@ const renderComponent = ({ ...rest } = {}) =>
   );
 
 describe(componentName, () => {
+  beforeEach(() => {
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
   it('renders a component FilterPanelSearch', async () => {
     renderComponent();
     expect(screen.getByTestId(dataTestId)).toHaveClass(blockClass);

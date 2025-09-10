@@ -5,38 +5,37 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+// Carbon and package components we use.
+import { Button, ButtonProps } from '@carbon/react';
 // Import portions of React that are needed.
 import React, {
   Children,
   ReactNode,
   RefObject,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 
-// Other standard imports.
-import PropTypes from 'prop-types';
-import cx from 'classnames';
-import { getDevtoolsProps } from '../../global/js/utils/devtools';
-import { pkg /*, carbon */ } from '../../settings';
-
-// Carbon and package components we use.
-import { Button, ButtonProps } from '@carbon/react';
-import { useCoachmark } from '../Coachmark';
-import { clamp } from 'lodash';
-import pconsole from '../../global/js/utils/pconsole';
 //TODO THIS PATH WILL NEED TO BE UPDATED ONCE IN IBM PRODUCTS
 import { Carousel } from '../Carousel';
-//TODO THIS PATH WILL NEED TO BE UPDATED ONCE IN IBM PRODUCTS
-import { SteppedAnimatedMedia } from '../SteppedAnimatedMedia';
 import { CarouselProps } from '../Carousel/Carousel';
+// Other standard imports.
+import PropTypes from 'prop-types';
+//TODO THIS PATH WILL NEED TO BE UPDATED ONCE IN IBM PRODUCTS
+import { clamp } from '../../global/js/utils/clamp';
+import cx from 'classnames';
+import { getDevtoolsProps } from '../../global/js/utils/devtools';
+import pconsole from '../../global/js/utils/pconsole';
+import { pkg } from '../../settings';
+import { useCoachmark } from '../Coachmark';
 
 // The block part of our conventional BEM class names (blockClass__E--M).
 const blockClass = `${pkg.prefix}--coachmark-overlay-elements`;
 const componentName = 'CoachmarkOverlayElements';
 
-interface CoachmarkOverlayElementsProps {
+export interface CoachmarkOverlayElementsProps {
   /**
    * CoachmarkOverlayElements should be used with one or many CoachmarkOverlayElement components as children.
    * @see CoachmarkOverlayElement
@@ -51,15 +50,11 @@ interface CoachmarkOverlayElementsProps {
    * managed in the parent component.
    */
   isVisible?: boolean;
+
   /**
-   * The object describing an image in one of two shapes.
-   * If a single media element is required, use `{render}`.
-   * If a stepped animation is required, use `{filePaths}`.
+   * Optional prop to render any media like images or any animated media.
    */
-  media?: {
-    render?: () => ReactNode;
-    filePaths?: string[];
-  };
+  renderMedia?: (params) => ReactNode;
   /**
    * The label for the Next button.
    */
@@ -72,6 +67,18 @@ interface CoachmarkOverlayElementsProps {
    * The label for the Close button.
    */
   closeButtonLabel?: string;
+  /**
+   * Callback called when clicking on the Next button.
+   */
+  onNext?: () => void;
+  /**
+   * Callback called when clicking on the Previous button.
+   */
+  onBack?: () => void;
+  /**
+   * Current step of the coachmarks.
+   */
+  currentStep?: number;
 }
 
 // NOTE: the component SCSS is not imported here: it is rolled up separately.
@@ -91,6 +98,9 @@ const defaults = {
   nextButtonText: 'Next',
   previousButtonLabel: 'Back',
   closeButtonLabel: 'Got it',
+  onNext: undefined,
+  onBack: undefined,
+  currentStep: 0,
 };
 /**
  * Composable container to allow for the displaying of CoachmarkOverlayElement
@@ -105,25 +115,28 @@ export let CoachmarkOverlayElements = React.forwardRef<
       className,
       children,
       isVisible = defaults.isVisible,
-      media,
+      renderMedia,
+      currentStep = defaults.currentStep,
       nextButtonText = defaults.nextButtonText,
       previousButtonLabel = defaults.previousButtonLabel,
       closeButtonLabel = defaults.closeButtonLabel,
+      onNext = defaults.onNext,
+      onBack = defaults.onBack,
       // Collect any other property values passed in.
       ...rest
     },
     ref
   ) => {
-    const buttonFocusRef = useRef<ButtonProps>();
-    const scrollRef = useRef<CarouselProps>();
+    const buttonFocusRef = useRef<ButtonProps<any> | undefined>(undefined);
+    const scrollRef = useRef<CarouselProps | undefined>(undefined);
     const [scrollPosition, setScrollPosition] = useState(0);
-    const [currentProgStep, _setCurrentProgStep] = useState(0);
+    const [currentProgStep, _setCurrentProgStep] = useState(currentStep);
     const coachmark = useCoachmark();
 
     const setCurrentProgStep = (value) => {
       if (currentProgStep > 0 && value === 0 && buttonFocusRef.current) {
         setTimeout(() => {
-          buttonFocusRef.current.focus();
+          buttonFocusRef.current?.focus();
         }, 1000);
       }
       _setCurrentProgStep(value);
@@ -132,6 +145,21 @@ export let CoachmarkOverlayElements = React.forwardRef<
     const numProgSteps = Children.count(children);
     const progStepFloor = 0;
     const progStepCeil = numProgSteps - 1;
+
+    const renderMediaContent = useMemo(
+      () => renderMedia?.({ playStep: currentProgStep }),
+      [currentProgStep, renderMedia]
+    );
+
+    useEffect(() => {
+      // When current step is set by props
+      // scroll to the appropriate view on the carrousel
+      const targetStep = clamp(currentStep, progStepFloor, progStepCeil);
+
+      scrollRef?.current?.scrollToView?.(targetStep);
+      // Avoid circular call to this hook
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentStep]);
 
     useEffect(() => {
       // On mount, one of the two primary buttons ("next" or "close")
@@ -171,19 +199,13 @@ export let CoachmarkOverlayElements = React.forwardRef<
           }
         )}
         ref={ref}
-        // role="main"
         {...getDevtoolsProps(componentName)}
       >
-        {media &&
-          (media.render ? (
-            media.render()
-          ) : (
-            <SteppedAnimatedMedia
-              className={`${blockClass}__element-stepped-media`}
-              filePaths={media.filePaths}
-              playStep={currentProgStep}
-            />
-          ))}
+        {renderMedia && (
+          <div className={`${blockClass}__element-stepped-media`}>
+            {renderMediaContent}
+          </div>
+        )}
 
         {numProgSteps === 1 ? (
           <>
@@ -208,7 +230,6 @@ export let CoachmarkOverlayElements = React.forwardRef<
         ) : (
           <>
             <Carousel
-              disableArrowScroll
               ref={scrollRef as RefObject<HTMLDivElement>}
               onScroll={(scrollPercent) => {
                 setScrollPosition(scrollPercent);
@@ -234,6 +255,7 @@ export let CoachmarkOverlayElements = React.forwardRef<
                     );
                     scrollRef?.current?.scrollToView?.(targetStep);
                     setCurrentProgStep(targetStep);
+                    onBack?.();
                   }}
                 >
                   {previousButtonLabel}
@@ -254,6 +276,7 @@ export let CoachmarkOverlayElements = React.forwardRef<
                     );
                     scrollRef?.current?.scrollToView?.(targetStep);
                     setCurrentProgStep(targetStep);
+                    onNext?.();
                   }}
                 >
                   {nextButtonText}
@@ -276,6 +299,12 @@ export let CoachmarkOverlayElements = React.forwardRef<
     );
   }
 );
+
+/**@ts-ignore*/
+CoachmarkOverlayElements.deprecated = {
+  level: 'warn',
+  details: `${componentName} is deprecated.`,
+};
 
 // Return a placeholder if not released and not enabled by feature flag
 CoachmarkOverlayElements = pkg.checkComponentEnabled(
@@ -307,30 +336,33 @@ CoachmarkOverlayElements.propTypes = {
    */
   closeButtonLabel: PropTypes.string,
   /**
+   * Current step of the coachmarks
+   */
+  currentStep: PropTypes.number,
+  /**
    * The visibility of CoachmarkOverlayElements is
    * managed in the parent component.
    */
   isVisible: PropTypes.bool,
-  /**
-   * The object describing an image in one of two shapes.
-   * If a single media element is required, use `{render}`.
-   * If a stepped animation is required, use `{filePaths}`.
-   */
-  /**@ts-ignore*/
-  media: PropTypes.oneOfType([
-    PropTypes.shape({
-      render: PropTypes.func,
-    }),
-    PropTypes.shape({
-      filePaths: PropTypes.arrayOf(PropTypes.string),
-    }),
-  ]),
+
   /**
    * The label for the Next button.
    */
   nextButtonText: PropTypes.string,
   /**
+   * Optional callback called when clicking on the Previous button.
+   */
+  onBack: PropTypes.func,
+  /**
+   * Optional callback called when clicking on the Next button.
+   */
+  onNext: PropTypes.func,
+  /**
    * The label for the Previous button.
    */
   previousButtonLabel: PropTypes.string,
+  /**
+   * Optional prop to render any media like images or animated media.
+   */
+  renderMedia: PropTypes.func,
 };

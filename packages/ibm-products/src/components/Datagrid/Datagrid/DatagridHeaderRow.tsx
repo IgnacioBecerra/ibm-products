@@ -1,4 +1,3 @@
-/* eslint-disable react/prop-types */
 /**
  * Copyright IBM Corp. 2020, 2024
  *
@@ -22,7 +21,7 @@ import {
   handleColumnResizingEvent,
 } from './addons/stateReducer';
 import { getNodeTextContent } from '../../../global/js/utils/getNodeTextContent';
-import { DatagridSlug } from './addons/Slug/DatagridSlug';
+import { DatagridAILabel } from './addons/AiLabel/DatagridAiLabel';
 import { useInitialColumnSort } from '../useInitialColumnSort';
 import {
   DataGridHeader,
@@ -35,16 +34,10 @@ import {
 
 const blockClass = `${pkg.prefix}--datagrid`;
 
-interface PropsType {
-  title?: string;
-}
-
 const getAccessibilityProps = (header: DataGridHeader) => {
-  const props: PropsType = {};
-  const title = getNodeTextContent(header.Header);
-  if (title) {
-    props.title = title;
-  } else {
+  const props = {};
+  const content = getNodeTextContent(header.Header);
+  if (!content) {
     props['aria-hidden'] = true;
   }
   return props;
@@ -113,9 +106,33 @@ const ResizeHeader = ({
         aria-label={resizerAriaLabel || 'Resize column'}
         disabled={isFetching}
       />
-      <span className={`${blockClass}__col-resize-indicator`} />
+      <span
+        role="separator"
+        className={`${blockClass}__col-resize-indicator`}
+      />
     </>
   );
+};
+
+const getAriaSortValue = (col, datagridState) => {
+  const {
+    ascendingSortableLabelText,
+    descendingSortableLabelText,
+    defaultSortableLabelText,
+  } = datagridState;
+  if (!col) {
+    return;
+  }
+  const { isSorted, isSortedDesc } = col;
+  if (!isSorted) {
+    return defaultSortableLabelText;
+  }
+  if (isSorted && !isSortedDesc) {
+    return ascendingSortableLabelText;
+  }
+  if (isSorted && isSortedDesc) {
+    return descendingSortableLabelText;
+  }
 };
 
 const HeaderRow = (
@@ -123,7 +140,8 @@ const HeaderRow = (
   headRef: MutableRefObject<HTMLDivElement>,
   headerGroup: DataGridHeaderGroup
 ) => {
-  const { resizerAriaLabel, isTableSortable, rows, isFetching } = datagridState;
+  const { resizerAriaLabel, isTableSortable, rows, isFetching, headers } =
+    datagridState;
   useInitialColumnSort(datagridState);
   // Used to measure the height of the table and uses that value
   // to display a vertical line to indicate the column you are resizing
@@ -182,17 +200,24 @@ const HeaderRow = (
   };
 
   const { className: headerGroupClassName, ...headerGroupProps } =
-    headerGroup.getHeaderGroupProps();
+    headerGroup.getHeaderGroupProps({ role: undefined });
 
-  const renderSlug = (slug) => {
+  const renderAILabel = (aiLabel) => {
     if (isTableSortable) {
       return;
     }
-    return <DatagridSlug slug={slug} />;
+    return <DatagridAILabel aiLabel={aiLabel} />;
   };
 
-  const foundAIRow = rows.some((r) => isValidElement(r?.original?.slug));
+  const foundAIRow = rows.some(
+    (r) =>
+      isValidElement(r?.original?.aiLabel) || isValidElement(r?.original?.slug)
+  );
   const { key, ...rowProps } = headerGroupProps;
+  const withActionsColumn = headers
+    ? !!headers.filter((header) => header.isAction).length
+    : false;
+
   return (
     <TableRow
       key={key}
@@ -216,9 +241,21 @@ const HeaderRow = (
           const { columnResizing } = state;
           const { columnWidths } = columnResizing || {};
           const originalCol = visibleColumns[index];
-          const { ...headerProps } = header.getHeaderProps();
+          const { ...headerProps } = header.getHeaderProps({ role: undefined });
 
-          const resizerProps = header?.getResizerProps?.();
+          const resizerProps = header?.getResizerProps?.({ role: undefined });
+          const headerStyle = headerProps?.style;
+          const lastVisibleIndex = withActionsColumn ? 2 : 1;
+          const isLastVisibleColumn =
+            index === visibleColumns.length - lastVisibleIndex;
+
+          if (headerStyle) {
+            Object.assign(headerStyle, {
+              flex: isLastVisibleColumn ? '1 1 0' : '0 0 auto',
+              overflow: isLastVisibleColumn ? 'hidden' : headerStyle.overflow,
+            });
+          }
+
           return (
             <TableHeader
               {...headerProps}
@@ -233,15 +270,20 @@ const HeaderRow = (
                   [`${blockClass}__header-actions-column`]: header?.isAction,
                   [`${blockClass}__with-slug`]:
                     header.slug && React.isValidElement(header?.slug),
+                  [`${blockClass}__with-ai-label`]:
+                    header.aiLabel && React.isValidElement(header?.aiLabel),
                 },
                 headerProps.className
               )}
               key={header.id}
               aria-hidden={header.id === 'spacer' && 'true'}
+              aria-sort={
+                header.canSort ? getAriaSortValue(header, datagridState) : ''
+              }
               {...getAccessibilityProps(header)}
             >
               {header.render('Header')}
-              {renderSlug(header.slug)}
+              {renderAILabel(header.aiLabel || header.slug)}
               {resizerProps && !header.isAction && (
                 <ResizeHeader
                   {...{

@@ -15,19 +15,14 @@ test.describe('ImportModal @avt', () => {
   test('@avt-default-state', async ({ page }) => {
     await visitStory(page, {
       component: 'ImportModal',
-      id: 'ibm-products-patterns-import-and-upload-importmodal--standard',
+      id: 'patterns-prebuilt-patterns-importmodal--standard',
       globals: {
         carbonTheme: 'white',
       },
     });
-    await page.getByText('Launch modal').click();
+    await page.screenshot({ animations: 'disabled' });
     const modalElement = page.locator(`.${carbon.prefix}--modal.is-visible`);
     await expect(modalElement).toBeVisible();
-    await modalElement.evaluate((element) =>
-      Promise.all(
-        element.getAnimations().map((animation) => animation.finished)
-      )
-    );
     await expect(page).toHaveNoACViolations('ImportModal @avt-default-state');
   });
 });

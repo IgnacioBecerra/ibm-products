@@ -1,5 +1,5 @@
 //
-// Copyright IBM Corp. 2020, 2024
+// Copyright IBM Corp. 2020, 2025
 //
 // This source code is licensed under the Apache-2.0 license found in the
 // LICENSE file in the root directory of this source tree.
@@ -29,6 +29,7 @@ const defaults = {
     ErrorEmptyState: true,
     ExportModal: true,
     ExpressiveCard: true,
+    FullPageError: true,
     HTTPError403: true,
     HTTPError404: true,
     HTTPErrorOther: true,
@@ -55,6 +56,7 @@ const defaults = {
     WebTerminal: true,
     WebTerminalContentWrapper: true,
     WebTerminalProvider: true,
+    UserAvatar: true,
 
     // other public components not yet reviewed and released:
     Toolbar: false,
@@ -69,10 +71,12 @@ const defaults = {
     EditFullPage: false,
     EditUpdateCards: false,
     Nav: false,
-    BigNumbers: false,
+    NavItem: false,
+    NavList: false,
+    BigNumber: false,
     TruncatedList: false,
+    TruncatedText: false,
     DelimitedList: false,
-    FullPageError: false,
     ScrollGradient: false,
     StringFormatter: false,
     StatusIndicator: false,
@@ -111,7 +115,6 @@ const defaults = {
     DescriptionListCell: false,
     DescriptionListRow: false,
     SearchBar: false,
-    UserAvatar: false,
 
     /* new component flags here - comment used by generate CLI */
 
@@ -124,9 +127,7 @@ const defaults = {
     InlineTip: false,
     InlineTipButton: false,
     InlineTipLink: false,
-    InterstitialScreen: false,
-    InterstitialScreenView: false,
-    InterstitialScreenViewModule: false,
+    InterstitialScreen: true,
     NonLinearReading: false,
   },
 

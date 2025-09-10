@@ -8,7 +8,7 @@
 
 import React, { useState } from 'react';
 import { Edit, TrashCan } from '@carbon/react/icons';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 import {
   Datagrid,
   useDatagrid,
@@ -21,13 +21,14 @@ import { DocsPage } from './EditableCell.docs-page';
 import { makeData } from '../../utils/makeData';
 import { ARG_TYPES } from '../../utils/getArgTypes';
 import { getInlineEditColumns } from '../../utils/getInlineEditColumns';
-import { WithFeatureFlags } from '../../../../../../core/.storybook/WithFeatureFlags';
+import { WithFeatureFlags } from '../../../../../.storybook/WithFeatureFlags';
+import { ListItem, UnorderedList } from '@carbon/react';
 
 const blockClass = `${pkg.prefix}--datagrid`;
 const storybookBlockClass = `storybook-${blockClass}__validation-code-snippet`;
 
 export default {
-  title: 'IBM Products/Components/Datagrid/EditableCell',
+  title: 'Deprecated/Datagrid/EditableCell',
   component: Datagrid,
   tags: ['autodocs'],
   parameters: {
@@ -92,7 +93,9 @@ const sharedDatagridProps = {
 };
 
 const EditableCellUsage = ({ ...args }) => {
-  const [data, setData] = useState(makeData(10));
+  const [data, setData] = useState(
+    makeData(10, { includeNonEditableCell: true, column: 'lastName' })
+  );
   const columns = React.useMemo(() => getInlineEditColumns(), []);
 
   const datagridState = useDatagrid(
@@ -112,13 +115,24 @@ const EditableCellUsage = ({ ...args }) => {
       }}
     >
       <Datagrid datagridState={datagridState} />
-      <p>
-        The following inline edit columns incorporate validation:
-        <code className={storybookBlockClass}>{'first_name'}</code>
-        <code className={storybookBlockClass}>{'last_name'}</code>
-        <code className={storybookBlockClass}>{'age'}</code>
-        <code className={storybookBlockClass}>{'visits'}</code>
-      </p>
+      <UnorderedList>
+        <ListItem>
+          <p>
+            The following inline edit columns incorporate validation:
+            <code className={storybookBlockClass}>{'first_name'}</code>
+            <code className={storybookBlockClass}>{'last_name'}</code>
+            <code className={storybookBlockClass}>{'age'}</code>
+            <code className={storybookBlockClass}>{'visits'}</code>
+          </p>
+        </ListItem>
+        <ListItem>
+          <p>
+            The second row's{' '}
+            <code className={storybookBlockClass}>{'lastName'}</code> cell is an
+            example of opting out of editing on a per cell basis.
+          </p>
+        </ListItem>
+      </UnorderedList>
     </WithFeatureFlags>
   );
 };

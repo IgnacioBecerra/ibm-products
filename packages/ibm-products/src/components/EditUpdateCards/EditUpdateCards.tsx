@@ -1,5 +1,5 @@
 /**
- * Copyright IBM Corp. 2022, 2022
+ * Copyright IBM Corp. 2022, 2024
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
@@ -8,16 +8,14 @@
 // Import portions of React that are needed.
 import React, { ForwardedRef, ReactNode } from 'react';
 
+import { CarbonIconType } from '@carbon/icons-react/lib/CarbonIcon';
+import { ProductiveCard } from '../ProductiveCard';
 // Other standard imports.
 import PropTypes from 'prop-types';
 import cx from 'classnames';
-
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
-import { pkg /*, carbon */ } from '../../settings';
-import { ProductiveCard } from '../ProductiveCard';
-import { CarbonIconType } from '@carbon/icons-react/lib/CarbonIcon';
-
-// import { children } from 'cheerio/lib/api/traversing';
+import { pkg } from '../../settings';
+import { ActionIcon } from '../Card/Card';
 
 // Carbon and package components we use.
 /* TODO: @import(s) of carbon components and other package components. */
@@ -37,18 +35,11 @@ const componentName = 'EditUpdateCards';
 // Default values should be provided when the component needs to make a choice
 // or assumption when a prop is not supplied.
 
-type ActionIcon = {
-  id: string;
-  icon: CarbonIconType;
-  onKeyDown?(): void;
-  onClick?(): void;
-  iconDescription: string;
-  href?: string;
-};
 type PlacementType = 'top' | 'bottom';
-interface EditUpdateCardsProps {
+
+export interface EditUpdateCardsProps {
   /**
-   * Icons that are displayed on card. Refer to design documentation for implementation guidelines
+   * Icons that are displayed on the card. Refer to design documentation for implementation guidelines. Note: href is deprecated. Set link.href for href functionality. If you are setting link object, href is a required property. link object supports all anchor element properties. Precedence: link.href > href. If link.href or href is set => anchor element, else button.
    */
   actionIcons?: Array<ActionIcon>;
   /**
@@ -139,9 +130,11 @@ interface EditUpdateCardsProps {
 // };
 
 /**
+ * **This component is deprecated.** <br>
  Editable cards allow a user to view, modify, and save the content contained within the card.
  These cards are generally used in instances where a user needs to make changes to a resource instances
  (ex. configuration details), account plan, etc. Editable cards allow a user to edit something within context.
+ @deprecated
  */
 export let EditUpdateCards = React.forwardRef(
   (
@@ -200,7 +193,6 @@ export let EditUpdateCards = React.forwardRef(
           }
         )}
         ref={ref}
-        role="main"
         {...getDevtoolsProps(componentName)}
       >
         <ProductiveCard
@@ -221,6 +213,12 @@ export let EditUpdateCards = React.forwardRef(
   }
 );
 
+/**@ts-ignore*/
+EditUpdateCards.deprecated = {
+  level: 'warn',
+  details: `This component is deprecated and will be removed in the next major version.`,
+};
+
 // Return a placeholder if not released and not enabled by feature flag
 EditUpdateCards = pkg.checkComponentEnabled(EditUpdateCards, componentName);
 
@@ -233,7 +231,7 @@ EditUpdateCards.displayName = componentName;
 // See https://www.npmjs.com/package/prop-types#usage.
 EditUpdateCards.propTypes = {
   /**
-   * Icons that are displayed on card. Refer to design documentation for implementation guidelines
+   * Icons that are displayed on the card. Refer to design documentation for implementation guidelines. Note: href is deprecated. Set link.href for href functionality. If you are setting link object, href is a required property. link object supports all anchor element properties. Precedence: link.href > href. If link.href or href is set => anchor element, else button.
    */
   /**@ts-ignore */
   actionIcons: PropTypes.arrayOf(
@@ -243,7 +241,13 @@ EditUpdateCards.propTypes = {
       onKeyDown: PropTypes.func,
       onClick: PropTypes.func,
       iconDescription: PropTypes.string,
+      /**
+       * @deprecated please use the `link.href` instead
+       */
       href: PropTypes.string,
+      link: PropTypes.shape({
+        href: PropTypes.string.isRequired,
+      }),
     })
   ),
   /**

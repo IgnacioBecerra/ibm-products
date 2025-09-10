@@ -11,14 +11,18 @@ import { generateData } from './utils/generateData';
 import mdx from './DataSpreadsheet.mdx';
 
 import styles from './_storybook-styles.scss?inline';
+import { OverflowMenu, OverflowMenuItem } from '@carbon/react';
 
 export default {
-  title: 'IBM Products/Components/Data spreadsheet/DataSpreadsheet',
+  title: 'Experimental/DataSpreadsheet',
   component: DataSpreadsheet,
   tags: ['autodocs'],
   argTypes: {
     onActiveCellChange: {
       action: 'active cell change',
+    },
+    onColDrag: {
+      action: 'on column drag',
     },
     onSelectionAreaChange: {
       action: 'selection area change',
@@ -45,7 +49,7 @@ const NumericLayout = ({ value }) => {
   );
 };
 
-const columnData = [
+const customColumnData = [
   {
     Header: 'Row Index',
     accessor: (row, index) => index,
@@ -55,6 +59,50 @@ const columnData = [
   },
   {
     Header: 'Pet type',
+    accessor: 'petType',
+  },
+  {
+    Header: (
+      <div>
+        <div>
+          <span>{'First Name'}</span>&nbsp;
+          <span>{'(Pets)'}</span>
+        </div>
+      </div>
+    ),
+    accessor: 'firstName',
+    column_name: 'First Name', // This will equal to the same string you want to represent as your header
+  },
+  {
+    Header: 'Age',
+    accessor: 'age',
+    Cell: ({ cell: { value } }) => <NumericLayout value={value} />,
+    placement: 'right',
+  },
+  {
+    Header: 'Vet visits',
+    accessor: 'visits',
+    Cell: ({ cell: { value } }) => <NumericLayout value={value} />,
+    placement: 'right',
+  },
+  {
+    Header: 'Health',
+    accessor: 'health',
+    Cell: ({ cell: { value } }) => <NumericLayout value={value} />,
+    placement: 'right',
+  },
+];
+
+const columnData = [
+  {
+    Header: 'Row index',
+    accessor: (row, index) => index,
+    Cell: ({ cell: { value } }) => <NumericLayout value={value} />,
+    placement: 'right',
+    width: 275,
+  },
+  {
+    Header: 'Pet Type',
     accessor: 'petType',
   },
   {
@@ -90,6 +138,36 @@ const Template = ({ ...args }) => {
       columns={columns}
       data={data}
       onDataUpdate={setData}
+      id="spreadsheet--id"
+      {...args}
+    />
+  );
+};
+
+const largeDatasetSpreadsheetCustomRowHeaders = ({ ...args }) => {
+  const [data, setData] = useState(() => generateData({ rows: 100000 }));
+  const columns = useMemo(() => columnData, []);
+
+  const buildComponent = (index) => (
+    <OverflowMenu
+      style={{
+        width: '32px',
+        height: '32px',
+        minWidth: '32px',
+        minHeight: '32px',
+      }}
+    >
+      <OverflowMenuItem itemText={`Test item ${index}`} />
+    </OverflowMenu>
+  );
+
+  return (
+    <DataSpreadsheet
+      columns={columns}
+      data={data}
+      onDataUpdate={setData}
+      renderRowHeaderDirection="Left"
+      renderRowHeader={buildComponent}
       id="spreadsheet--id"
       {...args}
     />
@@ -133,6 +211,7 @@ const WithManyColumns = ({ ...args }) => {
   const [data, setData] = useState(() =>
     generateData({ rows: 24, extraColumns: true })
   );
+
   const columnDataClone = useMemo(
     () => [
       ...columnData,
@@ -160,6 +239,74 @@ const WithManyColumns = ({ ...args }) => {
   );
 };
 
+const WithDifferentOptions = ({ ...args }) => {
+  const [data, setData] = useState(() =>
+    generateData({ rows: 24, extraColumns: true })
+  );
+  const columnDataClone = useMemo(
+    () => [
+      ...columnData,
+      {
+        Header: 'Owner name',
+        accessor: 'ownerName',
+      },
+      {
+        Header: 'Weight',
+        accessor: 'weight',
+      },
+    ],
+    []
+  );
+  const columns = useMemo(() => columnDataClone, [columnDataClone]);
+
+  return (
+    <DataSpreadsheet
+      columns={columns}
+      data={data}
+      onDataUpdate={setData}
+      id="spreadsheet--id"
+      {...args}
+    />
+  );
+};
+
+const dragDropCallback = ({ ...args }) => {
+  const [data, setData] = useState(() =>
+    generateData({ rows: 24, extraColumns: true })
+  );
+
+  const onColumnDragDrop = (tableData) => {
+    // Dev can debug here
+  };
+
+  const columnDataClone = useMemo(
+    () => [
+      ...customColumnData,
+      {
+        Header: 'Owner name',
+        accessor: 'ownerName',
+      },
+      {
+        Header: 'Weight',
+        accessor: 'weight',
+      },
+    ],
+    []
+  );
+  const columns = useMemo(() => columnDataClone, [columnDataClone]);
+
+  return (
+    <DataSpreadsheet
+      columns={columns}
+      data={data}
+      onDataUpdate={setData}
+      onColDrag={onColumnDragDrop}
+      id="spreadsheet--id"
+      {...args}
+    />
+  );
+};
+
 export const dataSpreadsheet = Template.bind({});
 dataSpreadsheet.storyName = 'Basic spreadsheet';
 dataSpreadsheet.args = {
@@ -170,6 +317,16 @@ dataSpreadsheet.args = {
 export const largeDatasetSpreadsheet = LargeTemplate.bind({});
 largeDatasetSpreadsheet.storyName = 'Large dataset';
 largeDatasetSpreadsheet.args = {
+  cellSize: 'lg',
+  selectAllAriaLabel: 'Select all',
+  spreadsheetAriaLabel: 'Example data spreadsheet',
+};
+
+export const largeDatasetSpreadsheetCustom =
+  largeDatasetSpreadsheetCustomRowHeaders.bind({});
+largeDatasetSpreadsheetCustom.storyName =
+  'Large dataset with optional component';
+largeDatasetSpreadsheetCustom.args = {
   cellSize: 'lg',
   selectAllAriaLabel: 'Select all',
   spreadsheetAriaLabel: 'Example data spreadsheet',
@@ -186,6 +343,24 @@ emptyWithCells.args = {
 export const withManyColumns = WithManyColumns.bind({});
 withManyColumns.storyName = 'With many columns';
 withManyColumns.args = {
+  selectAllAriaLabel: 'Select all',
+  spreadsheetAriaLabel: 'Example data spreadsheet',
+  totalVisibleColumns: 5,
+};
+
+export const withDifferentOptions = WithDifferentOptions.bind({});
+withDifferentOptions.storyName = 'With different options';
+withDifferentOptions.args = {
+  readOnlyTable: false,
+  disableColumnSwapping: false,
+  selectAllAriaLabel: 'Select all',
+  spreadsheetAriaLabel: 'Example data spreadsheet',
+  totalVisibleColumns: 5,
+};
+
+export const withDragDropCallback = dragDropCallback.bind({});
+withDragDropCallback.storyName = 'With drag drop  callback';
+withDragDropCallback.args = {
   selectAllAriaLabel: 'Select all',
   spreadsheetAriaLabel: 'Example data spreadsheet',
   totalVisibleColumns: 5,

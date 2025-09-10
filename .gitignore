@@ -5,6 +5,7 @@ packages/*/build/
 packages/*/examples/*/build/
 packages/*/scss
 es
+es-custom
 lib
 dist
 umd
@@ -26,6 +27,7 @@ logs
 pids
 *.pid
 *.seed
+.env
 
 # Certificates
 *.crt
@@ -71,4 +73,8 @@ package-lock.json
 
 # Playwright
 .playwright/
-/packages/ibm-products/.playwright/
+blob-report/
+
+# Actions
+/actions/**/node_modules
+/actions/**/yarn.lock

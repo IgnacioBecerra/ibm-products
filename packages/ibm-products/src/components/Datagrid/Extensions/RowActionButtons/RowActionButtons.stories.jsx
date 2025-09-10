@@ -8,12 +8,13 @@
 
 import React, { useState } from 'react';
 import { Add, Edit, TrashCan, Checkmark } from '@carbon/react/icons';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 import {
   Datagrid,
   useDatagrid,
   useStickyColumn,
   useActionsColumn,
+  useDisableSelectRows,
   useSelectRows,
 } from '../../index';
 import styles from '../../_storybook-styles.scss?inline';
@@ -24,7 +25,7 @@ import { makeData } from '../../utils/makeData';
 import { ARG_TYPES } from '../../utils/getArgTypes';
 
 export default {
-  title: 'IBM Products/Components/Datagrid/RowActionButtons',
+  title: 'Deprecated/Datagrid/RowActionButtons',
   component: Datagrid,
   tags: ['autodocs'],
   parameters: {
@@ -280,7 +281,7 @@ const RowActionButtonsBatchActions = ({ ...args }) => {
     ],
     []
   );
-  const [data] = useState(makeData(10));
+  const [data] = useState(makeData(50));
   const rows = React.useMemo(() => data, [data]);
 
   const datagridState = useDatagrid(
@@ -293,6 +294,8 @@ const RowActionButtonsBatchActions = ({ ...args }) => {
       },
       DatagridActions,
       DatagridPagination,
+      endPlugins: [useDisableSelectRows],
+      shouldDisableSelectRow: (row) => row.id % 5 === 0,
       ...args.defaultGridProps,
     },
     useStickyColumn,

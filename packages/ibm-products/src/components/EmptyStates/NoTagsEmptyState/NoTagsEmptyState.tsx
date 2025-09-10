@@ -6,7 +6,7 @@
  */
 
 // Import portions of React that are needed.
-import React, { ReactNode } from 'react';
+import React from 'react';
 
 // Other standard imports.
 import PropTypes from 'prop-types';
@@ -18,40 +18,13 @@ import { pkg } from '../../../settings';
 
 import { EmptyStateContent } from '../EmptyStateContent';
 import NoTagsIllustration from '../assets/NoTagsIllustration';
-import { defaults } from '../EmptyState';
-import { ButtonProps } from '@carbon/react';
-import { CarbonIconType } from '@carbon/icons-react/lib/CarbonIcon';
+import { defaults, EmptyStatePresetProps } from '../EmptyState';
 
 // The block part of our conventional BEM class names (blockClass__E--M).
 const blockClass = `${pkg.prefix}--empty-state`;
 const componentName = 'NoTagsEmptyState';
 
-interface NoTagsEmptyStateProps {
-  /**
-   * Empty state action button
-   */
-  action?: {
-    kind?: 'primary' | 'secondary' | 'tertiary';
-    renderIcon?: CarbonIconType;
-    onClick?: ButtonProps['onClick'];
-    text?: string;
-  };
-
-  /**
-   * Provide an optional class to be applied to the containing node.
-   */
-  className?: string;
-
-  /**
-   * The alt text for empty state svg images. If not provided , title will be used.
-   */
-  illustrationDescription?: string;
-
-  /**
-   * Designates the position of the illustration relative to the content
-   */
-  illustrationPosition?: 'top' | 'right' | 'bottom' | 'left';
-
+export interface NoTagsEmptyStateProps extends EmptyStatePresetProps {
   /**
    * Empty state illustration theme variations.
    * To ensure you use the correct themed illustrations, you can conditionally specify light or dark
@@ -59,29 +32,6 @@ interface NoTagsEmptyStateProps {
    * `illustrationTheme={appTheme === ('carbon--g100' || 'carbon--g90') ? 'dark' : 'light'}`
    */
   illustrationTheme?: 'light' | 'dark';
-
-  /**
-   * Empty state link object
-   */
-  link?: {
-    text?: string | ReactNode;
-    href?: string;
-  };
-
-  /**
-   * Empty state size
-   */
-  size?: 'lg' | 'sm';
-
-  /**
-   * Empty state subtitle
-   */
-  subtitle?: string | ReactNode;
-
-  /**
-   * Empty state title
-   */
-  title: string | ReactNode;
 }
 
 /**
@@ -102,6 +52,7 @@ export let NoTagsEmptyState = React.forwardRef<
       illustrationDescription,
       link,
       size = defaults.size,
+      headingAs,
       subtitle,
       title,
 
@@ -134,6 +85,7 @@ export let NoTagsEmptyState = React.forwardRef<
           action={action}
           link={link}
           size={size}
+          headingAs={headingAs}
           subtitle={subtitle}
           title={(title = '')}
         />
@@ -157,9 +109,11 @@ NoTagsEmptyState.propTypes = {
    * Empty state action button
    */
   action: PropTypes.shape({
+    /**@ts-ignore*/
     ...Button.propTypes,
     kind: PropTypes.oneOf(['primary', 'secondary', 'tertiary']),
     renderIcon: PropTypes.oneOfType([PropTypes.func, PropTypes.object]),
+    /**@ts-ignore*/
     onClick: Button.propTypes.onClick,
     text: PropTypes.string,
   }),
@@ -168,6 +122,11 @@ NoTagsEmptyState.propTypes = {
    * Provide an optional class to be applied to the containing node.
    */
   className: PropTypes.string,
+
+  /**
+   * Empty state headingAs allows you to customize the type of heading element
+   */
+  headingAs: PropTypes.elementType,
 
   /**
    * The alt text for empty state svg images. If not provided , title will be used.
@@ -190,11 +149,8 @@ NoTagsEmptyState.propTypes = {
   /**
    * Empty state link object
    */
-  link: PropTypes.shape({
-    ...Link.propTypes,
-    text: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
-    href: PropTypes.string,
-  }),
+  /**@ts-ignore*/
+  link: PropTypes.any,
 
   /**
    * Empty state size

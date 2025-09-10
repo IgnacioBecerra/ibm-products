@@ -10,10 +10,10 @@ import React, {
   useEffect,
   useState,
   useRef,
+  ComponentProps,
   PropsWithChildren,
   ReactNode,
   ForwardedRef,
-  MutableRefObject,
   RefObject,
 } from 'react';
 import { useResizeObserver } from '../../global/js/hooks/useResizeObserver';
@@ -24,6 +24,7 @@ import cx from 'classnames';
 import { pkg } from '../../settings';
 import pconsole from '../../global/js/utils/pconsole';
 import { getNodeTextContent } from '../../global/js/utils/getNodeTextContent';
+import { deprecateProp } from '../../global/js/utils/props-helper';
 
 // Carbon and package components we use.
 import {
@@ -31,15 +32,17 @@ import {
   ComposedModal,
   Layer,
   ModalHeader,
+  Section,
   usePrefix,
-  type ButtonProps,
+  unstable_FeatureFlags as FeatureFlags,
 } from '@carbon/react';
 
 import { ActionSet } from '../ActionSet';
 import { Wrap } from '../../global/js/utils/Wrap';
 import { usePortalTarget } from '../../global/js/hooks/usePortalTarget';
+import { useIsomorphicEffect, usePreviousValue } from '../../global/js/hooks';
 import { useFocus } from '../../global/js/hooks/useFocus';
-import { usePreviousValue } from '../../global/js/hooks';
+import { TearsheetAction } from './Tearsheet';
 
 // The block part of our conventional BEM class names (bc__E--M).
 const bc = `${pkg.prefix}--tearsheet`;
@@ -48,7 +51,7 @@ const componentName = 'TearsheetShell';
 const maxDepth = 3;
 
 interface TearsheetShellProps extends PropsWithChildren {
-  actions?: ButtonProps[];
+  actions?: TearsheetAction[];
 
   ariaLabel?: string;
 
@@ -56,6 +59,24 @@ interface TearsheetShellProps extends PropsWithChildren {
    * An optional class or classes to be added to the outermost element.
    */
   className?: string;
+
+  /**
+   * The accessibility title for the close icon (if shown).
+   *
+   * **Note:** This prop is only required if a close icon is shown, i.e. if
+   * there are a no navigation actions and/or hasCloseIcon is true.
+   */
+  closeIconDescription?: string;
+
+  /**
+   * Used to track the current step on components which use `StepsContext` and `TearsheetShell`
+   */
+  currentStep?: number;
+
+  /**
+   * Optional prop that allows you to pass any component.
+   */
+  decorator?: ReactNode;
 
   /**
    * A description of the flow, displayed in the header area of the tearsheet.
@@ -71,6 +92,12 @@ interface TearsheetShellProps extends PropsWithChildren {
    * this prop to either true or false.
    */
   hasCloseIcon?: boolean;
+
+  /**
+   * To indicate an error occurred in the Tearsheet step
+   * Mainly used by CreateTearsheet component to pass error state
+   */
+  hasError?: boolean;
 
   /**
    * The content for the header actions area, displayed alongside the title in
@@ -133,9 +160,20 @@ interface TearsheetShellProps extends PropsWithChildren {
   /**
    * The DOM element that the tearsheet should be rendered within. Defaults to document.body.
    */
-  portalTarget?: ReactNode;
+  portalTarget?: HTMLElement;
 
+  /**
+   * Specify a CSS selector that matches the DOM element that should be
+   * focused when the Modal opens.
+   */
   selectorPrimaryFocus?: string;
+
+  /**
+   * Specify the CSS selectors that match the floating menus.
+   *
+   * See https://react.carbondesignsystem.com/?path=/docs/components-composedmodal--overview#focus-management
+   */
+  selectorsFloatingMenus?: string[];
 
   /**
    * Specifies the width of the tearsheet, 'narrow' or 'wide'.
@@ -143,27 +181,18 @@ interface TearsheetShellProps extends PropsWithChildren {
   size: 'narrow' | 'wide';
 
   /**
-   *  **Experimental:** Provide a `Slug` component to be rendered inside the `Tearsheet` component
-   */
-  slug?: ReactNode;
-
-  /**
    * The main title of the tearsheet, displayed in the header area.
    */
   title?: ReactNode;
 
   verticalPosition?: 'normal' | 'lower';
-}
 
-export type CloseIconDescriptionTypes =
-  | {
-      hasCloseIcon?: false;
-      closeIconDescription?: string;
-    }
-  | {
-      hasCloseIcon: true;
-      closeIconDescription: string;
-    };
+  // Deprecated props
+  /**
+   * @deprecated Property replaced by `decorator`
+   */
+  slug?: ReactNode;
+}
 
 // NOTE: the component SCSS is not imported here: it is rolled up separately.
 
@@ -179,16 +208,13 @@ export type CloseIconDescriptionTypes =
 type stackTypes = {
   open: Array<{
     (a: number, b: number): void;
-    checkFocus?: () => void;
-    claimFocus?: () => void;
   }>;
   all: Array<{
     (a: number, b: number): void;
-    checkFocus?: () => void;
-    claimFocus?: () => void;
   }>;
   sizes: Array<string>;
 };
+
 const stack: stackTypes = { open: [], all: [], sizes: [] };
 
 // these props are only applicable when size='wide'
@@ -205,6 +231,19 @@ export const tearsheetHasCloseIcon = (actions, hasCloseIcon) =>
   hasCloseIcon ?? tearsheetIsPassive(actions);
 
 /**
+ * Since the Tearsheet has an H3 heading, any headings inside the Tearsheet should start at H4.
+ * This is a helper to do that.
+ */
+const SectionLevel3 = ({
+  children,
+  ...rest
+}: ComponentProps<typeof Section>) => (
+  <Section level={3} {...rest}>
+    {children}
+  </Section>
+);
+
+/**
  *  TearSheetShell is used internally by TearSheet and TearSheetNarrow
  *
  * The component is not public.
@@ -216,12 +255,15 @@ export const TearsheetShell = React.forwardRef(
     {
       // The component props, in alphabetical order (for consistency).
       actions,
+      decorator,
       ariaLabel,
       children,
       className,
-      closeIconDescription,
+      closeIconDescription = 'Close',
+      currentStep,
       description,
       hasCloseIcon,
+      hasError,
       headerActions,
       influencer,
       influencerPosition,
@@ -232,32 +274,31 @@ export const TearsheetShell = React.forwardRef(
       open,
       portalTarget: portalTargetIn,
       selectorPrimaryFocus,
+      selectorsFloatingMenus = [],
       size,
-      slug,
+      slug: deprecated_slug,
       title,
       verticalPosition,
       launcherButtonRef,
       // Collect any other property values passed in.
       ...rest
-    }: TearsheetShellProps & CloseIconDescriptionTypes,
+    }: TearsheetShellProps,
     ref: ForwardedRef<HTMLDivElement>
   ) => {
     const carbonPrefix = usePrefix();
     const bcModalHeader = `${carbonPrefix}--modal-header`;
     const renderPortalUse = usePortalTarget(portalTargetIn);
-    const localRef = useRef();
-    const resizer = useRef(null);
+    const localRef = useRef(undefined);
+    const resizer = useRef<HTMLDivElement | null>(null);
     const modalBodyRef = useRef(null);
-    const modalRef = ref || localRef;
-    const { width } = useResizeObserver(resizer);
+    const modalRef = (ref || localRef) as RefObject<HTMLDivElement>;
+    const { width } = useResizeObserver(resizer as RefObject<HTMLDivElement>);
     const prevOpen = usePreviousValue(open);
-    const { firstElement, keyDownListener, specifiedElement } = useFocus(
+    const { keyDownListener, claimFocus } = useFocus(
       modalRef,
       selectorPrimaryFocus
     );
-    const modalRefValue = (modalRef as MutableRefObject<HTMLDivElement>)
-      .current;
-
+    const modalRefValue = modalRef.current;
     const wide = size === 'wide';
 
     // Keep track of the stack depth and our position in it (1-based, 0=closed)
@@ -265,7 +306,7 @@ export const TearsheetShell = React.forwardRef(
     const [position, setPosition] = useState(0);
 
     // Keep a record of the previous value of depth.
-    const prevDepth = useRef<number>();
+    const prevDepth = useRef<number | undefined>(undefined);
     useEffect(() => {
       prevDepth.current = depth;
     });
@@ -281,54 +322,38 @@ export const TearsheetShell = React.forwardRef(
       setPosition(newPosition);
     }
 
-    handleStackChange.checkFocus = function () {
-      // if we are now the topmost tearsheet, ensure we have focus
-      if (
-        open &&
-        position === depth &&
-        modalRefValue &&
-        !modalRefValue.contains(document.activeElement)
-      ) {
-        handleStackChange.claimFocus();
-      }
-    };
-
-    // Callback to give the tearsheet the opportunity to claim focus
-    handleStackChange.claimFocus = function () {
-      if (selectorPrimaryFocus) {
-        return specifiedElement?.focus();
-      }
-      firstElement?.focus();
-    };
-
     useEffect(() => {
       if (open) {
-        // Focusing the first element or selectorPrimaryFocus element
-        setTimeout(() => {
-          if (selectorPrimaryFocus) {
-            return specifiedElement?.focus();
-          }
-          firstElement?.focus();
-        }, 0);
+        claimFocus();
       }
+    }, [open, currentStep, effectiveHasCloseIcon, claimFocus]);
+
+    useEffect(() => {
+      if (prevOpen && !open && launcherButtonRef?.current) {
+        setTimeout(() => {
+          launcherButtonRef?.current.focus();
+        }, 10);
+      }
+    }, [open, prevOpen, launcherButtonRef]);
+
+    useEffect(() => {
+      requestAnimationFrame(() => {
+        if (
+          open &&
+          depth === position &&
+          !modalRef?.current?.contains(document.activeElement)
+        ) {
+          claimFocus();
+        }
+      });
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open]);
+    }, [claimFocus, depth, modalRef, position]);
 
     useEffect(() => {
-      if (prevOpen && !open && launcherButtonRef) {
-        setTimeout(() => {
-          launcherButtonRef.current.focus();
-        }, 0);
+      if (hasError && !modalRef?.current?.contains(document.activeElement)) {
+        claimFocus();
       }
-    }, [launcherButtonRef, open, prevOpen]);
-
-    useEffect(() => {
-      if (open && position !== depth) {
-        setTimeout(() => {
-          firstElement?.focus();
-        }, 0);
-      }
-    }, [position, depth, firstElement, open]);
+    }, [claimFocus, hasError, modalRef]);
 
     useEffect(() => {
       const notify = () =>
@@ -337,7 +362,6 @@ export const TearsheetShell = React.forwardRef(
             Math.min(stack.open.length, maxDepth),
             stack.open.indexOf(handler) + 1
           );
-          handler.checkFocus?.();
         });
 
       // Register this tearsheet's stack change callback/listener.
@@ -372,13 +396,27 @@ export const TearsheetShell = React.forwardRef(
       };
     }, [open, size]);
 
-    function handleFocus() {
-      // If something within us is receiving focus but we are not the topmost
-      // stacked tearsheet, transfer focus to the topmost tearsheet instead
-      if (position < depth) {
-        stack.open[stack.open.length - 1].claimFocus?.();
+    const areAllSameSizeVariant = () => new Set(stack.sizes).size === 1;
+
+    useIsomorphicEffect(() => {
+      const setScaleValues = () => {
+        if (!areAllSameSizeVariant()) {
+          return {
+            [`--${bc}--stacking-scale-factor-single`]: 1,
+            [`--${bc}--stacking-scale-factor-double`]: 1,
+          };
+        }
+        return {
+          [`--${bc}--stacking-scale-factor-single`]: (width - 32) / width,
+          [`--${bc}--stacking-scale-factor-double`]: (width - 64) / width,
+        };
+      };
+      if (modalRef.current) {
+        Object.entries(setScaleValues()).map(([key, value]) => {
+          modalRef.current.style.setProperty(key, String(value));
+        });
       }
-    }
+    }, [modalRef, width]);
 
     if (position <= depth) {
       // Include a modal header if and only if one or more of these is given.
@@ -397,142 +435,156 @@ export const TearsheetShell = React.forwardRef(
 
       const areAllSameSizeVariant = () => new Set(stack.sizes).size === 1;
 
-      const setScaleValues = () => {
-        if (!areAllSameSizeVariant()) {
-          return {
-            [`--${bc}--stacking-scale-factor-single`]: 1,
-            [`--${bc}--stacking-scale-factor-double`]: 1,
-          };
-        }
-        return {
-          [`--${bc}--stacking-scale-factor-single`]: (width - 32) / width,
-          [`--${bc}--stacking-scale-factor-double`]: (width - 64) / width,
-        };
-      };
-
       return renderPortalUse(
-        <ComposedModal
-          {
-            // Pass through any other property values.
-            ...rest
-          }
-          aria-label={ariaLabel || getNodeTextContent(title)}
-          className={cx(bc, className, {
-            [`${bc}--stacked-${position}-of-${depth}`]:
-              // Don't apply this on the initial open of a single tearsheet.
-              depth > 1 || (depth === 1 && (prevDepth?.current ?? 0) > 1),
-            [`${bc}--wide`]: wide,
-            [`${bc}--narrow`]: !wide,
-            [`${bc}--has-slug`]: slug,
-            [`${bc}--has-close`]: effectiveHasCloseIcon,
-          })}
-          slug={slug}
-          style={setScaleValues()}
-          containerClassName={cx(`${bc}__container`, {
-            [`${bc}__container--lower`]: verticalPosition === 'lower',
-            [`${bc}__container--mixed-size-stacking`]: !areAllSameSizeVariant(),
-          })}
-          {...{ onClose, open, selectorPrimaryFocus }}
-          onFocus={handleFocus}
-          onKeyDown={keyDownListener}
-          preventCloseOnClickOutside={!isPassive}
-          ref={modalRef}
-          selectorsFloatingMenus={[
-            `.${carbonPrefix}--overflow-menu-options`,
-            `.${carbonPrefix}--tooltip`,
-            '.flatpickr-calendar',
-            `.${bc}__container`,
-          ]}
-          size="sm"
-        >
-          {includeHeader && (
-            <ModalHeader
-              className={cx(`${bc}__header`, {
-                [`${bc}__header--with-close-icon`]: effectiveHasCloseIcon,
-                [`${bc}__header--with-nav`]: navigation,
-              })}
-              closeClassName={cx({
-                [`${bc}__header--no-close-icon`]: !effectiveHasCloseIcon,
-              })}
-              closeModal={onClose}
-              iconDescription={closeIconDescription}
-            >
-              <Wrap
-                className={`${bc}__header-content`}
-                element={wide ? Layer : undefined}
-              >
-                <Wrap className={`${bc}__header-fields`}>
-                  {/* we create the label and title here instead of passing them
-                      as modal header props so we can wrap them in layout divs */}
-                  <Wrap element="h2" className={`${bcModalHeader}__label`}>
-                    {label}
-                  </Wrap>
-                  <Wrap
-                    element="h3"
-                    className={cx(
-                      `${bcModalHeader}__heading`,
-                      `${bc}__heading`
-                    )}
-                  >
-                    {title}
-                  </Wrap>
-                  <Wrap className={`${bc}__header-description`}>
-                    {description}
-                  </Wrap>
-                </Wrap>
-                <Wrap className={`${bc}__header-actions`}>{headerActions}</Wrap>
-              </Wrap>
-              <Wrap className={`${bc}__header-navigation`}>{navigation}</Wrap>
-            </ModalHeader>
-          )}
-          <Wrap
-            ref={modalBodyRef}
-            className={`${carbonPrefix}--modal-content ${bc}__body`}
+        <FeatureFlags enableExperimentalFocusWrapWithoutSentinels>
+          <ComposedModal
+            {
+              // Pass through any other property values.
+              ...rest
+            }
+            aria-label={ariaLabel || getNodeTextContent(title)}
+            className={cx(bc, className, {
+              [`${bc}--stacked-${position}-of-${depth}`]:
+                // Don't apply this on the initial open of a single tearsheet.
+                depth > 1 || (depth === 1 && (prevDepth?.current ?? 0) > 1),
+              [`${bc}--wide`]: wide,
+              [`${bc}--narrow`]: !wide,
+              [`${bc}--has-slug`]: deprecated_slug,
+              [`${bc}--has-ai-label`]:
+                !!decorator && decorator['type']?.displayName === 'AILabel',
+              [`${bc}--has-decorator`]:
+                !!decorator && decorator['type']?.displayName !== 'AILabel',
+              [`${bc}--has-close`]: effectiveHasCloseIcon,
+            })}
+            decorator={decorator || deprecated_slug}
+            containerClassName={cx(`${bc}__container`, {
+              [`${bc}__container--lower`]: verticalPosition === 'lower',
+              [`${bc}__container--mixed-size-stacking`]:
+                !areAllSameSizeVariant(),
+            })}
+            {...{ onClose, open, selectorPrimaryFocus }}
+            onKeyDown={keyDownListener}
+            preventCloseOnClickOutside={!isPassive}
+            ref={modalRef}
+            selectorsFloatingMenus={[
+              `.${carbonPrefix}--overflow-menu-options`,
+              `.${carbonPrefix}--tooltip`,
+              '.flatpickr-calendar',
+              `.${bc}__container`,
+              `.${carbonPrefix}--menu`,
+              ...selectorsFloatingMenus,
+            ]}
+            size="sm"
           >
-            <Wrap
-              className={cx({
-                [`${bc}__influencer`]: true,
-                [`${bc}__influencer--wide`]: influencerWidth === 'wide',
-              })}
-              neverRender={influencerPosition === 'right'}
-            >
-              {influencer}
-            </Wrap>
-            <Wrap className={`${bc}__right`}>
-              <Wrap className={`${bc}__main`} alwaysRender={includeActions}>
+            {includeHeader && (
+              <ModalHeader
+                className={cx(`${bc}__header`, {
+                  [`${bc}__header--with-close-icon`]: effectiveHasCloseIcon,
+                  [`${bc}__header--with-nav`]: navigation,
+                })}
+                closeClassName={cx({
+                  [`${bc}__header--no-close-icon`]: !effectiveHasCloseIcon,
+                })}
+                closeModal={onClose}
+                iconDescription={
+                  effectiveHasCloseIcon ? closeIconDescription : undefined
+                }
+              >
                 <Wrap
-                  className={`${bc}__content`}
-                  alwaysRender={
-                    !!(influencer && influencerPosition === 'right')
-                  }
+                  className={`${bc}__header-content`}
+                  element={wide ? Layer : undefined}
                 >
-                  {children}
+                  <Wrap className={`${bc}__header-fields`}>
+                    {/* we create the label and title here instead of passing them
+                      as modal header props so we can wrap them in layout divs */}
+                    <Wrap element="h2" className={`${bcModalHeader}__label`}>
+                      {label}
+                    </Wrap>
+                    <Wrap
+                      element="h3"
+                      className={cx(
+                        `${bcModalHeader}__heading`,
+                        `${bc}__heading`
+                      )}
+                    >
+                      {title}
+                    </Wrap>
+                    <Wrap className={`${bc}__header-description`}>
+                      {description}
+                    </Wrap>
+                  </Wrap>
+                  <Wrap className={`${bc}__header-actions`}>
+                    {headerActions}
+                  </Wrap>
                 </Wrap>
-                <Wrap
-                  className={cx({
-                    [`${bc}__influencer`]: true,
-                    [`${bc}__influencer--wide`]: influencerWidth === 'wide',
-                  })}
-                  neverRender={influencerPosition !== 'right'}
-                >
+                <Wrap className={`${bc}__header-navigation`}>{navigation}</Wrap>
+              </ModalHeader>
+            )}
+            <Wrap
+              ref={modalBodyRef}
+              className={`${carbonPrefix}--modal-content ${bc}__body`}
+            >
+              {/* Left influencer */}
+              <Wrap
+                className={cx({
+                  [`${bc}__influencer`]: true,
+                  [`${bc}__influencer--wide`]: influencerWidth === 'wide',
+                })}
+                neverRender={influencerPosition === 'right'}
+                element={SectionLevel3}
+              >
+                <Wrap element={Layer} className={`${bc}__layer`}>
                   {influencer}
                 </Wrap>
               </Wrap>
-              {includeActions && (
-                <Wrap className={`${bc}__button-container`}>
-                  <ActionSet
-                    actions={actions}
-                    buttonSize={wide ? '2xl' : undefined}
-                    className={`${bc}__buttons`}
-                    size={wide ? '2xl' : 'lg'}
-                    aria-hidden={!open}
-                  />
+              <Wrap className={`${bc}__right`}>
+                {/* Main area */}
+                <Wrap className={`${bc}__main`} alwaysRender={includeActions}>
+                  <Wrap
+                    className={`${bc}__content`}
+                    alwaysRender={
+                      !!(influencer && influencerPosition === 'right')
+                    }
+                    element={SectionLevel3}
+                  >
+                    {wide ? (
+                      children
+                    ) : (
+                      <Wrap element={Layer} className={`${bc}__layer`}>
+                        {children}
+                      </Wrap>
+                    )}
+                  </Wrap>
+                  {/* Right influencer */}
+                  <Wrap
+                    className={cx({
+                      [`${bc}__influencer`]: true,
+                      [`${bc}__influencer--wide`]: influencerWidth === 'wide',
+                    })}
+                    neverRender={influencerPosition !== 'right'}
+                    element={SectionLevel3}
+                  >
+                    <Wrap element={Layer} className={`${bc}__layer`}>
+                      {influencer}
+                    </Wrap>
+                  </Wrap>
                 </Wrap>
-              )}
+                {includeActions && (
+                  <Wrap className={`${bc}__button-container`}>
+                    <ActionSet
+                      actions={actions}
+                      buttonSize={wide ? '2xl' : undefined}
+                      className={`${bc}__buttons`}
+                      size={wide ? '2xl' : 'lg'}
+                      aria-hidden={!open}
+                    />
+                  </Wrap>
+                )}
+              </Wrap>
             </Wrap>
-          </Wrap>
-          <div className={`${bc}__resize-detector`} ref={resizer} />
-        </ComposedModal>
+            <div className={`${bc}__resize-detector`} ref={resizer} />
+          </ComposedModal>
+        </FeatureFlags>
       );
     } else {
       pconsole.warn('Tearsheet not rendered: maximum stacking depth exceeded.');
@@ -548,9 +600,15 @@ TearsheetShell.displayName = componentName;
 export const portalType =
   typeof Element === 'undefined'
     ? PropTypes.object
-    : PropTypes.instanceOf(Element);
+    : // eslint-disable-next-line ssr-friendly/no-dom-globals-in-module-scope
+      PropTypes.instanceOf(Element);
 
 export const deprecatedProps = {
+  /**
+   *  @deprecated Property replaced by `decorator`
+   */
+  slug: deprecateProp(PropTypes.node, 'Property replaced by `decorator`'),
+
   /**
    * **Deprecated**
    *
@@ -588,6 +646,7 @@ TearsheetShell.propTypes = {
     // NB we don't include the validator here, as the component wrapping this
     // one should ensure appropriate validation is done.
     PropTypes.shape({
+      /**@ts-ignore*/
       ...Button.propTypes,
       kind: PropTypes.oneOf([
         'ghost',
@@ -599,6 +658,7 @@ TearsheetShell.propTypes = {
       label: PropTypes.string,
       loading: PropTypes.bool,
       // we duplicate this Button prop to improve the DocGen here
+      /**@ts-ignore*/
       onClick: Button.propTypes.onClick,
     })
   ),
@@ -620,9 +680,12 @@ TearsheetShell.propTypes = {
    * there are a no navigation actions and/or hasCloseIcon is true.
    */
   /**@ts-ignore*/
-  closeIconDescription: PropTypes.string.isRequired.if(
-    ({ actions, hasCloseIcon }) => tearsheetHasCloseIcon(actions, hasCloseIcon)
-  ),
+  closeIconDescription: PropTypes.string,
+
+  /**
+   * Optional prop that allows you to pass any component.
+   */
+  decorator: PropTypes.oneOfType([PropTypes.node, PropTypes.bool]),
 
   /**
    * A description of the flow, displayed in the header area of the tearsheet.
@@ -706,20 +769,27 @@ TearsheetShell.propTypes = {
   portalTarget: portalType,
 
   /**
+   * Specify a CSS selector that matches the DOM element that should be
+   * focused when the Modal opens.
+   */
+  selectorPrimaryFocus: PropTypes.string,
+
+  /**
+   * Specify the CSS selectors that match the floating menus.
+   *
+   * See https://react.carbondesignsystem.com/?path=/docs/components-composedmodal--overview#focus-management
+   */
+  /**@ts-ignore*/
+  selectorsFloatingMenus: PropTypes.arrayOf(PropTypes.string),
+
+  /**
    * Specifies the width of the tearsheet, 'narrow' or 'wide'.
    */
   /**@ts-ignore*/
   size: PropTypes.oneOf(['narrow', 'wide']).isRequired,
-
-  /**
-   *  **Experimental:** Provide a `Slug` component to be rendered inside the `Tearsheet` component
-   */
-  slug: PropTypes.node,
-
   /**
    * The main title of the tearsheet, displayed in the header area.
    */
   title: PropTypes.node,
-
   ...deprecatedProps,
 };

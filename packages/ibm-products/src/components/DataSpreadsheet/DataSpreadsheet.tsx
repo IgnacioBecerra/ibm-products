@@ -5,57 +5,53 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+import { ActiveCellCoordinates, PrevState, Size, Theme } from './types';
+import {
+  Column,
+  TableInstance,
+  UseColumnOrderInstanceProps,
+  useBlockLayout,
+  useColumnOrder,
+  useTable,
+} from 'react-table';
 // Import portions of React that are needed.
 import React, {
+  ForwardedRef,
+  LegacyRef,
+  MutableRefObject,
+  useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
-  useCallback,
-  useEffect,
-  ForwardedRef,
-  MutableRefObject,
-  LegacyRef,
 } from 'react';
-import {
-  useBlockLayout,
-  useTable,
-  useColumnOrder,
-  Column,
-  UseColumnOrderInstanceProps,
-  TableInstance,
-} from 'react-table';
-
-// Other standard imports.
-import PropTypes from 'prop-types';
-import cx from 'classnames';
-
-import { pkg } from '../../settings';
-import { DataSpreadsheetBody } from './DataSpreadsheetBody';
-import { DataSpreadsheetHeader } from './DataSpreadsheetHeader';
-
-import { getDevtoolsProps } from '../../global/js/utils/devtools';
-import { getScrollbarWidth } from '../../global/js/utils/getScrollbarWidth';
 import { useActiveElement, usePreviousValue } from '../../global/js/hooks';
-import uuidv4 from '../../global/js/utils/uuidv4';
-import { deepCloneObject } from '../../global/js/utils/deepCloneObject';
-
 import {
-  useResetSpreadsheetFocus,
-  useSpreadsheetOutsideClick,
   useMoveActiveCell,
   useMultipleKeyTracking,
+  useResetSpreadsheetFocus,
   useSpreadsheetEdit,
+  useSpreadsheetOutsideClick,
 } from './hooks';
 
+import { DataSpreadsheetBody } from './DataSpreadsheetBody';
+import { DataSpreadsheetHeader } from './DataSpreadsheetHeader';
+// Other standard imports.
+import PropTypes from 'prop-types';
 import { createActiveCellFn } from './utils/createActiveCellFn';
+import cx from 'classnames';
+import { deepCloneObject } from '../../global/js/utils/deepCloneObject';
 import { getCellSize } from './utils/getCellSize';
-
+import { getDevtoolsProps } from '../../global/js/utils/devtools';
+import { getScrollbarWidth } from '../../global/js/utils/getScrollbarWidth';
+import { handleEditSubmit } from './utils/handleEditSubmit';
 import { handleHeaderCellSelection } from './utils/handleHeaderCellSelection';
+import { getNodeTextContent } from '../../global/js/utils/getNodeTextContent';
+import { handleKeyPress } from './utils/commonEventHandlers';
+import { pkg } from '../../settings';
 import { removeCellSelections } from './utils/removeCellSelections';
 import { selectAllCells } from './utils/selectAllCells';
-import { handleEditSubmit } from './utils/handleEditSubmit';
-import { handleKeyPress } from './utils/commonEventHandlers';
-import { ActiveCellCoordinates, PrevState, Size, Theme } from './types';
+import uuidv4 from '../../global/js/utils/uuidv4';
 
 // The block part of our conventional BEM class names (blockClass__E--M).
 const blockClass = `${pkg.prefix}--data-spreadsheet`;
@@ -67,12 +63,13 @@ const defaults = {
   data: Object.freeze([]),
   defaultEmptyRowCount: 16,
   onDataUpdate: Object.freeze(() => {}),
+  onColDrag: Object.freeze(() => {}),
   onActiveCellChange: Object.freeze(() => {}),
   onSelectionAreaChange: Object.freeze(() => {}),
   theme: 'light',
 };
 
-interface DataSpreadsheetProps {
+export interface DataSpreadsheetProps {
   /**
    * Specifies the cell height
    */
@@ -89,6 +86,11 @@ interface DataSpreadsheetProps {
   columns?: readonly Column<object>[];
 
   /**
+   * Disable column swapping, default false
+   */
+  disableColumnSwapping?: boolean;
+
+  /**
    * The spreadsheet data that will be rendered in the body of the spreadsheet component
    */
   data?: readonly object[];
@@ -97,6 +99,11 @@ interface DataSpreadsheetProps {
    * Sets the number of empty rows to be created when there is no data provided
    */
   defaultEmptyRowCount?: number;
+
+  /**
+   * Check if has custom row header component attached
+   */
+  hasCustomRowHeader?: boolean;
 
   /**
    * The spreadsheet id
@@ -109,6 +116,11 @@ interface DataSpreadsheetProps {
   onActiveCellChange?: () => void;
 
   /**
+   * Callback for columns after being dragged
+   */
+  onColDrag?: ({ ...args }) => void;
+
+  /**
    * The setter fn for the data prop
    */
   onDataUpdate?: ({ ...args }) => void;
@@ -117,6 +129,21 @@ interface DataSpreadsheetProps {
    * The event handler that is called when the selection area values change
    */
   onSelectionAreaChange?: () => void;
+
+  /**
+   * Read-only table
+   */
+  readOnlyTable?: boolean;
+
+  /**
+   * Position of the custom row numbering component
+   */
+  renderRowHeaderDirection?: 'left' | 'right';
+
+  /**
+   * Component next to numbering rows
+   */
+  renderRowHeader?: (index: number) => any[];
 
   /**
    * The aria label applied to the Select all button
@@ -155,9 +182,14 @@ export let DataSpreadsheet = React.forwardRef(
       data = defaults.data,
       defaultEmptyRowCount = defaults.defaultEmptyRowCount,
       onDataUpdate = defaults.onDataUpdate,
+      onColDrag = defaults.onColDrag,
       id,
       onActiveCellChange = defaults.onActiveCellChange,
       onSelectionAreaChange = defaults.onSelectionAreaChange,
+      renderRowHeader,
+      renderRowHeaderDirection,
+      disableColumnSwapping = false,
+      readOnlyTable = false,
       selectAllAriaLabel,
       spreadsheetAriaLabel,
       theme,
@@ -169,9 +201,11 @@ export let DataSpreadsheet = React.forwardRef(
     ref: ForwardedRef<HTMLDivElement>
   ) => {
     const multiKeyTrackingRef: LegacyRef<HTMLDivElement> = useRef(null);
-    const localRef = useRef();
+    const localRef = useRef(undefined);
     const spreadsheetRef = ref || localRef;
     const focusedElement = useActiveElement();
+    const [currentColumns, setCurrentColumns] = useState<object>(columns);
+    const [pastColumns, setPastColumns] = useState<object[]>([]);
     const [containerHasFocus, setContainerHasFocus] = useState(false);
     const [activeCellCoordinates, setActiveCellCoordinates] =
       useState<ActiveCellCoordinates | null>(null);
@@ -194,19 +228,26 @@ export let DataSpreadsheet = React.forwardRef(
         activeCellCoordinates,
         isEditing,
         cellEditorValue,
+        selectedHeaderReorderActive,
       }) || {};
     const cellSizeValue = getCellSize(cellSize);
-    const cellEditorRef = useRef<HTMLTextAreaElement>();
+    const cellEditorRef = useRef<HTMLTextAreaElement | undefined>(undefined);
     const [activeCellContent, setActiveCellContent] = useState<any>();
-    const activeCellRef = useRef<HTMLDivElement | HTMLButtonElement>();
-    const cellEditorRulerRef = useRef<HTMLPreElement>();
+    const activeCellRef = useRef<
+      HTMLDivElement | HTMLButtonElement | undefined
+    >(undefined);
+    const cellEditorRulerRef = useRef<HTMLPreElement | undefined>(undefined);
+
+    const hasCustomRowHeader = typeof renderRowHeader === 'function';
+    const maxNumRowsCount = data.length.toString().length;
+
     const defaultColumn = useMemo(
       () => ({
         width: 150,
-        rowHeaderWidth: 64,
+        rowHeaderWidth: hasCustomRowHeader ? 40 + maxNumRowsCount * 8.56 : 64,
         rowHeight: cellSizeValue,
       }),
-      [cellSizeValue]
+      [cellSizeValue, hasCustomRowHeader, maxNumRowsCount]
     );
     const { keysPressedList, usingMac } = useMultipleKeyTracking({
       ref: multiKeyTrackingRef,
@@ -251,6 +292,52 @@ export let DataSpreadsheet = React.forwardRef(
       },
       [cellEditorValue, onDataUpdate]
     );
+
+    useEffect(() => {
+      const currentHeaders: Array<any> = [];
+      if (Object.keys(currentColumns).length > 0) {
+        Object.keys(currentColumns).forEach((itemIndex) => {
+          if (typeof currentColumns[itemIndex].Header === 'object') {
+            if (currentColumns[itemIndex].column_name) {
+              currentHeaders.push(currentColumns[itemIndex].column_name);
+            } else {
+              currentHeaders.push(
+                getNodeTextContent(currentColumns[itemIndex].Header)
+              );
+            }
+          } else if (currentColumns[itemIndex].Header) {
+            currentHeaders.push(currentColumns[itemIndex].Header);
+          }
+        });
+      }
+
+      if (previousState.selectedHeaderReorderActive) {
+        setPastColumns(currentHeaders);
+      }
+
+      if (
+        !previousState.selectedHeaderReorderActive &&
+        pastColumns.length > 0 &&
+        !headerCellHoldActive &&
+        JSON.stringify(currentHeaders) !== JSON.stringify(pastColumns)
+      ) {
+        onColDrag({
+          headers: currentHeaders,
+          data: activeCellContent.props.data,
+        });
+        if (currentHeaders.length === 0) {
+          setPastColumns([]);
+        }
+      }
+    }, [
+      previousState?.selectedHeaderReorderActive,
+      currentColumns,
+      headerCellHoldActive,
+      columns,
+      activeCellContent,
+      onColDrag,
+      pastColumns,
+    ]);
 
     // Removes the active cell element
     const removeActiveCell = useCallback(() => {
@@ -572,7 +659,8 @@ export let DataSpreadsheet = React.forwardRef(
           activeCellRef,
           setActiveCellCoordinates,
           setContainerHasFocus,
-          setActiveCellContent
+          setActiveCellContent,
+          readOnlyTable
         );
       },
       [
@@ -592,6 +680,7 @@ export let DataSpreadsheet = React.forwardRef(
         updateData,
         checkForReturnCondition,
         handleArrowKeyPress,
+        readOnlyTable,
       ]
     );
 
@@ -606,12 +695,9 @@ export let DataSpreadsheet = React.forwardRef(
             ]
           : null;
 
-      let activeCellValue;
-      if (activeCellFullData && activeCellCoordinates?.column) {
-        activeCellValue = activeCellFullData
-          ? activeCellFullData.row.cells?.[activeCellCoordinates?.column]?.value
-          : null;
-      }
+      const activeCellValue =
+        activeCellFullData?.row?.cells?.[Number(activeCellCoordinates?.column)]
+          ?.value;
 
       setCellEditorValue(activeCellValue || '');
       if (cellEditorRulerRef?.current) {
@@ -685,7 +771,7 @@ export let DataSpreadsheet = React.forwardRef(
     // Go into edit mode if 'Enter' key is pressed on activeCellRef
     const handleActiveCellKeyDown = (event) => {
       const { key } = event;
-      if (key === 'Enter' && !activeCellInsideSelectionArea) {
+      if (key === 'Enter' && !activeCellInsideSelectionArea && !readOnlyTable) {
         if (
           activeCellCoordinates?.column !== 'header' &&
           activeCellCoordinates?.row !== 'header'
@@ -754,8 +840,10 @@ export let DataSpreadsheet = React.forwardRef(
     };
 
     // Go into edit mode if double click is detected on activeCellRef
-    const handleActiveCellDoubleClick = () => {
-      startEditMode();
+    const handleActiveCellDoubleClick = (readOnlyTable: boolean) => {
+      if (!readOnlyTable) {
+        startEditMode();
+      }
     };
 
     useSpreadsheetEdit({
@@ -860,6 +948,8 @@ export let DataSpreadsheet = React.forwardRef(
             setSelectionAreas={setSelectionAreas}
             setCurrentMatcher={setCurrentMatcher}
             setSelectionAreaData={setSelectionAreaData}
+            disableColumnSwapping={disableColumnSwapping}
+            readOnlyTable={readOnlyTable}
             totalVisibleColumns={totalVisibleColumns}
             updateActiveCellCoordinates={updateActiveCellCoordinates}
             setHeaderCellHoldActive={setHeaderCellHoldActive}
@@ -872,6 +962,7 @@ export let DataSpreadsheet = React.forwardRef(
           <DataSpreadsheetBody
             activeCellRef={activeCellRef}
             activeCellCoordinates={activeCellCoordinates}
+            setCurrentColumns={setCurrentColumns}
             ref={spreadsheetRef as LegacyRef<HTMLDivElement>}
             clickAndHoldActive={clickAndHoldActive}
             setClickAndHoldActive={setClickAndHoldActive}
@@ -885,7 +976,10 @@ export let DataSpreadsheet = React.forwardRef(
             headerGroups={headerGroups}
             defaultColumn={defaultColumn}
             getTableBodyProps={getTableBodyProps}
+            hasCustomRowHeader={hasCustomRowHeader}
             onDataUpdate={onDataUpdate}
+            renderRowHeaderDirection={renderRowHeaderDirection}
+            renderRowHeader={renderRowHeader}
             onActiveCellChange={onActiveCellChange}
             onSelectionAreaChange={onSelectionAreaChange}
             prepareRow={prepareRow}
@@ -909,7 +1003,7 @@ export let DataSpreadsheet = React.forwardRef(
             onMouseUp={handleActiveCellMouseUp}
             onClick={handleActiveCellClick}
             onKeyDown={handleActiveCellKeyDown}
-            onDoubleClick={handleActiveCellDoubleClick}
+            onDoubleClick={() => handleActiveCellDoubleClick(readOnlyTable)}
             onMouseEnter={handleActiveCellMouseEnter}
             ref={activeCellRef as LegacyRef<HTMLButtonElement>}
             className={cx(
@@ -1019,6 +1113,16 @@ DataSpreadsheet.propTypes = {
   defaultEmptyRowCount: PropTypes.number,
 
   /**
+   * Disable column swapping, default false
+   */
+  disableColumnSwapping: PropTypes.bool,
+
+  /**
+   * Check if spreadsheet is using custom row header component attached
+   */
+  hasCustomRowHeader: PropTypes.bool,
+
+  /**
    * The spreadsheet id
    */
   id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
@@ -1027,6 +1131,11 @@ DataSpreadsheet.propTypes = {
    * The event handler that is called when the active cell changes
    */
   onActiveCellChange: PropTypes.func,
+
+  /**
+   * Callback for when columns are dropped after dragged
+   */
+  onColDrag: PropTypes.func,
 
   /**
    * The setter fn for the data prop
@@ -1038,6 +1147,20 @@ DataSpreadsheet.propTypes = {
    */
   onSelectionAreaChange: PropTypes.func,
 
+  /**
+   * Read-only table
+   */
+  readOnlyTable: PropTypes.bool,
+
+  /**
+   * Component next to numbering rows
+   */
+  renderRowHeader: PropTypes.func,
+
+  /**
+   * Component next to numbering rows
+   */
+  renderRowHeaderDirection: PropTypes.oneOf(['left', 'right']),
   /**
    * The aria label applied to the Select all button
    */

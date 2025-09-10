@@ -1,3 +1,10 @@
+/**
+ * Copyright IBM Corp. 2024
+ *
+ * This source code is licensed under the Apache-2.0 license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 import { ReactNode } from 'react';
 
 export type Theme = 'light' | 'dark';
@@ -11,6 +18,7 @@ export interface Modifier {
   id?: string;
   label?: string;
   options?: string[];
+  multiSelect?: boolean;
 }
 
 export interface Avatar {
@@ -48,5 +56,5 @@ export interface SortOption {
   id?: string;
   direction?: string;
   attribute?: string;
-  itemText?: object;
+  label?: string;
 }

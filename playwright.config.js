@@ -6,8 +6,8 @@
  */
 
 const { devices, expect } = require('@playwright/test');
-const path = require('path');
-const { pkg } =  require('./packages/ibm-products/src/settings');
+const path = require('node:path');
+const { pkg } = require('./packages/ibm-products/src/settings');
 
 const config = {
   // https://playwright.dev/docs/api/class-testconfig#test-config-test-dir
@@ -48,7 +48,12 @@ const config = {
     },
   ],
   reporter: [
-    ['line'],
+    // Dot reporter is used in CI because it's very concise - it only produces a
+    // single character per successful test run.
+    [process.env.CI ? 'dot' : 'line'],
+
+    // The remaining reporters should always be used, in both CI and dev.
+    ['blob'],
     [
       'json',
       {
@@ -87,7 +92,7 @@ expect.extend({
         'html_skipnav_exists',
         'aria_content_in_landmark',
         'aria_child_tabbable',
-        'skip_main_described'
+        'skip_main_described',
       ]);
 
       const ruleset = await aChecker.getRuleset('IBM_Accessibility');
@@ -100,7 +105,8 @@ expect.extend({
             return !denylist.has(rule.id);
           });
           return checkpoint;
-        });
+        }
+      );
 
       aChecker.addRuleset(customRuleset);
     }
@@ -131,6 +137,7 @@ expect.extend({
       await expect(page.locator('css=.story-wrapper')).toBeInViewport();
       pass = true;
     } catch (e) {
+      console.error(e);
       pass = false;
     }
 
@@ -153,7 +160,7 @@ expect.extend({
             globals: ${JSON.stringify(options.globals)} 
             args: ${JSON.stringify(options.args)},
           }
-          `
+          `,
       };
     }
   },

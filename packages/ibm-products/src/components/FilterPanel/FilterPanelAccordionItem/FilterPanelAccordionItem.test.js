@@ -1,5 +1,5 @@
 /**
- * Copyright IBM Corp. FULL_YEAR, FULL_YEAR
+ * Copyright IBM Corp. 2024
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
@@ -31,6 +31,9 @@ const renderComponent = ({ ...rest } = {}) =>
   );
 
 describe(componentName, () => {
+  beforeEach(() => {
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
   it('renders a component FilterPanelAccordionItem', async () => {
     const { container } = renderComponent();
     const component = container.querySelector(`.${blockClass}`);
@@ -39,11 +42,11 @@ describe(componentName, () => {
 
   it('renders a count', async () => {
     renderComponent({ count });
-    expect(
-      screen.getByText(/5/, {
-        selector: `.${blockClass} .${pkg.prefix}--filter-panel-label__count`,
-      })
-    );
+    const element = screen.getByText(/5/, {
+      selector: `.${blockClass} .${pkg.prefix}--filter-panel-label__count`,
+    });
+    expect(element).toBeInTheDocument();
+    expect(element).toHaveTextContent(5);
   });
 
   it('has no accessibility violations', async () => {

@@ -1,3 +1,10 @@
+/**
+ * Copyright IBM Corp. 2024
+ *
+ * This source code is licensed under the Apache-2.0 license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 import { useEffect, useRef, useLayoutEffect } from 'react';
 import { COACHMARK_OVERLAY_KIND } from './enums';
 
@@ -15,7 +22,7 @@ function useClickOutsideElement(
   overlayKind,
   callback
 ) {
-  const cb = useRef();
+  const cb = useRef(undefined);
   const isTooltip = overlayKind === COACHMARK_OVERLAY_KIND.TOOLTIP;
   useLayoutEffect(() => {
     cb.current = callback;

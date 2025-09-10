@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 /**
- * Copyright IBM Corp. 2020, 2024
+ * Copyright IBM Corp. 2020, 2025
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
@@ -8,18 +8,20 @@
 
 import React, { useRef } from 'react';
 import { ChevronDown, ChevronUp } from '@carbon/react/icons';
-import { pkg, carbon } from '../../settings';
+import { pkg } from '../../settings';
 import cx from 'classnames';
 import { useFocusRowExpander } from './useFocusRowExpander';
+import { usePrefix } from '@carbon/react';
 
 const blockClass = `${pkg.prefix}--datagrid`;
 
 const useRowExpander = (hooks) => {
-  const tempState = useRef();
-  const lastExpandedRowIndex = useRef();
+  const tempState = useRef(undefined);
+  const lastExpandedRowIndex = useRef(undefined);
   const useInstance = (instance) => {
     tempState.current = instance;
   };
+  const carbonPrefix = usePrefix();
 
   useFocusRowExpander({
     instance: tempState?.current,
@@ -41,11 +43,10 @@ const useRowExpander = (hooks) => {
             row?.onClick?.(row, event);
             lastExpandedRowIndex.current = row.id;
           },
+          title: null,
         };
-        const {
-          expanderButtonTitleExpanded = 'Collapse row',
-          expanderButtonTitleCollapsed = 'Expand row',
-        } = tempState?.current || {};
+        const { expanderButtonTitleExpanded, expanderButtonTitleCollapsed } =
+          tempState?.current || {};
         const expanderTitle = row.isExpanded
           ? expanderButtonTitleExpanded
           : expanderButtonTitleCollapsed;
@@ -56,11 +57,10 @@ const useRowExpander = (hooks) => {
               aria-label={expanderTitle}
               className={cx(
                 `${blockClass}__row-expander`,
-                `${carbon.prefix}--btn`,
-                `${carbon.prefix}--btn--ghost`
+                `${carbonPrefix}--btn`,
+                `${carbonPrefix}--btn--ghost`
               )}
               {...expanderButtonProps}
-              title={expanderTitle}
             >
               {row.isExpanded ? (
                 <ChevronUp className={`${blockClass}__row-expander--icon`} />

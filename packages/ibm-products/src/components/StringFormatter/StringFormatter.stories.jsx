@@ -7,21 +7,27 @@
 
 import React from 'react';
 // TODO: import action to handle events if required.
-// import { action } from '@storybook/addon-actions';
+// import { action } from 'storybook/actions';
 
 import { StringFormatter } from '.';
 import mdx from './StringFormatter.mdx';
 
 import styles from './_storybook-styles.scss?inline';
+import { Wrap } from '../../global/js/utils/Wrap';
 
 export default {
-  title: 'IBM Products/Components/String formatter/StringFormatter',
+  title: 'Utilities/StringFormatter',
   component: StringFormatter,
   tags: ['autodocs'],
   // TODO: Define argTypes for props not represented by standard JS types.
-  // argTypes: {
-  //   egProp: { control: 'color' },
-  // },
+  argTypes: {
+    element: {
+      description:
+        'this is a story only prop to showcase the usage of this component in various html tags',
+      options: ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+      control: { type: 'select' },
+    },
+  },
   parameters: {
     styles,
     docs: {
@@ -34,14 +40,16 @@ export default {
 /**
  * TODO: Declare template(s) for one or more scenarios.
  */
-const Template = (args) => {
+const Template = ({ element, ...stringFormatterProps }) => {
   return (
-    <StringFormatter
-      className="storyStringFormatter"
-      // TODO: handle events with action or local handler.
-      // onTodo={action('onTodo log action')}
-      {...args}
-    />
+    <Wrap element={element}>
+      <StringFormatter
+        className="storyStringFormatter"
+        // TODO: handle events with action or local handler.
+        // onTodo={action('onTodo log action')}
+        {...stringFormatterProps}
+      />
+    </Wrap>
   );
 };
 
@@ -54,8 +62,11 @@ const valueStr =
  */
 export const stringFormatter = Template.bind({});
 stringFormatter.args = {
+  autoAlign: false,
   lines: 1,
   truncate: true,
   value: valueStr,
   width: '200px',
+  tooltipDirection: 'bottom-left',
+  element: 'p',
 };

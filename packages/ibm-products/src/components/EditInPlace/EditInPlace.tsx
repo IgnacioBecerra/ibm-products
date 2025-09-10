@@ -1,28 +1,23 @@
 /**
- * Copyright IBM Corp. 2022, 2022
+ * Copyright IBM Corp. 2022, 2025
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
  */
 
+import { Checkmark, Close, Edit, WarningFilled } from '@carbon/react/icons';
 import React, {
-  useState,
-  useEffect,
-  forwardRef,
-  useRef,
   PropsWithChildren,
+  forwardRef,
+  useEffect,
+  useRef,
+  useState,
 } from 'react';
-import { IconButton } from '@carbon/react';
-import cx from 'classnames';
+import { pkg } from '../../settings';
+
+import { IconButton, usePrefix } from '@carbon/react';
 import PropTypes from 'prop-types';
-import {
-  Edit,
-  Checkmark,
-  Close,
-  // EditOff,
-  WarningFilled,
-} from '@carbon/react/icons';
-import { pkg, carbon } from '../../settings';
+import cx from 'classnames';
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
 
 const componentName = 'EditInPlace';
@@ -49,7 +44,7 @@ type Shape = {
   save: AlignPropType;
 };
 
-interface EditInplaceProps extends PropsWithChildren {
+export interface EditInplaceProps extends PropsWithChildren {
   /**
    * label for cancel button
    */
@@ -86,6 +81,11 @@ interface EditInplaceProps extends PropsWithChildren {
    * Provide the text that will be read by a screen reader when visiting this control
    */
   labelText: string;
+
+  /**
+   * handler to add custom onBlur event
+   */
+  onBlur?: (value: string) => void;
   /**
    * handler that is called when the cancel button is pressed or when the user removes focus from the input and there is no new value
    */
@@ -124,6 +124,10 @@ interface EditInplaceProps extends PropsWithChildren {
    * current value of the input
    */
   value: string;
+  /**
+   * placeholder for the input
+   */
+  placeholder?: string;
 }
 
 export let EditInPlace = forwardRef<HTMLDivElement, EditInplaceProps>(
@@ -141,12 +145,14 @@ export let EditInPlace = forwardRef<HTMLDivElement, EditInplaceProps>(
       onCancel,
       onChange,
       onSave,
+      onBlur,
       // readOnly,
       // readOnlyLabel,
       saveLabel,
       size = 'sm',
       tooltipAlignment,
       value,
+      placeholder,
       ...rest
     }: EditInplaceProps & { invalidLabel?: string },
     ref
@@ -157,9 +163,10 @@ export let EditInPlace = forwardRef<HTMLDivElement, EditInplaceProps>(
     const inputRef = useRef<HTMLInputElement>(null);
     const canSave = value !== initialValue && !invalid;
     const escaping = useRef(false);
+    const carbonPrefix = usePrefix();
 
     const tipAlignIsObject = typeof tooltipAlignment === 'object';
-    const tipAlignments: { [key: string]: string } = [
+    const tipAlignments: { [key: string]: AlignPropType } = [
       'edit',
       'save',
       'cancel',
@@ -201,28 +208,33 @@ export let EditInPlace = forwardRef<HTMLDivElement, EditInplaceProps>(
 
     const onSaveHandler = () => {
       setInitialValue(value);
-      setFocused(false);
       setDirtyInput(false);
       onSave();
+      setFocused(false);
     };
 
     const onCancelHandler = () => {
-      setFocused(false);
       setDirtyInput(false);
       onCancel(initialValue);
     };
 
-    const onBlurHandler = (e) => {
-      // if (readOnly || escaping.current) {
-      if (escaping.current) {
-        return;
-      }
-
-      if (!isTargetingChild(e)) {
-        if (canSave) {
-          onSaveHandler();
-        } else {
-          onCancelHandler();
+    const onBlurHandler = (e: any) => {
+      // Use custom function provided if passed through
+      if (typeof onBlur === 'function' && !isTargetingChild(e)) {
+        onBlur(initialValue);
+        setFocused(false);
+      } else {
+        // Use Default behavior if no custom function provided
+        if (escaping.current) {
+          return;
+        }
+        if (!isTargetingChild(e)) {
+          if (canSave) {
+            onSaveHandler();
+          } else {
+            onCancelHandler();
+            setFocused(false);
+          }
         }
       }
     };
@@ -237,16 +249,21 @@ export let EditInPlace = forwardRef<HTMLDivElement, EditInplaceProps>(
       onCancelHandler();
     };
 
+    const removeFocus = () => {
+      inputRef.current?.blur();
+      setFocused(false);
+    };
+
     const onKeyHandler = (e) => {
       // to prevent blur handler from being called twice add additional state to check if escape is being used
       escaping.current = true;
       switch (e.key) {
         case 'Escape':
-          inputRef.current?.blur();
+          removeFocus();
           escapeHandler();
           break;
         case 'Enter':
-          inputRef.current?.blur();
+          removeFocus();
           returnHandler();
           break;
         default:
@@ -274,10 +291,11 @@ export let EditInPlace = forwardRef<HTMLDivElement, EditInplaceProps>(
             id={id}
             className={cx(
               `${blockClass}__text-input`,
-              `${carbon.prefix}--text-input`,
-              `${carbon.prefix}--text-input--${size}`
+              `${carbonPrefix}--text-input`,
+              `${carbonPrefix}--text-input--${size}`
             )}
             type="text"
+            placeholder={placeholder}
             value={value}
             onChange={onChangeHandler}
             ref={inputRef}
@@ -286,9 +304,6 @@ export let EditInPlace = forwardRef<HTMLDivElement, EditInplaceProps>(
             aria-label={labelText}
             aria-invalid={invalid}
           />
-          <div className={`${blockClass}__ellipsis`} aria-hidden={!focused}>
-            &hellip;
-          </div>
           <div className={`${blockClass}__toolbar`}>
             {invalid && (
               <WarningFilled
@@ -304,7 +319,6 @@ export let EditInPlace = forwardRef<HTMLDivElement, EditInplaceProps>(
                   label={cancelLabel}
                   onClick={onCancelHandler}
                   kind="ghost"
-                  tabIndex={0}
                   key="cancel"
                   className={`${blockClass}__btn ${blockClass}__btn-cancel`}
                 >
@@ -317,7 +331,6 @@ export let EditInPlace = forwardRef<HTMLDivElement, EditInplaceProps>(
                   label={saveLabel}
                   onClick={onSaveHandler}
                   kind="ghost"
-                  tabIndex={0}
                   key="save"
                   className={`${blockClass}__btn ${blockClass}__btn-save`}
                   disabled={!canSave}
@@ -336,7 +349,6 @@ export let EditInPlace = forwardRef<HTMLDivElement, EditInplaceProps>(
                 label={editLabel}
                 onClick={onFocusHandler}
                 kind="ghost"
-                tabIndex={0}
                 key="edit"
               >
                 <Edit size={16} />
@@ -416,9 +428,14 @@ EditInPlace.propTypes = {
    */
   labelText: PropTypes.string.isRequired,
   /**
+   * handler to add custom onBlur event
+   */
+  onBlur: PropTypes.func,
+  /**
    * handler that is called when the cancel button is pressed or when the user removes focus from the input and there is no new value
    */
   onCancel: PropTypes.func.isRequired,
+
   /**
    * handler that is called when the input is updated
    */
@@ -427,6 +444,10 @@ EditInPlace.propTypes = {
    * handler that is called when the save button is pressed or when the user removes focus from the input if it has a new value
    */
   onSave: PropTypes.func.isRequired,
+  /**
+   * Placeholder for text input
+   */
+  placeholder: PropTypes.string,
   /**
    * determines if the input is in readOnly mode
    */

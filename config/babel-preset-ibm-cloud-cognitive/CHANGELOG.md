@@ -1,7 +1,213 @@
+## `@babel-preset-ibm-cloud-cognitive@0.29.0`
+### Housekeeping :house:
+- chore: remove redundant upgrade scripts (#7774)
+
+## `@babel-preset-ibm-cloud-cognitive@0.27.0`
+### Housekeeping :house:
+- build(deps): update Carbon 11 compatible versions to latest (#7593)
+
 # Change Log
 
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+
+# [0.25.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.25.0-rc.0...babel-preset-ibm-cloud-cognitive@0.25.0) (2025-05-28)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.25.0-rc.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.20.0-rc.0...babel-preset-ibm-cloud-cognitive@0.25.0-rc.0) (2025-05-19)
+
+
+### Bug Fixes
+
+* **deps:** update dependency browserslist-config-carbon to v11 ([#7360](https://github.com/carbon-design-system/ibm-products/issues/7360)) ([137a2eb](https://github.com/carbon-design-system/ibm-products/commit/137a2eb68581f5cdeeee0b41201b6929a1c3b459))
+
+
+
+
+
+# [0.24.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.24.0-rc.0...babel-preset-ibm-cloud-cognitive@0.24.0) (2025-05-14)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.24.0-rc.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.20.0-rc.0...babel-preset-ibm-cloud-cognitive@0.24.0-rc.0) (2025-05-05)
+
+
+### Bug Fixes
+
+* **deps:** update dependency browserslist-config-carbon to v11 ([#7360](https://github.com/carbon-design-system/ibm-products/issues/7360)) ([137a2eb](https://github.com/carbon-design-system/ibm-products/commit/137a2eb68581f5cdeeee0b41201b6929a1c3b459))
+
+
+
+
+
+# [0.23.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.23.0-rc.0...babel-preset-ibm-cloud-cognitive@0.23.0) (2025-04-30)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.23.0-rc.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.20.0-rc.0...babel-preset-ibm-cloud-cognitive@0.23.0-rc.0) (2025-04-21)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.22.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.22.0-rc.0...babel-preset-ibm-cloud-cognitive@0.22.0) (2025-04-17)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.22.0-rc.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.20.0-rc.0...babel-preset-ibm-cloud-cognitive@0.22.0-rc.0) (2025-04-07)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.21.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.21.0-rc.0...babel-preset-ibm-cloud-cognitive@0.21.0) (2025-04-02)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.21.0-rc.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.20.0-rc.0...babel-preset-ibm-cloud-cognitive@0.21.0-rc.0) (2025-03-24)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.20.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.20.0-rc.0...babel-preset-ibm-cloud-cognitive@0.20.0) (2025-03-19)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.20.0-rc.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.14.40...babel-preset-ibm-cloud-cognitive@0.20.0-rc.0) (2025-03-10)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.19.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.19.0-rc.0...babel-preset-ibm-cloud-cognitive@0.19.0) (2025-03-05)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.19.0-rc.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.14.40...babel-preset-ibm-cloud-cognitive@0.19.0-rc.0) (2025-02-24)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.18.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.18.0-rc.0...babel-preset-ibm-cloud-cognitive@0.18.0) (2025-02-19)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.18.0-rc.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.14.40...babel-preset-ibm-cloud-cognitive@0.18.0-rc.0) (2025-02-10)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.17.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.17.0-rc.0...babel-preset-ibm-cloud-cognitive@0.17.0) (2025-02-05)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.17.0-rc.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.14.40...babel-preset-ibm-cloud-cognitive@0.17.0-rc.0) (2025-01-27)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.16.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.16.0-rc.0...babel-preset-ibm-cloud-cognitive@0.16.0) (2025-01-22)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.16.0-rc.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.14.40...babel-preset-ibm-cloud-cognitive@0.16.0-rc.0) (2025-01-13)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+## [0.15.1](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.15.1-rc.0...babel-preset-ibm-cloud-cognitive@0.15.1) (2025-01-10)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+## [0.15.1-rc.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.14.40...babel-preset-ibm-cloud-cognitive@0.15.1-rc.0) (2025-01-09)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.15.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.15.0-rc.0...babel-preset-ibm-cloud-cognitive@0.15.0) (2025-01-08)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
+
+# [0.15.0-rc.0](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.14.40...babel-preset-ibm-cloud-cognitive@0.15.0-rc.0) (2024-12-24)
+
+**Note:** Version bump only for package babel-preset-ibm-cloud-cognitive
+
+
+
+
 
 ## [0.14.40](https://github.com/carbon-design-system/ibm-products/compare/babel-preset-ibm-cloud-cognitive@0.14.39...babel-preset-ibm-cloud-cognitive@0.14.40) (2024-02-09)
 

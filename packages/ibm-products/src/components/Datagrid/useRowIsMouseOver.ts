@@ -1,13 +1,12 @@
-/*
- * Licensed Materials - Property of IBM
- * 5724-Q36
- * (c) Copyright IBM Corp. 2020
- * US Government Users Restricted Rights - Use, duplication or disclosure
- * restricted by GSA ADP Schedule Contract with IBM Corp.
+/**
+ * Copyright IBM Corp. 2024, 2025
+ *
+ * This source code is licensed under the Apache-2.0 license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
 import { useState, useCallback } from 'react';
-import debounce from 'lodash/debounce';
+import { debounce } from '../../global/js/utils/debounce';
 import { Hooks, RowPropGetter, TableInstance } from 'react-table';
 import { DataGridState } from './types';
 
@@ -21,6 +20,7 @@ const useRowIsMouseOver = (hooks: Hooks) => {
     }, 100);
 
     const getRowProps = (props, datagridState: DataGridState) => {
+      // @ts-expect-error
       const onMouseOver = () => onMouseChange(datagridState);
       return [props, { onMouseOver }];
     };

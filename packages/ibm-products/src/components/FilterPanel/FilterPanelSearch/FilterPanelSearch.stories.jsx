@@ -6,17 +6,18 @@
  */
 
 import React from 'react';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 
 import { FilterPanelSearch } from '.';
 import mdx from './FilterPanelSearch.mdx';
 
 import styles from '../_storybook-styles.scss?inline';
+import { Annotation } from '../../../../.storybook/Annotation';
 
 const storyClass = 'filter-panel-stories';
 
 export default {
-  title: 'IBM Products/Components/Filter Panel/FilterPanelSearch',
+  title: 'Deprecated/Filter panel/FilterPanelSearch',
   component: FilterPanelSearch,
   tags: ['autodocs'],
   parameters: {
@@ -29,6 +30,21 @@ export default {
     children: { table: { disable: true } },
     className: { control: { type: {} } },
   },
+  decorators: [
+    (story) => (
+      <Annotation
+        type="deprecation-notice"
+        text={
+          <div>
+            This component is deprecated and will be removed in the next major
+            version.
+          </div>
+        }
+      >
+        {story()}
+      </Annotation>
+    ),
+  ],
 };
 
 const Template = (args) => {

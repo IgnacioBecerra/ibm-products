@@ -1,51 +1,48 @@
 /**
- * Copyright IBM Corp. 2021, 2023
+ * Copyright IBM Corp. 2021, 2025
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
  */
 
-// Import portions of React that are needed.
-import React, {
-  useEffect,
-  useState,
-  createContext,
-  ReactNode,
-  ForwardedRef,
-} from 'react';
-
-// Other standard imports.
-import PropTypes from 'prop-types';
-import cx from 'classnames';
-
-import { getDevtoolsProps } from '../../global/js/utils/devtools';
-import { pkg } from '../../settings';
-
 // Carbon and package components we use.
 import {
-  ModalFooter,
-  ComposedModal,
-  ModalHeader,
-  ModalBody,
   Button,
+  ComposedModal,
   Form,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+  Tooltip,
 } from '@carbon/react';
-import { CreateInfluencer } from '../CreateInfluencer';
-import { ActionSet } from '../ActionSet';
+// Import portions of React that are needed.
+import React, {
+  ForwardedRef,
+  ReactNode,
+  createContext,
+  useEffect,
+  useState,
+  ReactElement,
+  isValidElement,
+} from 'react';
+import { SimpleHeader } from '../SimpleHeader/SimpleHeader';
 import {
-  usePreviousValue,
-  useValidCreateStepCount,
-  useResetCreateComponent,
   useCreateComponentFocus,
   useCreateComponentStepChange,
+  usePreviousValue,
+  useValidCreateStepCount,
 } from '../../global/js/hooks';
-import { lastIndexInArray } from '../../global/js/utils/lastIndexInArray';
-import { getNumberOfHiddenSteps } from '../../global/js/utils/getNumberOfHiddenSteps';
-import {
-  SimpleHeader,
-  overflowAriaLabel_required_if_breadcrumbs_exist,
-} from '../SimpleHeader/SimpleHeader';
+
+import { ActionSet } from '../ActionSet';
+import { CreateInfluencer } from '../CreateInfluencer';
+// Other standard imports.
+import PropTypes from 'prop-types';
 import { StepsContextType } from '../CreateTearsheet/CreateTearsheet';
+import cx from 'classnames';
+import { getDevtoolsProps } from '../../global/js/utils/devtools';
+import { getNumberOfHiddenSteps } from '../../global/js/utils/getNumberOfHiddenSteps';
+import { lastIndexInArray } from '../../global/js/utils/lastIndexInArray';
+import { pkg } from '../../settings';
 
 const blockClass = `${pkg.prefix}--create-full-page`;
 const componentName = 'CreateFullPage';
@@ -59,7 +56,7 @@ export const StepsContext = createContext<StepsContextType | null>(null);
 // to let it know what number it is in the sequence of steps
 export const StepNumberContext = createContext(-1);
 
-interface HeaderBreadcrumbs {
+interface HeaderBreadcrumb {
   /** breadcrumb item key */
   key: string;
   /** breadcrumb item label */
@@ -72,6 +69,8 @@ interface HeaderBreadcrumbs {
   isCurrentPage?: boolean;
 }
 
+type MaybePromise<T> = Promise<T> | T;
+
 type CreateFullPageBreadcrumbsProps =
   | {
       /** The header breadcrumbs */
@@ -81,15 +80,19 @@ type CreateFullPageBreadcrumbsProps =
        * Label for open/close overflow button used for breadcrumb items that do not fit
        */
       breadcrumbsOverflowAriaLabel?: never;
+
+      breadcrumbOverflowTooltipAlign?: never;
     }
   | {
       /** The header breadcrumbs */
-      breadcrumbs: HeaderBreadcrumbs;
+      breadcrumbs: HeaderBreadcrumb[];
 
       /**
        * Label for open/close overflow button used for breadcrumb items that do not fit
        */
       breadcrumbsOverflowAriaLabel: string;
+
+      breadcrumbOverflowTooltipAlign?: string;
     };
 
 type CreateFullPageBaseProps = {
@@ -159,6 +162,12 @@ type CreateFullPageBaseProps = {
   noTrailingSlash?: boolean;
 
   /**
+   * onChange event for Progress Indicator in the Influencer
+   * @param data step index
+   */
+  onClickInfluencerStep?: (data: number) => void;
+
+  /**
    * An optional handler that is called when the user closes the full page (by
    * clicking the secondary button, located in the modal, which triggers after
    * clicking the ghost button in the modal
@@ -168,8 +177,10 @@ type CreateFullPageBaseProps = {
   /**
    * Specify a handler for submitting the multi step full page (final step).
    * This function can _optionally_ return a promise that is either resolved or rejected and the CreateFullPage will handle the submitting state of the create button.
+   *
+   * @returns Object - if you want to prevent the modal from closing, return an object with the property preventClose set to true
    */
-  onRequestSubmit: () => void;
+  onRequestSubmit: () => MaybePromise<{ preventClose?: boolean } | void>;
 
   /**
    * A secondary title of the full page, displayed in the influencer area
@@ -193,7 +204,7 @@ type CreateFullPageBaseProps = {
   title?: string;
 };
 
-type CreateFullPageProps = CreateFullPageBaseProps &
+export type CreateFullPageProps = CreateFullPageBaseProps &
   CreateFullPageBreadcrumbsProps;
 
 interface Step {
@@ -230,6 +241,7 @@ export let CreateFullPage = React.forwardRef(
       modalSecondaryButtonText,
       modalTitle,
       nextButtonText,
+      onClickInfluencerStep,
       onClose,
       onRequestSubmit,
       firstFocusElement,
@@ -237,6 +249,7 @@ export let CreateFullPage = React.forwardRef(
       noTrailingSlash,
       title,
       secondaryTitle,
+      breadcrumbOverflowTooltipAlign = 'right',
       ...rest
     }: CreateFullPageProps,
     ref: ForwardedRef<HTMLDivElement>
@@ -246,13 +259,19 @@ export let CreateFullPage = React.forwardRef(
     const [currentStep, setCurrentStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [modalIsOpen, setModalIsOpen] = useState(false);
-    const previousState = usePreviousValue({ currentStep, open });
+    const previousState = usePreviousValue({ currentStep });
     const [isDisabled, setIsDisabled] = useState(false);
+    const [onPrevious, setOnPrevious] = useState();
     const [onNext, setOnNext] = useState();
     const [onMount, setOnMount] = useState();
     const [stepData, setStepData] = useState<Step[]>([]);
     const [firstIncludedStep, setFirstIncludedStep] = useState(1);
     const [lastIncludedStep, setLastIncludedStep] = useState<number>();
+    const stepLength = React.Children.toArray(children).filter(
+      (item) =>
+        isValidElement(item) &&
+        (item as ReactElement<any>).props.includeStep !== false
+    ).length;
 
     useEffect(() => {
       const firstItem =
@@ -265,8 +284,9 @@ export let CreateFullPage = React.forwardRef(
         setLastIncludedStep(lastItem);
       }
 
-      /**@ts-ignore */
-      if (open && initialStep) {
+      if (Number(initialStep) > stepLength || Number(initialStep) <= 0) {
+        setCurrentStep(1);
+      } else if (initialStep) {
         const numberOfHiddenSteps = getNumberOfHiddenSteps(
           stepData,
           initialStep
@@ -279,7 +299,14 @@ export let CreateFullPage = React.forwardRef(
       lastIncludedStep,
       initialStep,
       modalIsOpen,
+      stepLength,
     ]);
+
+    useEffect(() => {
+      checkForValidInitialStep();
+
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialStep]);
 
     useCreateComponentFocus({
       previousState,
@@ -289,22 +316,11 @@ export let CreateFullPage = React.forwardRef(
       firstFocusElement,
     });
     useValidCreateStepCount(stepData.length, componentName);
-    useResetCreateComponent({
-      firstIncludedStep,
-      previousState,
-      /**@ts-ignore */
-      open,
-      setCurrentStep,
-      stepData,
-      /**@ts-ignore */
-      initialStep,
-      totalSteps: stepData?.length,
-      componentName,
-    });
     useCreateComponentStepChange({
       firstIncludedStep,
       lastIncludedStep,
       stepData,
+      onPrevious,
       onNext,
       isSubmitDisabled: isDisabled,
       setCurrentStep,
@@ -325,6 +341,17 @@ export let CreateFullPage = React.forwardRef(
       setCreateComponentActions: setCreateFullPageActions,
       setModalIsOpen,
     });
+
+    const checkForValidInitialStep = () => {
+      if (
+        (initialStep && stepLength && Number(initialStep) > stepLength) ||
+        Number(initialStep) <= 0
+      ) {
+        console.warn(
+          `${componentName}: An invalid \`initialStep\` prop was supplied. The \`initialStep\` prop should be a number that is greater than 0 or less than or equal to the number of steps your ${componentName} has.`
+        );
+      }
+    };
     // currently, we are not supporting the use of 'view all' toggle state
     /* istanbul ignore next */
     return (
@@ -342,6 +369,7 @@ export let CreateFullPage = React.forwardRef(
             overflowAriaLabel={breadcrumbsOverflowAriaLabel}
             maxVisible={maxVisibleBreadcrumbs}
             className={`${blockClass}__header`}
+            overflowTooltipAlign={breadcrumbOverflowTooltipAlign}
           />
         )}
         <div className={`${blockClass}__influencer-and-body-container`}>
@@ -350,17 +378,25 @@ export let CreateFullPage = React.forwardRef(
               stepData={stepData}
               currentStep={currentStep}
               title={secondaryTitle}
+              onClickStep={onClickInfluencerStep}
             />
           </div>
           <div className={`${blockClass}__body`}>
             <div className={`${blockClass}__main`}>
               <div className={`${blockClass}__content`}>
-                <Form className={`${blockClass}__form`} aria-label={title}>
+                <Form
+                  className={`${blockClass}__form`}
+                  aria-label={title}
+                  onSubmit={(e: React.FormEvent<HTMLFormElement>) =>
+                    e.preventDefault()
+                  }
+                >
                   <StepsContext.Provider
                     value={
                       {
                         currentStep,
                         setIsDisabled,
+                        setOnPrevious: (fn) => setOnPrevious(() => fn),
                         setOnNext: (fn) => setOnNext(() => fn),
                         setOnMount: (fn) => setOnMount(() => fn),
                         setStepData,
@@ -368,11 +404,16 @@ export let CreateFullPage = React.forwardRef(
                       } as any
                     }
                   >
-                    {React.Children.map(children, (child, index) => (
-                      <StepNumberContext.Provider value={index + 1}>
-                        {child}
-                      </StepNumberContext.Provider>
-                    ))}
+                    {React.Children.toArray(children)
+                      .filter(Boolean)
+                      .map((child, index) => (
+                        <StepNumberContext.Provider
+                          value={index + 1}
+                          key={index}
+                        >
+                          {child}
+                        </StepNumberContext.Provider>
+                      ))}
                   </StepsContext.Provider>
                 </Form>
               </div>
@@ -435,6 +476,11 @@ CreateFullPage.propTypes = {
    */
   backButtonText: PropTypes.string.isRequired,
 
+  /**
+   * align breadcrumb overflow tooltip
+   */
+  breadcrumbOverflowTooltipAlign: Tooltip.propTypes.align,
+
   /** The header breadcrumbs */
   /**@ts-ignore */
   breadcrumbs: PropTypes.arrayOf(
@@ -455,7 +501,7 @@ CreateFullPage.propTypes = {
   /**
    * Label for open/close overflow button used for breadcrumb items that do not fit
    */
-  breadcrumbsOverflowAriaLabel: overflowAriaLabel_required_if_breadcrumbs_exist,
+  breadcrumbsOverflowAriaLabel: PropTypes.string,
 
   /**
    * The cancel button text
@@ -516,6 +562,11 @@ CreateFullPage.propTypes = {
    * A prop to omit the trailing slash for the breadcrumbs
    */
   noTrailingSlash: PropTypes.bool,
+
+  /**
+   * onChange event for Progress Indicator in the Influencer
+   */
+  onClickInfluencerStep: PropTypes.func,
 
   /**
    * An optional handler that is called when the user closes the full page (by

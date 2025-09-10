@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react'; // https://testing-library.com/docs/react-testing-library/intro
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'; // https://testing-library.com/docs/react-testing-library/intro
 
 import { pkg } from '../../settings';
 import uuidv4 from '../../global/js/utils/uuidv4';
@@ -27,56 +27,47 @@ const tagOverflowProps = {
 };
 
 describe(componentName, () => {
-  const { ResizeObserver } = window;
   let warn;
 
   beforeEach(() => {
     warn = jest.spyOn(console, 'warn').mockImplementation(jest.fn());
-
-    window.ResizeObserver = jest.fn().mockImplementation(() => ({
-      observe: jest.fn(),
-      unobserve: jest.fn(),
-      disconnect: jest.fn(),
-    }));
-
     window.innerWidth = 500;
     fireEvent(window, new Event('resize'));
   });
 
   afterEach(() => {
-    window.ResizeObserver = ResizeObserver;
     warn.mockRestore();
   });
 
   it('renders a component TagOverflow', async () => {
-    render(<TagOverflow> </TagOverflow>);
-    expect(screen.getByRole('main')).toHaveClass(blockClass);
+    render(<TagOverflow data-testid={dataTestId} />);
+    expect(screen.getByTestId(dataTestId)).toHaveClass(blockClass);
   });
 
   it('has no accessibility violations', async () => {
-    const { container } = render(<TagOverflow> </TagOverflow>);
+    const { container } = render(<TagOverflow />);
     expect(container).toBeAccessible(componentName);
     expect(container).toHaveNoAxeViolations();
   });
 
   it('applies className to the containing node', async () => {
-    render(<TagOverflow className={className}> </TagOverflow>);
-    expect(screen.getByRole('main')).toHaveClass(className);
+    render(<TagOverflow className={className} data-testid={dataTestId} />);
+    expect(screen.getByTestId(dataTestId)).toHaveClass(className);
   });
 
   it('adds additional props to the containing node', async () => {
-    render(<TagOverflow data-testid={dataTestId}> </TagOverflow>);
+    render(<TagOverflow data-testid={dataTestId} />);
     screen.getByTestId(dataTestId);
   });
 
   it('forwards a ref to an appropriate node', async () => {
     const ref = React.createRef();
-    render(<TagOverflow ref={ref}> </TagOverflow>);
+    render(<TagOverflow ref={ref} />);
     expect(ref.current).toHaveClass(blockClass);
   });
 
   it('adds the Devtools attribute to the containing node', async () => {
-    render(<TagOverflow data-testid={dataTestId}> </TagOverflow>);
+    render(<TagOverflow data-testid={dataTestId} />);
 
     expect(screen.getByTestId(dataTestId)).toHaveDevtoolsAttribute(
       componentName
@@ -104,12 +95,9 @@ describe(componentName, () => {
 
   it('Obeys max visible', async () => {
     render(<TagOverflow {...tagOverflowProps} maxVisible={3} />);
-
-    expect(
-      screen.getAllByText(/Tag [0-9]+/, {
-        selector: `.${blockClass}__item--tag span`,
-      }).length
-    ).toEqual(3);
+    await waitFor(() => {
+      expect(screen.getByText('+2')).toBeTruthy();
+    });
   });
 
   // The below test case is failing due to ResizeObserver mock

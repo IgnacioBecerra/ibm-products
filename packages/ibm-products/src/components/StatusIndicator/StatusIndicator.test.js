@@ -28,6 +28,10 @@ const renderComponent = ({ ...rest } = {}) =>
   );
 
 describe(componentName, () => {
+  beforeEach(() => {
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
   it('renders a component StatusIndicator', async () => {
     renderComponent();
     screen.getByTestId(dataTestId);
@@ -35,7 +39,7 @@ describe(componentName, () => {
 
   it('renders a child component StatusIndicatorStep', async () => {
     renderComponent();
-    expect(screen.getByText(/Waiting/));
+    expect(screen.getByText(/Waiting/)).toBeTruthy();
   });
 
   it('has no accessibility violations', async () => {

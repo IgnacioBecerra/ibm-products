@@ -45,6 +45,9 @@ const defaultProps = {
 };
 
 describe(componentName, () => {
+  beforeEach(() => {
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
   it('has no accessibility violations', async () => {
     const { container } = render(
       <main>
@@ -58,7 +61,7 @@ describe(componentName, () => {
   it('Renders the component `HTTPErrors` if flag is enabled', async () => {
     const { container } = render(<HTTPError404 {...defaultProps} />);
     expect(container.querySelector(`.${blockClass}`)).not.toBeNull();
-    expect(screen.getByText(title));
+    expect(screen.getByText(title)).toBeVisible();
     const link = screen.getByRole('link', { name: 'Carbon Design System' });
     expect(link.href).toEqual('https://www.carbondesignsystem.com/');
   });
@@ -73,8 +76,8 @@ describe(componentName, () => {
 
   it('should render the HTTPError404 component', async () => {
     const { container } = render(<HTTPError404 {...defaultProps} />);
-    expect(screen.getByText(errorCodeLabel));
-    expect(screen.getByText(description));
+    expect(screen.getByText(errorCodeLabel)).toBeVisible();
+    expect(screen.getByText(description)).toBeVisible();
     expect(screen.getByText('Carbon for IBM Products component library'));
     expect(ref.current.classList.contains(blockClass)).toBeTruthy();
     expect(
@@ -92,8 +95,8 @@ describe(componentName, () => {
 
   it('should render the HTTPError403 component', async () => {
     const { container } = render(<HTTPError403 {...defaultProps} />);
-    expect(screen.getByText(errorCodeLabel));
-    expect(screen.getByText(description));
+    expect(screen.getByText(errorCodeLabel)).toBeVisible();
+    expect(screen.getByText(description)).toBeVisible();
     expect(screen.getByText('Carbon for IBM Products component library'));
     expect(ref.current.classList.contains(blockClass)).toBeTruthy();
     expect(
@@ -111,8 +114,8 @@ describe(componentName, () => {
 
   it('should render the HTTPErrorOther component', async () => {
     const { container } = render(<HTTPErrorOther {...defaultProps} />);
-    expect(screen.getByText(errorCodeLabel));
-    expect(screen.getByText(description));
+    expect(screen.getByText(errorCodeLabel)).toBeVisible();
+    expect(screen.getByText(description)).toBeVisible();
     expect(screen.getByText('Carbon for IBM Products component library'));
     expect(ref.current.classList.contains(blockClass)).toBeTruthy();
     expect(

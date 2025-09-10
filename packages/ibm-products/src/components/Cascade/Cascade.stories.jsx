@@ -12,7 +12,7 @@ import { Column } from '@carbon/react';
 import DocsPage from './Cascade.docs-page';
 
 export default {
-  title: 'IBM Products/Patterns/Cascade',
+  title: 'Utilities/Cascade',
   component: Cascade,
   tags: ['autodocs'],
   parameters: {

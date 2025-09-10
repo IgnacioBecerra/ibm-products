@@ -5,7 +5,7 @@
 // LICENSE file in the root directory of this source tree.
 //
 
-import React, { ForwardedRef, ReactNode, forwardRef } from 'react';
+import React, { forwardRef } from 'react';
 import PropTypes from 'prop-types';
 import { AddSelectBody } from './AddSelectBody';
 import { normalize, getGlobalFilterValues } from './add-select-utils';
@@ -48,17 +48,14 @@ export interface AddSelectProps {
   /**
    * portal target for the all tags modal
    */
-  portalTarget?: ReactNode;
+  portalTarget?: HTMLElement;
   searchResultsTitle?: string;
   sortByLabel?: string;
   title: string;
 }
 
-export const AddSelect = forwardRef(
-  (
-    { items, globalFilters, ...props }: AddSelectProps,
-    ref: ForwardedRef<HTMLDivElement>
-  ) => {
+export const AddSelect = forwardRef<HTMLDivElement, AddSelectProps>(
+  ({ items = { entries: [] }, globalFilters, ...props }, ref) => {
     const useNormalizedItems = !!items.entries.find((item) => item.children);
     const normalizedItems = useNormalizedItems ? normalize(items) : null;
     const globalFilterOpts =
@@ -125,6 +122,7 @@ AddSelect.propTypes = {
       id: PropTypes.string,
       label: PropTypes.string,
       options: PropTypes.array,
+      multiSelect: PropTypes.bool,
     }),
     sortBy: PropTypes.array,
     filterBy: PropTypes.array,
@@ -172,28 +170,11 @@ AddSelect.propTypes = {
   /**
    * portal target for the all tags modal
    */
+  /**@ts-ignore */
   portalTarget: PropTypes.node,
   searchResultsTitle: PropTypes.string,
   sortByLabel: PropTypes.string,
   title: PropTypes.string.isRequired,
-};
-
-AddSelect.defaultProps = {
-  closeIconDescription: '',
-  description: '',
-  itemsLabel: '',
-  items: {
-    entries: [],
-  },
-  multi: false,
-  noResultsDescription: '',
-  noResultsTitle: '',
-  onClose: () => {},
-  onCloseButtonText: '',
-  onSubmit: () => {},
-  onSubmitButtonText: '',
-  open: false,
-  title: '',
 };
 
 AddSelect.displayName = componentName;

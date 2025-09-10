@@ -1,38 +1,41 @@
 /**
- * Copyright IBM Corp. 2021, 2022
+ * Copyright IBM Corp. 2021, 2025
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
  */
 
 import React, {
-  forwardRef,
-  useState,
-  useRef,
-  createContext,
-  useEffect,
-  ReactNode,
+  Dispatch,
   ForwardedRef,
   PropsWithChildren,
-  Dispatch,
+  ReactNode,
   SetStateAction,
+  createContext,
+  forwardRef,
+  useEffect,
+  useRef,
+  useState,
 } from 'react';
-import PropTypes from 'prop-types';
-import cx from 'classnames';
-import { Form } from '@carbon/react';
-import { TearsheetShell } from '../Tearsheet/TearsheetShell';
-import { CreateInfluencer } from '../CreateInfluencer';
-import { pkg } from '../../settings';
 import {
-  usePreviousValue,
-  useValidCreateStepCount,
-  useResetCreateComponent,
   useCreateComponentFocus,
   useCreateComponentStepChange,
+  usePreviousValue,
+  useResetCreateComponent,
+  useValidCreateStepCount,
 } from '../../global/js/hooks';
+import { deprecateProp } from '../../global/js/utils/props-helper';
+
+import { CreateInfluencer } from '../CreateInfluencer';
+import { Form } from '@carbon/react';
+import PropTypes from 'prop-types';
+import { TearsheetShell } from '../Tearsheet/TearsheetShell';
+import cx from 'classnames';
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
-import { lastIndexInArray } from '../../global/js/utils/lastIndexInArray';
 import { getNumberOfHiddenSteps } from '../../global/js/utils/getNumberOfHiddenSteps';
+import { lastIndexInArray } from '../../global/js/utils/lastIndexInArray';
+import { pkg } from '../../settings';
+import { ExperimentalSecondarySubmit } from './CreateTearsheetStep';
 
 const componentName = 'CreateTearsheet';
 const blockClass = `${pkg.prefix}--tearsheet-create`;
@@ -43,6 +46,9 @@ const blockClass = `${pkg.prefix}--tearsheet-create`;
 
 export interface StepsContextType {
   currentStep: number;
+  setExperimentalSecondarySubmit: Dispatch<
+    SetStateAction<ExperimentalSecondarySubmit | undefined>
+  >;
   setIsDisabled: Dispatch<SetStateAction<boolean>>;
   setOnPrevious: (fn: any) => void;
   setOnNext: (fn: any) => void;
@@ -56,7 +62,7 @@ export const StepsContext = createContext<StepsContextType | null>(null);
 // to let it know what number it is in the sequence of steps
 export const StepNumberContext = createContext(-1);
 
-interface CreateTearsheetProps extends PropsWithChildren {
+export interface CreateTearsheetProps extends PropsWithChildren {
   /**
    * The back button text
    */
@@ -78,14 +84,36 @@ interface CreateTearsheetProps extends PropsWithChildren {
   className?: string;
 
   /**
-   * A description of the flow, displayed in the header area of the tearsheet.
+   * The experimentalSecondary submit button text
    */
-  description?: ReactNode;
+  experimentalSecondarySubmitText?: string;
+
+  /**
+   * Optional prop that allows you to pass any component.
+   */
+  decorator?: ReactNode;
 
   /**
    * Specifies elements to focus on first on render.
    */
   firstFocusElement?: string;
+
+  /**
+   * A description of the flow, displayed in the header area of the tearsheet.
+   */
+  description?: ReactNode;
+
+  /**
+   * Specify a CSS selector that matches the DOM element that should be
+   * focused when the Modal opens.
+   */
+  selectorPrimaryFocus?: string;
+
+  /**
+   * To indicate an error occurred in the Tearsheet step
+   * Used to pass this value to TearsheetShell
+   */
+  hasError?: boolean;
 
   /**
    * Used to set the size of the influencer
@@ -130,11 +158,6 @@ interface CreateTearsheetProps extends PropsWithChildren {
   open?: boolean;
 
   /**
-   *  **Experimental:** Provide a `Slug` component to be rendered inside the `Tearsheet` component
-   */
-  slug?: ReactNode;
-
-  /**
    * The submit button text
    */
   submitButtonText: string;
@@ -152,6 +175,12 @@ interface CreateTearsheetProps extends PropsWithChildren {
    * to allow an action bar navigation or breadcrumbs to also show through.
    */
   verticalPosition?: 'normal' | 'lower';
+
+  // Deprecated props
+  /**
+   * @deprecated Property replaced by `decorator`
+   */
+  slug?: ReactNode;
 }
 
 interface Step {
@@ -170,7 +199,10 @@ export let CreateTearsheet = forwardRef(
       cancelButtonText,
       children,
       className,
+      experimentalSecondarySubmitText,
+      firstFocusElement,
       description,
+      hasError,
       influencerWidth = 'narrow',
       initialStep,
       label,
@@ -178,8 +210,9 @@ export let CreateTearsheet = forwardRef(
       onClose,
       onRequestSubmit,
       open,
-      firstFocusElement,
-      slug,
+      selectorPrimaryFocus,
+      slug: deprecated_slug,
+      decorator,
       submitButtonText,
       title,
       verticalPosition = 'normal',
@@ -201,7 +234,8 @@ export let CreateTearsheet = forwardRef(
     const [stepData, setStepData] = useState<Step[]>([]);
     const [firstIncludedStep, setFirstIncludedStep] = useState(1);
     const [lastIncludedStep, setLastIncludedStep] = useState<number>();
-
+    const [experimentalSecondarySubmit, setExperimentalSecondarySubmit] =
+      useState<ExperimentalSecondarySubmit>();
     const previousState = usePreviousValue({ currentStep, open });
     const contentRef = useRef<HTMLDivElement>(null);
 
@@ -210,6 +244,7 @@ export let CreateTearsheet = forwardRef(
         stepData.findIndex((item) => item?.shouldIncludeStep) + 1;
       const lastItem = lastIndexInArray(stepData, 'shouldIncludeStep', true);
       if (firstItem !== firstIncludedStep) {
+        setCurrentStep(firstItem);
         setFirstIncludedStep(firstItem);
       }
       if (lastItem !== lastIncludedStep) {
@@ -221,10 +256,8 @@ export let CreateTearsheet = forwardRef(
           initialStep
         );
         setCurrentStep(Number(initialStep + numberOfHiddenSteps));
-      } else {
-        setCurrentStep(firstIncludedStep);
       }
-    }, [stepData, firstIncludedStep, lastIncludedStep, initialStep, open]);
+    }, [firstIncludedStep, initialStep, lastIncludedStep, open, stepData]);
 
     useCreateComponentFocus({
       previousState,
@@ -270,6 +303,10 @@ export let CreateTearsheet = forwardRef(
       nextButtonText,
       isSubmitting,
       componentBlockClass: blockClass,
+      experimentalSecondarySubmit,
+      experimentalSecondarySubmitText: experimentalSecondarySubmit?.labelText
+        ? experimentalSecondarySubmit.labelText
+        : experimentalSecondarySubmitText,
       setCreateComponentActions: setCreateTearsheetActions,
     });
 
@@ -290,17 +327,26 @@ export let CreateTearsheet = forwardRef(
           onClose,
           open,
           size: 'wide',
-          slug,
+          decorator: decorator || deprecated_slug,
           title,
           verticalPosition,
           closeIconDescription: '',
         }}
+        currentStep={currentStep}
+        hasError={hasError}
+        selectorPrimaryFocus={selectorPrimaryFocus}
       >
         <div className={`${blockClass}__content`} ref={contentRef}>
-          <Form aria-label={title}>
+          <Form
+            aria-label={title}
+            onSubmit={(e: React.FormEvent<HTMLFormElement>) =>
+              e.preventDefault()
+            }
+          >
             <StepsContext.Provider
               value={{
                 currentStep,
+                setExperimentalSecondarySubmit,
                 setIsDisabled,
                 setOnPrevious: (fn) => setOnPrevious(() => fn),
                 setOnNext: (fn) => setOnNext(() => fn),
@@ -309,11 +355,13 @@ export let CreateTearsheet = forwardRef(
                 stepData,
               }}
             >
-              {React.Children.map(children, (child, index) => (
-                <StepNumberContext.Provider value={index + 1}>
-                  {child}
-                </StepNumberContext.Provider>
-              ))}
+              {React.Children.toArray(children)
+                .filter(Boolean)
+                .map((child, index) => (
+                  <StepNumberContext.Provider value={index + 1} key={index}>
+                    {child}
+                  </StepNumberContext.Provider>
+                ))}
             </StepsContext.Provider>
           </Form>
         </div>
@@ -329,6 +377,12 @@ CreateTearsheet = pkg.checkComponentEnabled(CreateTearsheet, componentName);
 // is used in preference to relying on function.name.
 CreateTearsheet.displayName = componentName;
 
+const deprecatedProps = {
+  /**
+   *  @deprecated Property replaced by `decorator`
+   */
+  slug: deprecateProp(PropTypes.node, 'Property replaced by `decorator`'),
+};
 // Note that the descriptions here should be kept in sync with those for the
 // corresponding props for TearsheetNarrow and TearsheetShell components.
 CreateTearsheet.propTypes = {
@@ -353,14 +407,30 @@ CreateTearsheet.propTypes = {
   className: PropTypes.string,
 
   /**
+   *  Optional prop that allows you to pass any component.
+   */
+  decorator: PropTypes.node,
+
+  /**
    * A description of the flow, displayed in the header area of the tearsheet.
    */
   description: PropTypes.node,
 
   /**
+   * The experimentalSecondary submit button text
+   */
+  experimentalSecondarySubmitText: PropTypes.string,
+
+  /**
    * Specifies elements to focus on first on render.
    */
   firstFocusElement: PropTypes.string,
+
+  /**
+   * To indicate an error occurred in the Tearsheet step
+   * Used to pass this value to TearsheetShell
+   */
+  hasError: PropTypes.bool,
 
   /**
    * Used to set the size of the influencer
@@ -405,9 +475,10 @@ CreateTearsheet.propTypes = {
   open: PropTypes.bool,
 
   /**
-   *  **Experimental:** Provide a `Slug` component to be rendered inside the `Tearsheet` component
+   * Specify a CSS selector that matches the DOM element that should be
+   * focused when the Modal opens.
    */
-  slug: PropTypes.node,
+  selectorPrimaryFocus: PropTypes.string,
 
   /**
    * The submit button text
@@ -427,4 +498,5 @@ CreateTearsheet.propTypes = {
    * to allow an action bar navigation or breadcrumbs to also show through.
    */
   verticalPosition: PropTypes.oneOf(['normal', 'lower']),
+  ...deprecatedProps,
 };

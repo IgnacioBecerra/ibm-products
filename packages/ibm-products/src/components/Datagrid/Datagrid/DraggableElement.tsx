@@ -1,11 +1,10 @@
-// @flow
-/*
- * Licensed Materials - Property of IBM
- * 5724-Q36
- * (c) Copyright IBM Corp. 2021
- * US Government Users Restricted Rights - Use, duplication or disclosure
- * restricted by GSA ADP Schedule Contract with IBM Corp.
+/**
+ * Copyright IBM Corp. 2024
+ *
+ * This source code is licensed under the Apache-2.0 license found in the
+ * LICENSE file in the root directory of this source tree.
  */
+
 import React, { PropsWithChildren, ReactNode } from 'react';
 import PropTypes from 'prop-types';
 import { Draggable as DraggableIcon, Locked } from '@carbon/react/icons';
@@ -22,12 +21,17 @@ interface DraggableElementProps extends PropsWithChildren {
   classList?: string;
   disabled?: boolean;
   id: string;
+  elementId?: string;
   isSticky?: boolean;
   selected?: boolean;
 }
 
+/**
+ * Single row in the DraggableItemsList used by CustomizeColumnsTearsheet.
+ */
 const DraggableElement = ({
   id,
+  elementId,
   children,
   classList,
   disabled,
@@ -47,18 +51,37 @@ const DraggableElement = ({
     id,
   });
 
+  // Most of the attributes (ex: role, tabIndex, aria-disabled) are unnecessary for a <button>, so just get the ones we need.
+  const { 'aria-pressed': ariaPressed, 'aria-describedby': ariaDescribedby } =
+    attributes;
+
+  const dragHandle = isSticky ? (
+    <div
+      className={cx(
+        {
+          disabled,
+        },
+        `${blockClass}__draggable-handleStyle`
+      )}
+    >
+      <Locked size={16} />{' '}
+    </div>
+  ) : (
+    <button
+      className={`${blockClass}__draggable-handleStyle`}
+      type="button"
+      aria-label={ariaLabel}
+      aria-describedby={ariaDescribedby}
+      aria-pressed={ariaPressed}
+      {...listeners}
+    >
+      <DraggableIcon size={16} />
+    </button>
+  );
+
   const content = (
     <>
-      <div
-        className={cx(
-          {
-            disabled,
-          },
-          `${blockClass}__draggable-handleStyle`
-        )}
-      >
-        {isSticky ? <Locked size={16} /> : <DraggableIcon size={16} />}
-      </div>
+      {dragHandle}
       {children}
     </>
   );
@@ -67,7 +90,6 @@ const DraggableElement = ({
     transform: !disabled ? CSS.Transform.toString(transform) : undefined,
     transition,
   };
-
   return (
     <li
       className={cx(classList, `${blockClass}__draggable-handleHolder`, {
@@ -75,25 +97,11 @@ const DraggableElement = ({
         [`${blockClass}__draggable-handleHolder--sticky`]: isSticky,
         [`${blockClass}__draggable-handleHolder--dragging`]: isDragging,
       })}
-      id={id}
+      id={elementId ? elementId : id}
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
-      aria-selected={selected}
-      role="option"
     >
-      <span className={`${blockClass}__shared-ui--assistive-text`}>
-        {ariaLabel}
-      </span>
-      <div
-        className={cx(
-          {
-            [`${blockClass}__draggable-handleStyle`]: !disabled,
-          },
-          [`${blockClass}__draggable-handleHolder-droppable`]
-        )}
-      >
+      <div className={cx([`${blockClass}__draggable-handleHolder-droppable`])}>
         {content}
       </div>
     </li>
@@ -105,6 +113,7 @@ DraggableElement.propTypes = {
   children: PropTypes.element.isRequired,
   classList: PropTypes.string,
   disabled: PropTypes.bool,
+  elementId: PropTypes.string,
   id: PropTypes.string.isRequired,
   isSticky: PropTypes.bool,
   selected: PropTypes.bool,

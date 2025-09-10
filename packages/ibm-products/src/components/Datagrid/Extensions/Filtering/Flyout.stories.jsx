@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 import { Datagrid } from '../../index';
 import styles from '../../_storybook-styles.scss?inline';
 import { DocsPage } from './Filtering.docs-page';
@@ -15,10 +15,10 @@ import { handleFilterTagLabelText } from '../../utils/handleFilterTagLabelText';
 import { multiSelectProps } from './Panel.stories';
 import { FilteringUsage } from '../../utils/FilteringUsage';
 import { getDateFormat } from '../../utils/getDateFormat';
-import { filterProps } from './Panel.stories';
+import { getFilterProps } from './Panel.stories';
 
 export default {
-  title: 'IBM Products/Components/Datagrid/Filtering/Flyout',
+  title: 'Deprecated/Datagrid/Filtering/Flyout',
   component: Datagrid,
   tags: ['autodocs'],
   parameters: {
@@ -165,6 +165,7 @@ FlyoutBatch.args = {
     primaryActionLabel: 'Apply',
     secondaryActionLabel: 'Cancel',
     flyoutIconDescription: 'Open filters',
+    align: 'bottom',
     onFlyoutOpen: action('onFlyoutOpen'),
     onFlyoutClose: action('onFlyoutClose'),
     filters,
@@ -193,6 +194,7 @@ FlyoutInstant.args = {
     primaryActionLabel: 'Apply',
     secondaryActionLabel: 'Cancel',
     flyoutIconDescription: 'Open filters',
+    align: 'bottom',
     onFlyoutOpen: action('onFlyoutOpen'),
     onFlyoutClose: action('onFlyoutClose'),
     filters,
@@ -224,5 +226,5 @@ FlyoutWithInitialFilters.args = {
   emptyStateTitle: 'No filters match',
   emptyStateDescription:
     'Data was not found with the current filters applied. Change filters or clear filters to see other results.',
-  filterProps,
+  filterProps: getFilterProps(),
 };

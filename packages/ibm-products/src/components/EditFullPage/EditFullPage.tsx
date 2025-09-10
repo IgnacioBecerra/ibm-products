@@ -6,14 +6,13 @@
  */
 
 // Import portions of React that are needed.
-import React, { ReactNode, ForwardedRef } from 'react';
+import React, { ForwardedRef, ReactNode } from 'react';
 
 // Other standard imports.
 import PropTypes from 'prop-types';
 import cx from 'classnames';
-
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
-import { pkg /*, carbon */ } from '../../settings';
+import { pkg } from '../../settings';
 
 // Carbon and package components we use.
 /* TODO: @import(s) of carbon components and other package components. */
@@ -33,7 +32,7 @@ const componentName = 'EditFullPage';
 // Default values should be provided when the component needs to make a choice
 // or assumption when a prop is not supplied.
 
-interface EditFullPageProps {
+export interface EditFullPageProps {
   /**
    * Provide an optional class to be applied to the containing node.
    */
@@ -49,8 +48,10 @@ interface EditFullPageProps {
 // };
 
 /**
+ * **This component is deprecated.** <br>
  * Use when settings on a page need to always be shown in edit mode, or when the context of the page is needed to make several changes.
  * See usage guidance for further details.
+ * @deprecated
  */
 export let EditFullPage = React.forwardRef(
   (
@@ -90,6 +91,12 @@ export let EditFullPage = React.forwardRef(
     );
   }
 );
+
+/**@ts-ignore*/
+EditFullPage.deprecated = {
+  level: 'warn',
+  details: `This component is deprecated and will be removed in the next major version.`,
+};
 
 // Return a placeholder if not released and not enabled by feature flag
 EditFullPage = pkg.checkComponentEnabled(EditFullPage, componentName);

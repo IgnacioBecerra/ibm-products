@@ -8,12 +8,17 @@
 import React from 'react';
 import { HTTPError403 } from '.';
 import { StoryDocsPage } from '../../../global/js/utils/StoryDocsPage';
+import { Annotation } from '../../../../.storybook/Annotation';
+import styles from '../_storybook-styles.scss?inline';
+
+const storyClass = 'http-error-stories';
 
 export default {
-  title: 'IBM Products/Patterns/HTTP errors/HTTPError403',
+  title: 'Deprecated/HTTP errors/HTTPError403',
   component: HTTPError403,
   tags: ['autodocs'],
   parameters: {
+    styles,
     docs: {
       page: () => (
         <StoryDocsPage altGuidelinesHref="https://pages.github.ibm.com/cdai-design/pal/patterns/http-errors/usage#403-error" />
@@ -25,11 +30,26 @@ export default {
 
 const Template = (args) => {
   return (
-    <HTTPError403
-      {...args}
-      // TODO: handle events with action or local handler
-      // onTodo={action('onTodo log action')}
-    />
+    <Annotation
+      type="deprecation-notice"
+      text={
+        <div>
+          This component is deprecated and will be removed in the next major
+          version. Please migrate to{' '}
+          <a href="https://ibm-products.carbondesignsystem.com/?path=/docs/ibm-products-patterns-full-page-error-fullpageerror--docs">
+            FullPageError
+          </a>{' '}
+          by running{' '}
+          <code>
+            npx @carbon/upgrade migrate ibm-products-update-http-errors --write
+          </code>
+        </div>
+      }
+    >
+      <div className={`${storyClass}__viewport`}>
+        <HTTPError403 {...args} />
+      </div>
+    </Annotation>
   );
 };
 

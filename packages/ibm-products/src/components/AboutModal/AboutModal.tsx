@@ -12,14 +12,16 @@ import {
   ModalFooter,
   ModalHeader,
   Theme,
+  unstable_FeatureFlags as FeatureFlags,
 } from '@carbon/react';
 // Import portions of React that are needed.
-import React, { ReactNode, useEffect, useRef } from 'react';
+import React, { MutableRefObject, ReactNode, useEffect, useRef } from 'react';
 
 // Other standard imports.
 import PropTypes from 'prop-types';
 import cx from 'classnames';
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
+import { useFocus } from '../../global/js/hooks/useFocus';
 import { pkg } from '../../settings';
 import { usePortalTarget } from '../../global/js/hooks/usePortalTarget';
 import uuidv4 from '../../global/js/utils/uuidv4';
@@ -28,79 +30,73 @@ import uuidv4 from '../../global/js/utils/uuidv4';
 const blockClass = `${pkg.prefix}--about-modal`;
 const componentName = 'AboutModal';
 
-interface AboutModalProps {
+export interface AboutModalProps {
   /**
-   * If you are legally required to display logos of technologies used
-   * to build your product you can provide this in the additionalInfo.
-   * Additional information will be displayed in the footer.
+   * Provide additional detail for the modal footer, such as logos of
+   * technologies used in the product, legally required for some products
    */
   additionalInfo?: ReactNode;
 
   /**
-   * Provide an optional class to be applied to the modal root node.
+   * Specify an optional className to be applied to the modal root node
    */
   className?: string;
 
   /**
-   * The accessibility title for the close icon.
+   * Provide an accessible name for the close icon
    */
   closeIconDescription: string;
 
   /**
-   * Subhead text providing any relevant product disclaimers including
-   * legal information (optional)
+   * Provide any relevant product disclaimers or legal information
    */
   content?: ReactNode;
 
   /**
-   * Trademark and copyright information. Displays first year of
-   * product release to current year.
+   * Specify the first year of product release to the current year
    */
   copyrightText: string;
 
   /**
-   * An array of Carbon `Link` component if there are additional information
-   * to call out within the card. The about modal should be used to display
-   * the product information and not where users go to find help (optional)
+   * Provide an array of Carbon `Link`s for additional detail about the
+   * product
    */
   links?: ReactNode[];
 
   /**
-   * A visual symbol used to represent the product.
+   * Provide a visual representation of the product
    */
   logo: ReactNode;
 
   /**
-   * Specifies aria label for AboutModal
+   * Specify an aria-label for the modal
    */
   modalAriaLabel?: string;
 
   /**
-   * Specifies an optional handler which is called when the AboutModal
-   * is closed. Returning `false` prevents the AboutModal from closing.
+   * Specify an optional handler for closing modal. Returning `false`
+   * prevents the modal from closing
    */
   onClose?: () => void | boolean;
 
   /**
-   * Specifies whether the AboutModal is open or not.
+   * Specify whether the modal is currently open
    */
   open?: boolean;
 
   /**
-   * The DOM node the tearsheet should be rendered within. Defaults to document.body.
+   * Provide the DOM node where the modal should be rendered.
+   * Defaults to `document.body`
    */
   portalTarget?: ReactNode;
 
   /**
-   * Header text that provides the product name. The IBM Services logo
-   * consists of two discrete, but required, elements: the iconic
-   * IBM 8-bar logo represented alongside the IBM Services logotype.
-   * Please follow these guidelines to ensure proper execution.
+   * Provide the product name for the modal header
    */
   title: ReactNode;
 
   /**
-   * Text that provides information on the version number of your product.
+   * Provide the product’s version number
    */
   version: string;
 }
@@ -136,9 +132,12 @@ export let AboutModal = React.forwardRef(
     ref: React.Ref<HTMLDivElement>
   ) => {
     const bodyRef = useRef<HTMLElement | null | undefined>(null);
+    const localRef = useRef(undefined);
+    const modalRef = (ref || localRef) as MutableRefObject<HTMLDivElement>;
     const contentRef = useRef<HTMLDivElement>(null);
     const contentId = uuidv4();
     const renderPortalUse = usePortalTarget(portalTargetIn);
+    const { claimFocus } = useFocus(modalRef);
 
     // We can't add a ref directly to the ModalBody, so track it in a ref
     // as the parent of the current bodyRef element
@@ -146,55 +145,67 @@ export let AboutModal = React.forwardRef(
       bodyRef.current = contentRef.current?.parentElement;
     }, [bodyRef]);
 
+    useEffect(() => {
+      if (open) {
+        claimFocus();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [modalRef, open]);
+
     return renderPortalUse(
-      <ComposedModal
-        {
-          // Pass through any other property values as HTML attributes.
-          ...rest
-        }
-        className={cx(
-          blockClass, // Apply the block class to the main HTML element
-          className // Apply any supplied class names to the main HTML element.
-        )}
-        aria-label={modalAriaLabel}
-        {...{ onClose, open, ref, ...getDevtoolsProps(componentName) }}
-      >
-        <div className={`${blockClass}__logo`}>{logo}</div>
-        <ModalHeader
-          className={`${blockClass}__header`}
-          closeModal={onClose}
-          iconDescription={closeIconDescription}
-          label={title}
-          labelClassName={`${blockClass}__title`}
-        />
-        <ModalBody className={`${blockClass}__body`}>
-          <div
-            className={`${blockClass}__body-content`}
-            ref={contentRef}
-            id={contentId}
-          >
-            <div className={`${blockClass}__version`}>{version}</div>
-            {links && links.length > 0 && (
-              <div className={`${blockClass}__links-container`}>
-                {links.map((link, i) => (
-                  <React.Fragment key={i}>{link}</React.Fragment>
-                ))}
-              </div>
-            )}
-            {content && <p className={`${blockClass}__content`}>{content}</p>}
-            {copyrightText && (
-              <p className={`${blockClass}__copyright-text`}>{copyrightText}</p>
-            )}
-          </div>
-        </ModalBody>
-        {additionalInfo && (
-          <Theme theme="g100">
-            <ModalFooter className={`${blockClass}__footer`}>
-              {additionalInfo}
-            </ModalFooter>
-          </Theme>
-        )}
-      </ComposedModal>
+      <FeatureFlags enableExperimentalFocusWrapWithoutSentinels>
+        <ComposedModal
+          {
+            // Pass through any other property values as HTML attributes.
+            ...rest
+          }
+          className={cx(
+            blockClass, // Apply the block class to the main HTML element
+            className // Apply any supplied class names to the main HTML element.
+          )}
+          aria-label={modalAriaLabel}
+          ref={modalRef}
+          {...{ onClose, open, ...getDevtoolsProps(componentName) }}
+        >
+          <div className={`${blockClass}__logo`}>{logo}</div>
+          <ModalHeader
+            className={`${blockClass}__header`}
+            closeModal={onClose}
+            iconDescription={closeIconDescription}
+            label={title}
+            labelClassName={`${blockClass}__title`}
+          />
+          <ModalBody className={`${blockClass}__body`}>
+            <div
+              className={`${blockClass}__body-content`}
+              ref={contentRef}
+              id={contentId}
+            >
+              <div className={`${blockClass}__version`}>{version}</div>
+              {links && links.length > 0 && (
+                <div className={`${blockClass}__links-container`}>
+                  {links.map((link, i) => (
+                    <React.Fragment key={i}>{link}</React.Fragment>
+                  ))}
+                </div>
+              )}
+              {content && <p className={`${blockClass}__content`}>{content}</p>}
+              {copyrightText && (
+                <p className={`${blockClass}__copyright-text`}>
+                  {copyrightText}
+                </p>
+              )}
+            </div>
+          </ModalBody>
+          {additionalInfo && (
+            <Theme theme="g100">
+              <ModalFooter className={`${blockClass}__footer`}>
+                {additionalInfo}
+              </ModalFooter>
+            </Theme>
+          )}
+        </ComposedModal>
+      </FeatureFlags>
     );
   }
 );
@@ -208,77 +219,71 @@ AboutModal.displayName = componentName;
 // See https://www.npmjs.com/package/prop-types#usage.
 AboutModal.propTypes = {
   /**
-   * If you are legally required to display logos of technologies used
-   * to build your product you can provide this in the additionalInfo.
-   * Additional information will be displayed in the footer.
+   * Provide additional detail for the modal footer, such as logos of
+   * technologies used in the product, legally required for some products
    */
   additionalInfo: PropTypes.node,
 
   /**
-   * Provide an optional class to be applied to the modal root node.
+   * Specify an optional className to be applied to the modal root node
    */
   className: PropTypes.string,
 
   /**
-   * The accessibility title for the close icon.
+   * Provide an accessible name for the close icon
    */
   closeIconDescription: PropTypes.string.isRequired,
 
   /**
-   * Subhead text providing any relevant product disclaimers including
-   * legal information (optional)
+   * Provide any relevant product disclaimers or legal information
    */
   content: PropTypes.node,
 
   /**
-   * Trademark and copyright information. Displays first year of
-   * product release to current year.
+   * Specify the first year of product release to the current year
    */
   copyrightText: PropTypes.string.isRequired,
 
   /**
-   * An array of Carbon `Link` component if there are additional information
-   * to call out within the card. The about modal should be used to display
-   * the product information and not where users go to find help (optional)
+   * Provide an array of Carbon `Link`s for additional detail about the
+   * product
    */
   links: PropTypes.arrayOf(PropTypes.element),
 
   /**
-   * A visual symbol used to represent the product.
+   * Provide a visual representation of the product
    */
   logo: PropTypes.node.isRequired,
 
   /**
-   * Specifies aria label for AboutModal
+   * Specify an aria-label for the modal
    */
   modalAriaLabel: PropTypes.string,
 
   /**
-   * Specifies an optional handler which is called when the AboutModal
-   * is closed. Returning `false` prevents the AboutModal from closing.
+   * Specify an optional handler for closing modal. Returning `false`
+   * prevents the modal from closing
    */
   onClose: PropTypes.func,
 
   /**
-   * Specifies whether the AboutModal is open or not.
+   * Specify whether the modal is currently open
    */
   open: PropTypes.bool,
 
   /**
-   * The DOM node the tearsheet should be rendered within. Defaults to document.body.
+   * Provide the DOM node where the modal should be rendered.
+   * Defaults to `document.body`
    */
   portalTarget: PropTypes.node,
 
   /**
-   * Header text that provides the product name. The IBM Services logo
-   * consists of two discrete, but required, elements: the iconic
-   * IBM 8-bar logo represented alongside the IBM Services logotype.
-   * Please follow these guidelines to ensure proper execution.
+   * Provide the product name for the modal header
    */
   title: PropTypes.node.isRequired,
 
   /**
-   * Text that provides information on the version number of your product.
+   * Provide the product’s version number
    */
   version: PropTypes.string.isRequired,
 };

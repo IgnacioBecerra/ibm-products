@@ -9,6 +9,7 @@ import React from 'react';
 import { PropTypes } from 'prop-types';
 import { Checkbox } from '@carbon/react';
 import { isColumnVisible } from './common';
+import { useId } from '../../../../../global/js/utils/useId';
 import DraggableElement from '../../DraggableElement';
 import { pkg } from '../../../../../settings';
 import { getNodeTextContent } from '../../../../../global/js/utils/getNodeTextContent';
@@ -42,6 +43,8 @@ export const DraggableItemsList = ({
   setAriaRegionText,
 }) => {
   const draggableClass = `${blockClass}__draggable-item`;
+  const generatedId = useId();
+
   const visibleCols = columns
     // hide the columns without Header, e.g the sticky actions, spacer
     .filter((colDef) => getNodeTextContent(colDef.Header).trim().length !== 0)
@@ -206,44 +209,29 @@ export const DraggableItemsList = ({
         >
           {visibleCols.map((colDef) => {
             const colHeaderTitle = getNodeTextContent(colDef.Header);
-            const searchString = new RegExp('(' + filterString + ')');
-            const res = filterString.length
-              ? colHeaderTitle.toLowerCase().split(searchString)
-              : null;
-            const firstWord =
-              res !== null
-                ? res[0] === ''
-                  ? res[1].charAt(0).toUpperCase() + res[1].substring(1)
-                  : res[0].charAt(0).toUpperCase() + res[0].substring(1)
-                : null;
-            const highlightedText =
-              res !== null
-                ? res[0] === ''
-                  ? `<strong>${firstWord}</strong>` + res[2]
-                  : firstWord + `<strong>${res[1]}</strong>` + res[2]
-                : colHeaderTitle;
+            // const parts = colHeaderTitle.split(
+            //   new RegExp(`(${filterString})`, 'gi')
+            // );
+            // const highlightedText = parts.map((part) =>
+            //   part.toLowerCase() === filterString.toLowerCase() ? (
+            //     <strong>{part}</strong>
+            //   ) : (
+            //     part
+            //   )
+            // );
             const isFrozenColumn = !!colDef.sticky;
             const isDisabled = colDef.disabled;
+
             const listContents = (
-              <>
-                <Checkbox
-                  checked={isColumnVisible(colDef)}
-                  disabled={isDisabled || isFrozenColumn}
-                  onChange={(_, { checked }) => onSelectColumn(colDef, checked)}
-                  id={`${blockClass}__customization-column-${colDef.id}`}
-                  labelText={colHeaderTitle}
-                  title={colHeaderTitle}
-                  className={`${blockClass}__customize-columns-checkbox`}
-                  hideLabel
-                  onKeyDown={(event) => handleCheckboxKeydown(event, colDef)}
-                />
-                {
-                  <div
-                    dangerouslySetInnerHTML={{ __html: highlightedText }}
-                    className={`${blockClass}__customize-columns-checkbox-visible-label`}
-                  />
-                }
-              </>
+              <Checkbox
+                checked={isColumnVisible(colDef)}
+                disabled={isDisabled || isFrozenColumn}
+                onChange={(_, { checked }) => onSelectColumn(colDef, checked)}
+                id={`${blockClass}__customization-column-${colDef.id}`}
+                labelText={colHeaderTitle} //filterString ? highlightedText : colHeaderTitle
+                className={`${blockClass}__customize-columns-checkbox`}
+                onKeyDown={(event) => handleCheckboxKeydown(event, colDef)}
+              />
             );
 
             return (
@@ -251,6 +239,7 @@ export const DraggableItemsList = ({
                 classList={draggableClass}
                 key={colDef.id}
                 id={colDef.id}
+                elementId={`${colDef.id}-${generatedId}`}
                 disabled={filterString.length > 0 || isFrozenColumn}
                 ariaLabel={colHeaderTitle}
                 isSticky={isFrozenColumn}

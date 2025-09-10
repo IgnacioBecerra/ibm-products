@@ -6,7 +6,13 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react'; // https://testing-library.com/docs/react-testing-library/intro
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  waitFor,
+} from '@testing-library/react'; // https://testing-library.com/docs/react-testing-library/intro
 
 import { pkg } from '../../settings';
 import uuidv4 from '../../global/js/utils/uuidv4';
@@ -28,7 +34,31 @@ const props = {
   children,
 };
 
+let originalAnimateFunction;
+
 describe(componentName, () => {
+  beforeAll(() => {
+    originalAnimateFunction = HTMLDivElement.prototype.animate;
+
+    const obj = {
+      onfinish: () => {},
+    };
+
+    const animationFunction = function () {
+      Promise.resolve().then(async () => {
+        act(() => obj.onfinish());
+      });
+
+      return obj;
+    };
+
+    HTMLDivElement.prototype.animate = animationFunction;
+  });
+
+  afterAll(() => {
+    HTMLDivElement.prototype.animate = originalAnimateFunction;
+  });
+
   it('renders a component OptionsTile', async () => {
     render(<OptionsTile {...props} />);
     expect(screen.getByTestId(dataTestId)).toHaveClass(blockClass);
@@ -83,7 +113,7 @@ describe(componentName, () => {
   it('renders a toggle if props.enabled is set', async () => {
     render(<OptionsTile {...props} enabled />);
 
-    expect(screen.getByRole('switch'));
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
   });
 
   it('renders as static variant if no children are provided', async () => {
@@ -157,16 +187,21 @@ describe(componentName, () => {
   });
 
   it('can be controlled by setting props.open', async () => {
+    const onChange = jest.fn();
     const { container, rerender } = render(
-      <OptionsTile {...props} open={false} />
+      <OptionsTile {...props} open={false} onChange={onChange} />
     );
-    expect(container.querySelector('details').open).toBe(false);
+    const summaryEl = container.querySelector('summary');
+    const detailsEl = container.querySelector('details');
 
-    rerender(<OptionsTile {...props} open={true} />);
-    expect(container.querySelector('details').open).toBe(true);
+    expect(detailsEl.open).toBe(false);
+    fireEvent.click(summaryEl);
+    expect(onChange).toHaveBeenCalled();
 
-    rerender(<OptionsTile {...props} open={false} />);
-    expect(container.querySelector('details').open).toBe(false);
+    rerender(<OptionsTile {...props} open={true} onChange={onChange} />);
+    expect(detailsEl.open).toBe(true);
+    fireEvent.click(summaryEl);
+    expect(onChange).toHaveBeenCalled();
   });
 
   it('supports "lg" size', async () => {
@@ -195,6 +230,20 @@ describe(componentName, () => {
     expect(container.querySelector('details').open).toBe(false);
   });
 
+  it('expands and collapses with usePrefersReducedMotion', async () => {
+    const { container } = render(<OptionsTile {...props} />);
+    const summaryEl = container.querySelector('summary');
+    const detailsEl = container.querySelector('details');
+    fireEvent.click(summaryEl);
+    await waitFor(() => {
+      expect(detailsEl.open).toBe(true);
+    });
+    fireEvent.click(summaryEl);
+    await waitFor(() => {
+      expect(detailsEl.open).toBe(false);
+    });
+  });
+
   it('emits onToggle', async () => {
     const onToggle = jest.fn();
     render(<OptionsTile {...props} enabled onToggle={onToggle} />);
@@ -210,8 +259,19 @@ describe(componentName, () => {
       <OptionsTile onChange={onChangeFn} {...props} />
     );
     fireEvent.click(container.querySelector('summary'));
-    expect(onChangeFn).toHaveBeenCalledTimes(1);
+    expect(onChangeFn).toHaveBeenCalled();
     fireEvent.click(container.querySelector('summary'));
-    expect(onChangeFn).toHaveBeenCalledTimes(2);
+    expect(onChangeFn).toHaveBeenCalled();
+  });
+
+  it('should throw if props.title contains interactive children', async () => {
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(() => {
+      render(<OptionsTile {...props} title={<button>Button</button>} />);
+    }).toThrow();
+
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
   });
 });

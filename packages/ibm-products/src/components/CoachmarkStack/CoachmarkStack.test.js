@@ -5,13 +5,14 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import React from 'react';
-import { render, screen, act } from '@testing-library/react'; // https://testing-library.com/docs/react-testing-library/intro
+import React, { act } from 'react';
+import { render, screen } from '@testing-library/react'; // https://testing-library.com/docs/react-testing-library/intro
 
 import { pkg } from '../../settings';
 import uuidv4 from '../../global/js/utils/uuidv4';
 import { CoachmarkOverlayElement, CoachmarkOverlayElements } from '..';
 import { CoachmarkStack } from '.';
+import userEvent from '@testing-library/user-event';
 
 const blockClass = `${pkg.prefix}--coachmark-stack`;
 const overlayBlockClass = `${pkg.prefix}--coachmark-overlay--stack`;
@@ -52,6 +53,9 @@ const renderCoachmarkStack = ({ ...rest } = {}, children = childrenContent) =>
   render(<CoachmarkStack {...rest}>{children}</CoachmarkStack>);
 
 describe(componentName, () => {
+  beforeEach(() => {
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
   it('renders a component CoachmarkStack', () => {
     renderCoachmarkStack({
       title: 'Coachmark Stack',
@@ -59,6 +63,7 @@ describe(componentName, () => {
       navLinkLabels: ['Label 1', 'Label 2', 'Label 3'],
       tagline: 'Test Tagline',
       'data-testid': dataTestId,
+      closeIconDescription: 'Close',
     });
     expect(screen.getByTestId(dataTestId)).toHaveClass(overlayBlockClass);
   });
@@ -70,6 +75,7 @@ describe(componentName, () => {
       navLinkLabels: ['Label 1', 'Label 2', 'Label 3'],
       tagline: 'Test Tagline',
       'data-testid': dataTestId,
+      closeIconDescription: 'Close',
     });
     await act(async () => {
       await expect(container).toBeAccessible(componentName);
@@ -77,15 +83,18 @@ describe(componentName, () => {
     });
   });
 
-  it(`adds additional props to the containing node and renders children`, () => {
+  it(`adds additional props to the containing node and renders children`, async () => {
     renderCoachmarkStack({
       title: 'Coachmark Stack',
       description: 'Coachmark Stack Description',
       navLinkLabels: ['Label 1', 'Label 2', 'Label 3'],
       tagline: 'Test Tagline',
       'data-testid': dataTestId,
+      closeIconDescription: 'Close',
     });
     screen.getByTestId(dataTestId);
+    const stackButton = screen.getByRole('button', { name: 'Test Tagline' });
+    await act(() => userEvent.click(stackButton));
     screen.getByTestId(childDataTestId);
   });
 
@@ -96,6 +105,7 @@ describe(componentName, () => {
       navLinkLabels: ['Label 1', 'Label 2', 'Label 3'],
       tagline: 'Test Tagline',
       'data-testid': dataTestId,
+      closeIconDescription: 'Close',
       className,
     });
 
@@ -110,6 +120,7 @@ describe(componentName, () => {
       navLinkLabels: ['Label 1', 'Label 2', 'Label 3'],
       tagline: 'Test Tagline',
       'data-testid': dataTestId,
+      closeIconDescription: 'Close',
       ref,
     });
     expect(ref.current).toHaveClass(blockClass);
@@ -122,10 +133,83 @@ describe(componentName, () => {
       navLinkLabels: ['Label 1', 'Label 2', 'Label 3'],
       tagline: 'Test Tagline',
       'data-testid': dataTestId,
+      closeIconDescription: 'Close',
     });
 
     expect(screen.getByTestId(dataTestId)).toHaveDevtoolsAttribute(
       componentName
     );
+  });
+
+  it('calls the onClose prop', async () => {
+    const onClose = jest.fn();
+    renderCoachmarkStack({
+      title: 'Coachmark Stack',
+      description: 'Coachmark Stack Description',
+      navLinkLabels: ['Label 1', 'Label 2', 'Label 3'],
+      tagline: 'Test Tagline',
+      'data-testid': dataTestId,
+      closeIconDescription: 'Close',
+      onClose,
+    });
+    expect(onClose).not.toHaveBeenCalled();
+
+    const coachmarkStackButton = screen.getByRole('button', {
+      name: /Test Tagline/,
+    });
+
+    await act(() => userEvent.click(coachmarkStackButton));
+
+    const closeButton = screen.getAllByRole('button', {
+      name: /Close/,
+    })[0];
+
+    await act(() => userEvent.click(closeButton));
+
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('opens a stacked coachmark', async () => {
+    const onClose = jest.fn();
+    renderCoachmarkStack({
+      title: 'Coachmark Stack',
+      description: 'Coachmark Stack Description',
+      navLinkLabels: ['Label 1', 'Label 2', 'Label 3'],
+      tagline: 'Test Tagline',
+      'data-testid': dataTestId,
+      closeIconDescription: 'Close',
+      onClose,
+    });
+
+    // gets the trigger to open the overlay
+    const coachmarkStackButton = screen.getByRole('button', {
+      name: /Test Tagline/,
+    });
+    await act(() => userEvent.click(coachmarkStackButton));
+
+    // Gets the label button to open a stacked item
+    const labelButton = screen.getByRole('button', {
+      name: /Label 1/,
+    });
+    await act(() => userEvent.click(labelButton));
+
+    // Gets the overlay element
+    const coachmarkOverlay = document.querySelector(
+      `.${pkg.prefix}--coachmark-overlay`
+    );
+
+    // tests to see if the element has the is-stacked class
+    expect(coachmarkOverlay).toHaveClass(
+      `${pkg.prefix}--coachmark-stack-element--is-stacked`
+    );
+
+    // pressing escape should close the stacked item
+    await act(() => userEvent.keyboard('{Escape}'));
+
+    expect(coachmarkOverlay).not.toHaveClass(
+      `${pkg.prefix}--coachmark-stack-element--is-stacked`
+    );
+
+    await act(() => userEvent.keyboard('{Escape}'));
   });
 });

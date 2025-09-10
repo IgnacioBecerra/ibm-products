@@ -6,27 +6,33 @@
  */
 
 import React, { useRef, useState } from 'react';
+import { action } from 'storybook/actions';
+
 // TODO: import action to handle events if required.
-// import { action } from '@storybook/addon-actions';
+// import { action } from 'storybook/actions';
 import { Wikis } from '@carbon/react/icons';
 import { ConditionBuilder } from '.';
 import mdx from './ConditionBuilder.mdx';
 
 import styles from './_storybook-styles.scss?inline';
-import { inputData, inputDataDynamicOptions } from './assets/sampleInput';
 import {
-  sampleDataStructure_sentence,
-  sampleDataStructure_tree,
+  inputData,
+  inputDataDynamicOptions,
+  inputDataForCustomOperator,
+  inputDataWithDisabledProperties,
+} from './assets/sampleInput';
+import {
+  sampleDataStructure_nonHierarchical,
+  sampleDataStructure_Hierarchical,
+  initialStateWithCustomOperators,
 } from './assets/SampleData';
+import uuidv4 from '../../global/js/utils/uuidv4';
+import { HIERARCHICAL_VARIANT, NON_HIERARCHICAL_VARIANT } from './utils/util';
 export default {
-  title: 'IBM Products/Components/ConditionBuilder',
+  title: 'Experimental/ConditionBuilder',
   component: ConditionBuilder,
   tags: ['autodocs'],
 
-  // TODO: Define argTypes for props not represented by standard JS types.
-  // argTypes: {
-  //   egProp: { control: 'color' },
-  // },
   parameters: {
     layout: 'fullscreen',
     styles,
@@ -155,7 +161,7 @@ const getColors = () => {
   ];
 };
 
-const getOptions = async ({ property }) => {
+const getOptions = async (conditionState, { property }) => {
   switch (property) {
     case 'continent':
       return new Promise((resolve) => {
@@ -180,30 +186,69 @@ const getOptions = async ({ property }) => {
   }
 };
 const requiredProps = {
-  startConditionLabel: 'Add Condition',
+  startConditionLabel: 'Add condition',
   popOverSearchThreshold: 4,
-  getConditionState: (rootState) => {},
+  getConditionState: (rootState) => {
+    console.log(rootState);
+  },
 };
 
+const actions = [
+  {
+    id: uuidv4(),
+    label: 'Add item to cart',
+  },
+  { id: uuidv4(), label: 'Proceed item to checkout' },
+];
+
+const translateWithId = (key) => {
+  const translationsObject = {
+    ifText: 'if',
+    addConditionText: 'Add condition',
+    addConditionGroupText: 'Add condition group',
+    addSubgroupText: 'Add subgroup',
+  };
+
+  return translationsObject[key];
+};
 /**
  * TODO: Declare template(s) for one or more scenarios.
  */
 
 const ConditionBuilderTemplate = (args) => {
-  const ref = useRef();
-  const [open, setOpen] = useState(false);
-  return <ConditionBuilder {...args} ref={ref} {...requiredProps} />;
+  const ref = useRef(undefined);
+  return (
+    <ConditionBuilder
+      {...args}
+      ref={ref}
+      {...requiredProps}
+      onAddItem={(type) => action(`onAddItem is triggered , type: ${type}`)()}
+    />
+  );
 };
 
 /**
  * TODO: Declare one or more stories, generally one per design scenario.
  * NB no need for a 'Playground' because all stories have all controls anyway.
  */
+const statementConfigCustom = [
+  {
+    id: 'if',
+    connector: 'and',
+    label: 'if',
+  },
+  {
+    id: 'exclIf',
+    connector: 'or',
+    label: 'excl. if',
+  },
+];
+
 export const conditionBuilder = ConditionBuilderTemplate.bind({});
 conditionBuilder.storyName = 'Condition Builder';
 conditionBuilder.args = {
   inputConfig: inputData,
-  variant: 'sentence',
+  variant: NON_HIERARCHICAL_VARIANT,
 };
 
 export const conditionBuilderDynamicOptions = ConditionBuilderTemplate.bind({});
@@ -211,7 +256,7 @@ conditionBuilderDynamicOptions.storyName = 'With dynamic options';
 conditionBuilderDynamicOptions.args = {
   inputConfig: inputDataDynamicOptions,
   getOptions: getOptions,
-  variant: 'sentence',
+  variant: NON_HIERARCHICAL_VARIANT,
 };
 
 export const conditionBuilderWithInitialState = ConditionBuilderTemplate.bind(
@@ -219,22 +264,86 @@ export const conditionBuilderWithInitialState = ConditionBuilderTemplate.bind(
 );
 conditionBuilderWithInitialState.storyName = 'With initial state';
 conditionBuilderWithInitialState.args = {
-  initialState: sampleDataStructure_sentence,
+  initialState: {
+    state: sampleDataStructure_nonHierarchical,
+    enabledDefault: true,
+  },
   inputConfig: inputData,
-  variant: 'sentence',
+  variant: NON_HIERARCHICAL_VARIANT,
+  translateWithId: translateWithId,
 };
 
-export const conditionBuilderTree = ConditionBuilderTemplate.bind({});
-conditionBuilderTree.storyName = 'Condition Builder(Tree)';
-conditionBuilderTree.args = {
-  inputConfig: inputData,
-  variant: 'tree',
-};
-export const conditionBuilderWithInitialStateTree =
+export const conditionBuilderWithCustomStatements =
   ConditionBuilderTemplate.bind({});
-conditionBuilderWithInitialStateTree.storyName = 'With initial state(Tree)';
-conditionBuilderWithInitialStateTree.args = {
-  initialState: sampleDataStructure_tree,
+conditionBuilderWithCustomStatements.storyName =
+  'With Custom statement configuration';
+conditionBuilderWithCustomStatements.args = {
   inputConfig: inputData,
-  variant: 'tree',
+  variant: NON_HIERARCHICAL_VARIANT,
+  translateWithId: translateWithId,
+  statementConfigCustom: statementConfigCustom,
+};
+
+export const conditionBuilderWithCustomOperators =
+  ConditionBuilderTemplate.bind({});
+conditionBuilderWithCustomOperators.storyName =
+  'With Custom operator configuration';
+conditionBuilderWithCustomOperators.args = {
+  inputConfig: inputDataForCustomOperator,
+  initialState: {
+    state: initialStateWithCustomOperators,
+    enabledDefault: true,
+  },
+  variant: NON_HIERARCHICAL_VARIANT,
+  translateWithId: translateWithId,
+};
+
+export const conditionBuilderWithDisabledProperties =
+  ConditionBuilderTemplate.bind({});
+conditionBuilderWithDisabledProperties.storyName = 'With disabled properties';
+conditionBuilderWithDisabledProperties.args = {
+  inputConfig: inputDataWithDisabledProperties,
+
+  variant: NON_HIERARCHICAL_VARIANT,
+};
+
+export const conditionBuilderWithActions = ConditionBuilderTemplate.bind({});
+conditionBuilderWithActions.storyName = 'With Actions';
+conditionBuilderWithActions.args = {
+  inputConfig: inputData,
+  variant: NON_HIERARCHICAL_VARIANT,
+  actions: actions,
+  getActionsState: (actionState) => {
+    console.log('action state', actionState);
+  },
+};
+
+export const conditionBuilderHierarchical = ConditionBuilderTemplate.bind({});
+conditionBuilderHierarchical.storyName = 'Condition Builder (Hierarchical)';
+conditionBuilderHierarchical.args = {
+  inputConfig: inputData,
+  variant: HIERARCHICAL_VARIANT,
+};
+export const conditionBuilderWithInitialStateHierarchical =
+  ConditionBuilderTemplate.bind({});
+conditionBuilderWithInitialStateHierarchical.storyName =
+  'With initial state (Hierarchical)';
+conditionBuilderWithInitialStateHierarchical.args = {
+  initialState: {
+    state: sampleDataStructure_Hierarchical,
+    enabledDefault: false,
+  },
+  inputConfig: inputData,
+  variant: HIERARCHICAL_VARIANT,
+};
+
+export const conditionBuilderWithActionsHierarchical =
+  ConditionBuilderTemplate.bind({});
+conditionBuilderWithActionsHierarchical.storyName =
+  'With Actions (Hierarchical)';
+conditionBuilderWithActionsHierarchical.args = {
+  inputConfig: inputData,
+  variant: HIERARCHICAL_VARIANT,
+  actions: actions,
+  getActionsState: (actionState) => {},
 };

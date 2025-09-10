@@ -19,13 +19,17 @@ import {
   Dropdown,
   DatePicker,
   DatePickerInput,
+  Checkbox,
 } from '@carbon/react';
 import { Edit, CaretSort, ChevronDown, Calendar } from '@carbon/react/icons';
 import { InlineEditButton } from '../InlineEditButton';
 import { pkg } from '../../../../../../settings';
 import cx from 'classnames';
 import { InlineEditContext } from '../InlineEditContext';
-import { usePreviousValue } from '../../../../../../global/js/hooks';
+import {
+  useIsomorphicEffect,
+  usePreviousValue,
+} from '../../../../../../global/js/hooks';
 import { prepareProps } from '../../../../../../global/js/utils/props-helper';
 
 const blockClass = `${pkg.prefix}--datagrid`;
@@ -54,11 +58,11 @@ export const InlineEditCell = ({
   const previousState = usePreviousValue({ editId, activeCellId });
   const { inputProps } = config || {};
 
-  const textInputRef = useRef();
-  const numberInputRef = useRef();
-  const dropdownRef = useRef();
-  const datePickerRef = useRef();
-  const outerButtonElement = useRef();
+  const textInputRef = useRef(undefined);
+  const checkboxRef = useRef(undefined);
+  const numberInputRef = useRef(undefined);
+  const dropdownRef = useRef(undefined);
+  const outerButtonElement = useRef(undefined);
 
   const { rowSize, onDataUpdate } = instance;
   let saveCellData;
@@ -227,7 +231,9 @@ export const InlineEditCell = ({
     const newCellId =
       key === 'Enter'
         ? `column-${columnIndex}-row-${
-            cell.row.index < totalRows - 1 ? cell.row.index + 1 : cell.row.index
+            cell.row.index < totalRows - 1 && type === 'checkbox'
+              ? cell.row.index + 1
+              : cell.row.index
           }`
         : `column-${
             columnIndex < instance.columns.length - 1
@@ -240,9 +246,29 @@ export const InlineEditCell = ({
   const handleKeyDown = (event) => {
     const { key } = event;
     switch (key) {
+      case 'ArrowRight':
+      case 'ArrowLeft':
+      case 'ArrowUp':
+      case 'ArrowDown':
+        if (inEditMode && event.target.type === 'checkbox') {
+          const newCellId = getNewCellId(key);
+          saveCellData(cellValue);
+          setInitialValue(cellValue);
+          dispatch({ type: 'EXIT_EDIT_MODE', payload: newCellId });
+          setInEditMode(false);
+          sendFocusBackToGrid();
+        }
+        break;
       // Save cell contents to data
       case 'Tab':
       case 'Enter': {
+        if (type === 'checkbox') {
+          // Since checkbox doesn't need to click into it to enter `inEditMode` we don't need to check for it
+          const newCellId = getNewCellId(key);
+          dispatch({ type: 'EXIT_EDIT_MODE', payload: newCellId });
+          setInEditMode(false);
+          sendFocusBackToGrid();
+        }
         if (inEditMode) {
           // Dropdown saves are handled in the Dropdown's/DatePicker's onChange prop
           if (type === 'selection' || type === 'date') {
@@ -303,6 +329,16 @@ export const InlineEditCell = ({
       : null;
   };
 
+  useIsomorphicEffect(() => {
+    if (dropdownRef.current && dropdownRef.current.style) {
+      const closestElement = dropdownRef.current.closest(
+        `.${blockClass}__inline-edit--select`
+      );
+      closestElement.style.width = `${cell.column.totalWidth}px`;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dropdownRef.current, cell.column.totalWidth]);
+
   const renderSelectCell = () => {
     const { inputProps } = config || {};
     return (
@@ -312,9 +348,6 @@ export const InlineEditCell = ({
         ariaLabel={cellLabel || 'Dropdown menu options'}
         {...inputProps}
         hideLabel
-        style={{
-          width: cell.column.totalWidth,
-        }}
         className={cx(`${blockClass}__inline-edit--select`, {
           [`${blockClass}__inline-edit--select-${rowSize}`]: rowSize,
         })}
@@ -344,6 +377,7 @@ export const InlineEditCell = ({
           },
         }}
         ref={dropdownRef}
+        autoAlign
       />
     );
   };
@@ -363,10 +397,6 @@ export const InlineEditCell = ({
     }
   };
 
-  const renderRegularCell = () => {
-    return <span {...inputProps} id={cellId}></span>;
-  };
-
   const renderDateCell = () => {
     const datePickerPreparedProps = prepareProps(config.inputProps, [
       'datePickerInputProps',
@@ -376,9 +406,15 @@ export const InlineEditCell = ({
       <DatePicker
         {...datePickerPreparedProps}
         appendTo={outerButtonElement?.current?.parentElement}
-        ref={datePickerRef}
-        style={{
-          width: cell.column.totalWidth,
+        ref={(el) => {
+          if (el && el.style) {
+            el.style.width = `${cell.column.totalWidth}px`;
+            const elementId = `${blockClass}__inline-edit--date-picker--${cell.row.index}`;
+            const element = el.querySelector(`input#${elementId}`);
+            if (element) {
+              element.style.position = 'static';
+            }
+          }
         }}
         datePickerType="single"
         className={cx(`${blockClass}__inline-edit--date`, {
@@ -401,9 +437,6 @@ export const InlineEditCell = ({
       >
         <DatePickerInput
           {...datePickerInputProps}
-          style={{
-            position: 'static',
-          }}
           placeholder={datePickerInputProps?.placeholder || 'mm/dd/yyyy'}
           labelText={datePickerInputProps?.labelText || cellLabel || 'Set date'}
           id={`${blockClass}__inline-edit--date-picker--${cell.row.index}`}
@@ -463,6 +496,29 @@ export const InlineEditCell = ({
     );
   };
 
+  const renderCheckBoxCell = () => {
+    return (
+      <Checkbox
+        labelText={cellLabel || 'Checkbox'}
+        {...inputProps}
+        className={cx(`${blockClass}__inline-edit--outer-cell-checkbox`, {
+          [`${blockClass}__inline-edit--outer-cell-checkbox-focus`]:
+            activeCellId === cellId,
+        })}
+        id={cellId}
+        hideLabel
+        checked={cellValue}
+        onChange={(event, { checked }) => {
+          setCellValue(checked);
+          if (inputProps.onChange) {
+            inputProps.onChange(checked);
+          }
+        }}
+        ref={checkboxRef}
+      />
+    );
+  };
+
   const renderTextInput = () => {
     const { validator } = config || {};
     const isInvalid = validator?.(cellValue);
@@ -487,6 +543,24 @@ export const InlineEditCell = ({
     );
   };
 
+  const getLabel = () => {
+    const checkStaticCell = (val) => {
+      if (typeof val === 'object' && val?.isStaticCell) {
+        return val?.value;
+      }
+    };
+    switch (type) {
+      case 'selection':
+        checkStaticCell(value);
+        return value?.text ?? value;
+      case 'date':
+        checkStaticCell(value);
+        return buildDate(value);
+      default:
+        return checkStaticCell(value) ?? value;
+    }
+  };
+
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
     <div
@@ -494,7 +568,7 @@ export const InlineEditCell = ({
       data-cell-id={cellId}
       data-column-index={columnIndex}
       data-row-index={cell.row.index}
-      data-disabled={disabledCell}
+      data-disabled={disabledCell || nonEditCell}
       data-inline-type={type}
       onClick={!nonEditCell ? handleInlineCellClick : addActiveState}
       onKeyDown={!nonEditCell ? handleKeyDown : null}
@@ -506,18 +580,11 @@ export const InlineEditCell = ({
         [`${blockClass}__static--outer-cell`]: !disabledCell,
       })}
     >
-      {!nonEditCell && !disabledCell && renderRegularCell()}
-      {(!inEditMode || disabledCell) && (
+      {(!inEditMode || disabledCell) && type !== 'checkbox' && (
         <InlineEditButton
           isActiveCell={cellId === activeCellId}
           renderIcon={setRenderIcon()}
-          label={
-            type === 'selection'
-              ? value?.text ?? value
-              : type === 'date'
-              ? buildDate(value)
-              : value
-          }
+          label={getLabel()}
           disabledCell={disabledCell}
           labelIcon={value?.icon || null}
           placeholder={placeholder}
@@ -527,6 +594,7 @@ export const InlineEditCell = ({
           type={type}
         />
       )}
+      {type === 'checkbox' && renderCheckBoxCell()}
       {!nonEditCell && inEditMode && cellId === activeCellId && (
         <>
           {type === 'text' && renderTextInput()}
@@ -554,7 +622,7 @@ InlineEditCell.propTypes = {
   nonEditCell: PropTypes.bool,
   placeholder: PropTypes.string,
   tabIndex: PropTypes.number,
-  type: PropTypes.oneOf(['text', 'number', 'selection', 'date']),
+  type: PropTypes.oneOf(['text', 'number', 'selection', 'date', 'checkbox']),
   value: PropTypes.oneOfType([
     PropTypes.string,
     PropTypes.node,

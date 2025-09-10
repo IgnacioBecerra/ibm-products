@@ -6,22 +6,18 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import {
-  fireEvent,
-  render,
-  screen,
-  act,
-  waitFor,
-} from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expectMultipleError } from '../../global/js/utils/test-helper';
 
-import React from 'react';
-import { Button, TextInput } from '@carbon/react';
+import React, { act } from 'react';
+import { Button, TextInput, AILabel, AILabelContent } from '@carbon/react';
 import { pkg } from '../../settings';
 import uuidv4 from '../../global/js/utils/uuidv4';
 import { SidePanel } from '.';
 import { Add } from '@carbon/react/icons';
+import { unstable_FeatureFlags as FeatureFlags } from '..';
+import { SIDE_PANEL_SIZES } from './constants';
 
 const { prefix } = pkg;
 
@@ -38,6 +34,26 @@ const selectorPageContentValue = '#side-panel-test-page-content';
 const onRequestCloseFn = jest.fn();
 const onUnmountFn = jest.fn();
 
+const sampleAILabel = (
+  <AILabel className="aiLabel-container" size="xs" align="left-start">
+    <AILabelContent>
+      <div>
+        <p className="secondary">AI Explained</p>
+        <h1>84%</h1>
+        <p className="secondary bold">Confidence score</p>
+        <p className="secondary">
+          This is not really Lorem Ipsum but the spell checker did not like the
+          previous text with it&apos;s non-words which is why this unwieldy
+          sentence, should one choose to call it that, here.
+        </p>
+        <hr />
+        <p className="secondary">Model type</p>
+        <p className="bold">Foundation model</p>
+      </div>
+    </AILabelContent>
+  </AILabel>
+);
+
 const renderSidePanel = ({ ...rest } = {}, children = <p>test</p>) =>
   render(
     <SidePanel
@@ -51,6 +67,26 @@ const renderSidePanel = ({ ...rest } = {}, children = <p>test</p>) =>
     >
       {children}
     </SidePanel>
+  );
+
+const renderResizableSidePanel = ({ ...rest } = {}, children = <p>test</p>) =>
+  render(
+    <FeatureFlags enableSidepanelResizer>
+      <SidePanel
+        id="resizable-sidepanel-id"
+        {...{
+          title,
+          open: true,
+          placement: 'right',
+          size: 'md',
+          open: true,
+          onRequestClose: onRequestCloseFn,
+          ...rest,
+        }}
+      >
+        {children}
+      </SidePanel>
+    </FeatureFlags>
   );
 
 const SlideIn = ({
@@ -88,20 +124,6 @@ const SlideIn = ({
 };
 
 describe('SidePanel', () => {
-  const { ResizeObserver } = window;
-
-  beforeEach(() => {
-    window.ResizeObserver = jest.fn().mockImplementation(() => ({
-      observe: jest.fn(),
-      unobserve: jest.fn(),
-      disconnect: jest.fn(),
-    }));
-  });
-
-  afterEach(() => {
-    window.ResizeObserver = ResizeObserver;
-  });
-
   it('renders the side panel', async () => {
     const subtitle = uuidv4();
     const labelText = uuidv4();
@@ -111,8 +133,8 @@ describe('SidePanel', () => {
       labelText,
     });
     expect(screen.queryAllByText(/Test side panel/i)).toBeTruthy();
-    expect(screen.getByText(subtitle));
-    expect(screen.getByText(labelText));
+    expect(screen.getByText(subtitle).textContent).toEqual(subtitle);
+    expect(screen.getByText(labelText).textContent).toEqual(labelText);
   });
 
   it('should render a side panel with an overlay and trigger clickOutside hook when clicked', async () => {
@@ -152,11 +174,9 @@ describe('SidePanel', () => {
     const pageContent = container.querySelector(selectorPageContentValue);
     const style = getComputedStyle(pageContent);
     expect(style.marginInlineStart).toBe('30rem');
-    const closeIconButton = container.querySelector(
-      `.${blockClass}__close-button`
-    );
+    const closeIconButton = screen.getByRole('button', { name: 'Close' });
     await act(() => userEvent.click(closeIconButton));
-    rerender(<SlideIn placement="left" open={false} />);
+    await act(() => rerender(<SlideIn placement="left" open={false} />));
     const updatedStyles = getComputedStyle(pageContent);
     expect(updatedStyles.marginInlineStart).toBe('0');
   });
@@ -166,14 +186,12 @@ describe('SidePanel', () => {
     const pageContent = container.querySelector(selectorPageContentValue);
     const style = getComputedStyle(pageContent);
     expect(style.marginInlineEnd).toBe('30rem');
-    const closeIconButton = container.querySelector(
-      `.${blockClass}__close-button`
-    );
+    const closeIconButton = screen.getByRole('button', { name: 'Close' });
     const outerElement = container.querySelector(`.${blockClass}`);
     await act(() => userEvent.click(closeIconButton));
-    fireEvent.animationStart(outerElement);
-    rerender(<SlideIn placement="right" open={false} />);
-    fireEvent.animationEnd(outerElement);
+    await act(() => fireEvent.animationStart(outerElement));
+    await act(() => rerender(<SlideIn placement="right" open={false} />));
+    await act(() => fireEvent.animationEnd(outerElement));
     const updatedStyles = getComputedStyle(pageContent);
     expect(updatedStyles.marginInlineEnd).toBe('0');
     expect(onUnmountFn).toHaveBeenCalled();
@@ -191,14 +209,14 @@ describe('SidePanel', () => {
     const pageContent = container.querySelector(selectorPageContentValue);
     const style = getComputedStyle(pageContent);
     expect(style.marginInlineEnd).toBe('30rem');
-    const closeIconButton = container.querySelector(
-      `.${blockClass}__close-button`
-    );
+    const closeIconButton = screen.getByRole('button', { name: 'Close' });
     const outerElement = container.querySelector(`.${blockClass}`);
     await act(() => userEvent.click(closeIconButton));
-    fireEvent.animationStart(outerElement);
-    fireEvent.animationEnd(outerElement);
-    rerender(<SlideIn animateTitle={false} placement="right" open={false} />);
+    await act(() => fireEvent.animationStart(outerElement));
+    await act(() => fireEvent.animationEnd(outerElement));
+    await act(() =>
+      rerender(<SlideIn animateTitle={false} placement="right" open={false} />)
+    );
     const updatedStyles = getComputedStyle(pageContent);
     expect(updatedStyles.marginInlineEnd).toBe('0');
   });
@@ -207,25 +225,48 @@ describe('SidePanel', () => {
     const { container, rerender } = renderSidePanel({
       includeOverlay: true,
     });
-    const closeIconButton = container.querySelector(
-      `.${blockClass}__close-button`
-    );
+    const closeIconButton = screen.getByRole('button', { name: 'Close' });
     const overlayElement = container.querySelector(`.${blockClass}__overlay`);
     await act(() => userEvent.click(closeIconButton));
-    rerender(
-      <SidePanel
-        title={title}
-        includeOverlay
-        open={false}
-        onRequestClose={onRequestCloseFn}
-        id="sidepanel-id"
-      >
-        Content
-      </SidePanel>
+    await act(() =>
+      rerender(
+        <SidePanel
+          title={title}
+          includeOverlay
+          open={false}
+          onRequestClose={onRequestCloseFn}
+          id="sidepanel-id"
+        >
+          Content
+        </SidePanel>
+      )
     );
     setTimeout(() => {
       expect(overlayElement).not.toBeInTheDocument();
     }, 250);
+  });
+
+  it('should label text be hidden on scroll on main body', async () => {
+    const subtitle = 'Test label text';
+    const labelText = uuidv4();
+    const { container } = render(
+      <SlideIn
+        subtitle={subtitle}
+        labelText={labelText}
+        animateTitle={true}
+        placement="right"
+        open
+        actionToolbarButtons={[]}
+      />
+    );
+    const mainBody = container.querySelector(`.${blockClass}__inner-content`);
+    expect(mainBody).toBeTruthy();
+    const subTitle = screen.getByText('Test label text');
+    const initialMarginTop = window.getComputedStyle(subTitle).marginTop;
+    fireEvent.scroll(mainBody, { target: { scrollTop: 300 } });
+    expect(mainBody.scrollTop).toBe(300);
+    const updatedMarginTop = window.getComputedStyle(subTitle).marginTop;
+    expect(updatedMarginTop).not.toBe(initialMarginTop);
   });
 
   it('should render one primary action button', async () => {
@@ -299,35 +340,56 @@ describe('SidePanel', () => {
     ).toBeTruthy();
   });
 
-  it('rejects too many buttons using the custom validator', async () =>
-    expectMultipleError(
-      [
-        'Invalid prop `actions` supplied to `SidePanel`: you cannot have more than three actions',
-        'Invalid prop `actions` supplied to `ActionSet`: you cannot have more than three actions',
-        'Invalid prop `kind` of value `danger--tertiary` supplied to `ActionSetButton`',
-      ],
-      () =>
-        renderSidePanel({
-          actions: [
-            { kind: 'primary' },
-            { kind: 'primary' },
-            { kind: 'ghost' },
-            { kind: 'ghost' },
-            { kind: 'danger--tertiary' },
-          ],
-        })
-    ));
-
   it('should render navigation button', async () => {
     const { container } = renderSidePanel({
       currentStep: 1,
     });
-    const navigationAction = container.querySelector(
-      `.${blockClass}__navigation-back-button`
-    );
+    const navigationAction = screen.getByRole('button', { name: 'Back' });
     expect(navigationAction).toBeTruthy();
   });
 
+  it('should have AI Label when it is passed through slug', () => {
+    const { container } = renderSidePanel({
+      slug: sampleAILabel,
+    });
+    expect(container.querySelector('.aiLabel-container')).toBeTruthy();
+  });
+
+  it('should not have a ai label container when a it is not passed', () => {
+    const { container } = renderSidePanel();
+    expect(container.querySelector('.aiLabel-container')).toBe(null);
+  });
+
+  it('should have AI Label when it is passed', () => {
+    const { container } = renderSidePanel({
+      aiLabel: sampleAILabel,
+    });
+    expect(container.querySelector('.aiLabel-container')).toBeTruthy();
+  });
+
+  it('should have AI Label when it is passed to decorator', () => {
+    const { container } = renderSidePanel({
+      decorator: sampleAILabel,
+    });
+    expect(container.querySelector('.aiLabel-container')).toBeTruthy();
+  });
+
+  it('should throw console warning if labelText passed without Title', () => {
+    const consoleWarnSpy = jest
+      .spyOn(console, 'warn')
+      .mockImplementation(() => {});
+    renderSidePanel({
+      title: '',
+      labelText: 'Side Panel test label',
+    });
+    expect(consoleWarnSpy).toHaveBeenCalled();
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `The prop \`labelText\` was provided without a \`title\`. It is required to have a \`title\` when using the \`labelText\` prop.`
+      )
+    ); // Adjust the expected message
+    consoleWarnSpy.mockRestore();
+  });
   it('should click the navigation button', async () => {
     const { fn } = jest;
     const { click } = userEvent;
@@ -408,10 +470,17 @@ describe('SidePanel', () => {
   it('should call the onRequestClose event handler', async () => {
     const { click } = userEvent;
     const { container } = renderSidePanel();
-    const closeIconButton = container.querySelector(
-      `.${blockClass}__close-button`
-    );
+    const closeIconButton = screen.getByRole('button', { name: 'Close' });
     await act(() => click(closeIconButton));
+    expect(onRequestCloseFn).toHaveBeenCalled();
+  });
+
+  it('should call the onRequestClose event handler on pressing Esc key', async () => {
+    const { keyboard } = userEvent;
+    renderSidePanel();
+    await act(async () => {
+      await keyboard('{Escape}');
+    });
     expect(onRequestCloseFn).toHaveBeenCalled();
   });
 
@@ -463,9 +532,7 @@ describe('SidePanel', () => {
     );
     const outerElement = container.querySelector(`.${blockClass}`);
     fireEvent.animationEnd(outerElement);
-    const closeIconButton = container.querySelector(
-      `.${blockClass}__close-button`
-    );
+    const closeIconButton = screen.getByRole('button', { name: 'Close' });
     await waitFor(() => {
       expect(closeIconButton).toHaveFocus();
     });
@@ -486,7 +553,7 @@ describe('SidePanel', () => {
     const mockCloseFn = jest.fn();
 
     const DummyComponent = ({ open }) => {
-      const buttonRef = React.useRef();
+      const buttonRef = React.useRef(undefined);
 
       return (
         <div>
@@ -510,9 +577,7 @@ describe('SidePanel', () => {
     const launchButtonEl = getByText('Open');
     expect(launchButtonEl).toBeInTheDocument();
 
-    const closeIconButton = container.querySelector(
-      `.${blockClass}__close-button`
-    );
+    const closeIconButton = screen.getByRole('button', { name: 'Close' });
     await act(() => userEvent.click(closeIconButton));
     expect(mockCloseFn).toHaveBeenCalledTimes(1);
 
@@ -521,5 +586,122 @@ describe('SidePanel', () => {
     await waitFor(() => {
       expect(launchButtonEl).toHaveFocus();
     });
+  });
+
+  it('should render a resizer, when enabled via flag', async () => {
+    const { container } = renderResizableSidePanel();
+    const resizer = container.querySelector(`.${blockClass}__resizer`);
+    expect(resizer).toBeTruthy();
+  });
+
+  it('should not render a resizer, when not enabled via flag', async () => {
+    const { container } = renderSidePanel();
+    const resizer = container.querySelector(`.${blockClass}__resizer`);
+    expect(resizer).toBeFalsy();
+  });
+
+  it('should resize the side panel when resizer is clicked and dragged', async () => {
+    const { container } = renderResizableSidePanel();
+    const resizer = container.querySelector(`.${blockClass}__resizer`);
+    const sidePanel = container.querySelector(`.${blockClass}`);
+    const parentEl = sidePanel.parentElement;
+
+    const setPropertySpy = jest.spyOn(parentEl.style, 'setProperty');
+
+    fireEvent.mouseDown(resizer);
+    fireEvent.mouseMove(document, { clientX: 200 });
+    fireEvent.mouseUp(document);
+
+    await waitFor(() => {
+      expect(setPropertySpy).toHaveBeenCalledWith(
+        '--c4p-side-panel-modified-size',
+        '-200px'
+      );
+    });
+
+    setPropertySpy.mockRestore();
+  });
+
+  it('should set width to a maximum 75vw on Home key press', async () => {
+    const { container } = renderResizableSidePanel();
+    const resizer = container.querySelector(`.${blockClass}__resizer`);
+    const sidePanel = container.querySelector(`.${blockClass}`);
+    const parentEl = sidePanel.parentElement;
+
+    const setPropertySpy = jest.spyOn(parentEl.style, 'setProperty');
+
+    fireEvent.keyDown(resizer, { key: 'Home' });
+
+    expect(setPropertySpy).toHaveBeenCalledWith(
+      '--c4p-side-panel-modified-size',
+      '75vw'
+    );
+
+    setPropertySpy.mockRestore();
+  });
+
+  it('should set width to a minimum xs size on End key press', () => {
+    const { container } = renderResizableSidePanel();
+    const resizer = container.querySelector(`.${blockClass}__resizer`);
+    const sidePanel = container.querySelector(`.${blockClass}`);
+    const parentEl = sidePanel.parentElement;
+
+    const setPropertySpy = jest.spyOn(parentEl.style, 'setProperty');
+
+    fireEvent.keyDown(resizer, { key: 'End' });
+
+    expect(setPropertySpy).toHaveBeenCalledWith(
+      '--c4p-side-panel-modified-size',
+      SIDE_PANEL_SIZES['xs']
+    );
+
+    setPropertySpy.mockRestore();
+  });
+
+  it('should adjust width on ArrowRight key press', () => {
+    const { container } = renderResizableSidePanel();
+    const resizer = container.querySelector(`.${blockClass}__resizer`);
+    const sidePanel = container.querySelector(`.${blockClass}`);
+    const parentEl = sidePanel.parentElement;
+
+    const setPropertySpy = jest.spyOn(parentEl.style, 'setProperty');
+
+    fireEvent.keyDown(resizer, { key: 'ArrowRight' });
+
+    expect(setPropertySpy).toHaveBeenCalledWith(
+      '--c4p-side-panel-modified-size',
+      '-5px' // 1 step to the right = -5px
+    );
+
+    setPropertySpy.mockRestore();
+  });
+
+  it('should remove custom width style on double click', () => {
+    const { container } = renderResizableSidePanel();
+    const sidePanel = container.querySelector(`.${blockClass}`);
+    const parentEl = sidePanel.parentElement;
+
+    // Pre set custom size
+    parentEl.style.setProperty('--c4p-side-panel-modified-size', '1000px');
+
+    const resizer = container.querySelector(`.${blockClass}__resizer`);
+
+    fireEvent.doubleClick(resizer);
+
+    expect(
+      parentEl.style.getPropertyValue('--c4p-side-panel-modified-size')
+    ).toBe('');
+  });
+
+  it('should display a close button by default', () => {
+    const { container } = renderSidePanel();
+    expect(
+      container.querySelector(`.${blockClass}__close-button`)
+    ).toBeTruthy();
+  });
+
+  it('should not display a close button when hideCloseButton prop is set to true', () => {
+    const { container } = renderSidePanel({ hideCloseButton: true });
+    expect(container.querySelector(`.${blockClass}__close-button`)).toBe(null);
   });
 });

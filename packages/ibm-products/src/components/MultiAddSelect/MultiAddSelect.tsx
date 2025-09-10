@@ -6,11 +6,12 @@
 //
 
 import React, { ForwardedRef, ReactNode, forwardRef } from 'react';
-import PropTypes from 'prop-types';
+
 import { AddSelect } from '../AddSelect';
+import { AddSelectProps } from '../AddSelect/AddSelect';
+import PropTypes from 'prop-types';
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
 import { pkg } from '../../settings';
-import { AddSelectProps } from '../AddSelect/AddSelect';
 
 const componentName = 'MultiAddSelect';
 
@@ -22,6 +23,10 @@ type Filter = {
 type Modifier = {
   label?: string;
   options?: string[];
+  /**
+   * Allows to select multiple modifier items, default it is false
+   */
+  multiSelect?: boolean;
 };
 
 interface Entry {
@@ -48,7 +53,7 @@ type ItemType = {
   filterBy: string[];
 };
 
-interface MultiAddSelectProps {
+export interface MultiAddSelectProps {
   /**
    * optional class name
    */
@@ -230,6 +235,7 @@ MultiAddSelect.propTypes = {
     modifiers: PropTypes.shape({
       label: PropTypes.string,
       options: PropTypes.array,
+      multiSelect: PropTypes.bool,
     }),
     sortBy: PropTypes.array,
     filterBy: PropTypes.array,

@@ -1,3 +1,12 @@
+/* eslint-disable @typescript-eslint/no-empty-object-type */
+
+/**
+ * Copyright IBM Corp. 2024
+ *
+ * This source code is licensed under the Apache-2.0 license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 import { MultiSelectProps } from '@carbon/react/lib/components/MultiSelect/MultiSelect';
 import { FormGroupProps } from '@carbon/react/lib/components/FormGroup/FormGroup';
 import { RadioButtonProps } from '@carbon/react/lib/components/RadioButton/RadioButton';
@@ -26,11 +35,14 @@ import {
   TableCommonProps,
   TableDispatch,
   TableInstance,
+  TableRowProps,
+  TableState,
   TableToggleAllRowsSelectedProps,
   UseExpandedRowProps,
   UseFiltersInstanceProps,
   UsePaginationInstanceProps,
   UseResizeColumnsColumnProps,
+  UseResizeColumnsOptions,
   UseResizeColumnsState,
   UseRowSelectInstanceProps,
   UseRowSelectRowProps,
@@ -103,6 +115,18 @@ interface Labels {
   allPageRows?: object;
   allRows?: object;
 }
+interface ColumnLabels {
+  findColumnPlaceholderLabel?: string;
+  resetToDefaultLabel?: string;
+  customizeTearsheetHeadingLabel?: string;
+  primaryButtonTextLabel?: string;
+  secondaryButtonTextLabel?: string;
+  instructionsLabel?: string;
+  iconTooltipLabel?: string;
+  assistiveTextInstructionsLabel?: string;
+  assistiveTextDisabledInstructionsLabel?: string;
+  selectAllLabel?: string;
+}
 
 interface Section {
   categoryTitle?: string;
@@ -115,6 +139,7 @@ export interface FilterFlyoutProps {
   flyoutIconDescription?: string;
   onFlyoutClose?: () => void;
   onFlyoutOpen?: () => void;
+  onClearFilters?: () => void;
   panelIconDescription?: string;
   primaryActionLabel?: string;
   reactTableFiltersState?: ReactTableFiltersState[];
@@ -132,12 +157,13 @@ export interface DataGridToggleAllRowsProps
   disabled?: boolean;
 }
 
-export interface DatagridTableHooks<T extends object = any>
-  extends UseTableHooks<T> {}
+export type DatagridTableHooks<T extends object = any> = UseTableHooks<T>;
 
 export interface DatagridColumn<T extends object = any>
   extends ColumnInstance<T>,
-    UseSortByOptions<T> {
+    UseSortByOptions<T>,
+    Partial<UseResizeColumnsColumnProps<T>>,
+    UseResizeColumnsOptions<T> {
   sticky?: 'left' | 'right';
   className?: string;
   rightAlignedColumn?: boolean;
@@ -160,6 +186,7 @@ export interface DatagridRow<T extends object = any>
   cells: Array<DataGridCell>;
   isSkeleton?: boolean;
   hasExpanded?: boolean;
+  skeletonKey?: string;
 }
 
 export interface DataGridHeader<T extends object = any>
@@ -168,18 +195,15 @@ export interface DataGridHeader<T extends object = any>
     UseSortByColumnProps<T> {
   className(className: any, arg1: { [x: string]: any }): unknown;
   isAction?: boolean;
-  slug?: any;
+  slug?: ReactNode; // To be removed once the support for slug is not available
+  aiLabel?: ReactNode;
 }
 
 export interface DataGridHeaderGroup<T extends object = any>
   extends HeaderGroup<T>,
     UseResizeColumnsColumnProps<T> {}
 
-export interface TableProps {
-  className?: string;
-  role?: string;
-  style?: CSSStyleDeclaration;
-}
+export type DataGridTableProps = TableCommonProps;
 
 interface DataGridTableState
   extends UseResizeColumnsState<any>,
@@ -188,7 +212,18 @@ interface DataGridTableState
 }
 
 export interface DataGridTableInstance<T extends object = any>
-  extends TableInstance<T> {}
+  extends Omit<TableInstance<T>, 'state'>,
+    Partial<UsePaginationInstanceProps<any>> {
+  shouldDisableSelectRow?: (...args) => void | boolean;
+  state?: Partial<TableState & UseRowSelectState<any>>;
+  disableSelectAll?: boolean;
+  disableSelectRowsProps?: {
+    labels?: {
+      toggleAllRowsLabel?: string;
+    };
+  };
+  withSelectRows?: boolean;
+}
 
 export interface RowAction {
   id?: string;
@@ -196,17 +231,16 @@ export interface RowAction {
   icon?: ComponentType | FunctionComponent;
   align?: React.ComponentProps<typeof IconButton>['align'];
   shouldHideMenuItem?: (...args) => void;
-  shouldDisableMenuItem?: (...args) => void;
+  shouldDisableMenuItem?: (...args) => boolean;
   disabled?: boolean;
   onClick?: (...args) => void;
 }
 export interface DataGridState<T extends object = any>
   extends TableCommonProps,
-    UsePaginationInstanceProps<T>,
+    Partial<UsePaginationInstanceProps<T>>,
     Omit<TableInstance<T>, 'state' | 'headers' | 'rows' | 'columns'>,
-    Omit<UseFiltersInstanceProps<T>, 'rows'>,
-    UseRowSelectInstanceProps<T>,
-    Pick<UseRowSelectInstanceProps<T>, 'toggleAllRowsSelected'> {
+    Partial<Pick<UseFiltersInstanceProps<T>, 'setFilter' | 'setAllFilters'>>,
+    UseRowSelectInstanceProps<T> {
   withVirtualScroll?: boolean;
   DatagridPagination?: JSXElementConstructor<any>;
   isFetching?: boolean;
@@ -245,10 +279,10 @@ export interface DataGridState<T extends object = any>
   emptyStateSize?: 'lg' | 'sm';
   emptyStateType?: string;
   illustrationTheme?: 'light' | 'dark';
-  emptyStateAction: {
+  emptyStateAction?: {
     kind?: 'primary' | 'secondary' | 'tertiary';
     renderIcon?: CarbonIconType;
-    onClick?: ButtonProps<any>['onClick'];
+    onClick?: ButtonProps<React.ElementType>['onClick'];
     text?: string;
   };
   emptyStateLink?: {
@@ -264,18 +298,19 @@ export interface DataGridState<T extends object = any>
   setMouseOverRowIndex?: (arg: any) => void;
   hideSelectAll?: boolean;
   radio?: boolean;
-  onAllRowSelect: (rows: DatagridRow[], evt: any) => void;
+  onAllRowSelect?: (rows: DatagridRow[], evt: any) => void;
   selectAllToggle?: {
     onSelectAllRows?: (args) => void;
     labels?: Labels;
   };
   allPageRowsLabel?: string | object;
-  allRowsLabel: string | object;
+  allRowsLabel?: string | object;
   onSelectAllRows?: (val?: boolean) => void;
-  toolbarBatchActions?: ButtonProps<any>[];
+  toolbarBatchActions?: ButtonProps<React.ElementType>[];
   setGlobalFilter?: (filterValue: FilterValue) => void;
   batchActionMenuButtonLabel?: string;
   translateWithIdBatchActions?: TableBatchActionsProps['translateWithId'];
+  toolbarBatchActionsDisplayMin?: number;
   onScroll?: (evt?: any) => void;
   innerListRef?: MutableRefObject<HTMLDivElement>;
   tableHeight?: number;
@@ -288,6 +323,13 @@ export interface DataGridState<T extends object = any>
   expandedRowIds?: object;
   onRowClick?: (row, event) => void;
   onSort?: boolean;
+  customizeColumnsProps?: {
+    onSaveColumnPrefs?: (args) => void;
+    labels?: ColumnLabels;
+    isTearsheetOpen?: boolean;
+    setIsTearsheetOpen?: (args: boolean) => void;
+  };
+  CustomizeColumnsButton?: (args: any) => ReactNode;
   column?: DatagridColumn;
   expandedContentHeight?: number;
   onRowExpand?: (
@@ -295,6 +337,14 @@ export interface DataGridState<T extends object = any>
     event: React.MouseEvent<HTMLElement>
   ) => void;
   ExpandedRowContentComponent?: JSXElementConstructor<any>;
+  getAsyncSubRows?: (row: DatagridRow) => void;
+  enableSpacerColumn?: boolean;
+}
+
+export interface DataGridData {
+  instance?: DataGridTableInstance;
+  column?: DatagridColumn;
+  cell?: DataGridCell;
 }
 
 // DatagridHeaderRow related types
@@ -313,10 +363,18 @@ export interface ResizeHeaderProps {
   isFetching?: boolean;
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
 export type VisibleColumns<T extends object = {}> = (
   allColumns: Array<ColumnInstance<T>>,
   meta: Meta<T>
 ) => Array<Column<T>>;
 
 export type NodeFuncType = (props) => ReactNode;
+
+export interface PropGetterMeta {
+  instance?: DataGridTableInstance;
+  row?: Partial<Row<any> & DatagridRow<any>>;
+}
+
+export interface DatagridRowProps extends TableRowProps {
+  nonselectablerows: Array<number>;
+}

@@ -1,5 +1,5 @@
 /**
- * Copyright IBM Corp. 2020, 2023
+ * Copyright IBM Corp. 2020, 2024
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
@@ -8,11 +8,7 @@
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {
-  expectWarn,
-  expectMultipleError,
-  required,
-} from '../../global/js/utils/test-helper';
+import { expectWarn } from '../../global/js/utils/test-helper';
 
 import uuidv4 from '../../global/js/utils/uuidv4';
 import { pkg, carbon } from '../../settings';
@@ -27,6 +23,11 @@ import {
 } from '@carbon/react';
 import { Tearsheet, TearsheetNarrow } from '.';
 import { CreateTearsheetNarrow } from '../CreateTearsheetNarrow';
+import { checkHeightOverflow } from '../../global/js/utils/checkForOverflow';
+
+jest.mock('../../global/js/utils/checkForOverflow', () => ({
+  checkHeightOverflow: jest.fn(),
+}));
 
 const blockClass = `${pkg.prefix}--tearsheet`;
 const componentName = Tearsheet.displayName;
@@ -36,18 +37,12 @@ const componentNameCreateNarrow = CreateTearsheetNarrow.displayName;
 const onClick = jest.fn();
 const onCloseReturnsFalse = jest.fn(() => false);
 const onCloseReturnsTrue = jest.fn(() => true);
+const onBlur = jest.fn();
 
 const createButton = `Create ${uuidv4()}`;
 const actions = [
   { kind: 'secondary', onClick, label: 'Cancel' },
   { onClick, label: createButton },
-];
-const badActions = [
-  { kind: 'primary' },
-  { kind: 'primary' },
-  { kind: 'ghost' },
-  { kind: 'ghost' },
-  { kind: 'danger--tertiary' },
 ];
 const childFragment = `Main ${uuidv4()} content`;
 const children = <div>{childFragment}</div>;
@@ -92,10 +87,43 @@ const navigation = (
 );
 const title = `Title of the ${uuidv4()} tearsheet`;
 
+const mainText = 'Main content 1';
+const inputId = 'stacked-input-1';
+
+// eslint-disable-next-line react/prop-types
+const DummyComponent = ({ props, open }) => {
+  const buttonRef = React.useRef(undefined);
+
+  return (
+    <>
+      <Button ref={buttonRef}>Open</Button>
+      <Tearsheet
+        {...{ ...props, closeIconDescription }}
+        {...{
+          open: open,
+        }}
+        hasCloseIcon={true}
+        onClose={onCloseReturnsTrue}
+        open={open}
+        selectorPrimaryFocus={`#${inputId}`}
+        launcherButtonRef={buttonRef}
+      >
+        <div className="tearsheet-stories__dummy-content-block">
+          {mainText}
+          <TextInput
+            id={inputId}
+            data-testid={inputId}
+            labelText="Enter an important value here"
+            onBlur={onBlur}
+          />
+        </div>
+      </Tearsheet>
+    </>
+  );
+};
+
 // These are tests than apply to both Tearsheet and TearsheetNarrow
 // and also (with extra props and omitting button tests) to CreateTearsheetNarrow
-let tooManyButtonsTestedAlready = false;
-let closeIconDescriptionTestedAlready = false;
 const commonTests = (Ts, name, props, testActions) => {
   it(`renders a component ${name}`, async () => {
     render(<Ts {...{ ...props, closeIconDescription }} />);
@@ -106,28 +134,16 @@ const commonTests = (Ts, name, props, testActions) => {
     });
   });
 
-  // Currently fails due to https://github.com/carbon-design-system/carbon/issues/14135 regarding focusable button
-  it.skip('has no accessibility violations when closed', async () => {
-    const { container } = render(
-      <Ts {...{ ...props, closeIconDescription, label, title }} />
-    );
-    await expect(container).toBeAccessible(`${name} when closed`);
-    await expect(container).toHaveNoAxeViolations();
-  });
-
   it('has no accessibility violations', async () => {
-    const { container } = render(
-      <Ts
-        {...{ ...props, closeIconDescription, label, title }}
-        open
-        hasCloseIcon
-      />
-    );
-
     await act(async () => {
-      await expect(container).toBeAccessible(name);
-      await expect(container).toHaveNoAxeViolations();
+      render(<Ts {...{ ...props, closeIconDescription, title }} open />);
     });
+
+    const tearsheetElement = document.querySelector(
+      `.${pkg.prefix}--tearsheet`
+    );
+    await expect(tearsheetElement).toBeAccessible(`${name}`);
+    await expect(tearsheetElement).toHaveNoAxeViolations();
   });
 
   it('omits main content sections when no props supplied and no close icon requested', async () => {
@@ -153,26 +169,6 @@ const commonTests = (Ts, name, props, testActions) => {
       await act(() => userEvent.click(screen.getByText(createButton)));
       expect(onClick).toHaveBeenCalledTimes(1);
     });
-
-    it('rejects too many buttons using the custom validator', async () =>
-      expectMultipleError(
-        // prop-types only reports the first occurrence of each distinct error,
-        // which creates an unfortunate dependency between test runs
-        tooManyButtonsTestedAlready
-          ? [
-              `Invalid prop \`actions\` supplied to \`${name}\`: you cannot have more than four actions`,
-            ]
-          : [
-              `Invalid prop \`actions\` supplied to \`${name}\`: you cannot have more than four actions`,
-              'Invalid prop `actions[4].kind` of value `danger--tertiary` supplied to `TearsheetShell`',
-              'Invalid prop `actions` supplied to `ActionSet`: you cannot have more than four actions',
-              'Invalid prop `kind` of value `danger--tertiary` supplied to `ActionSetButton`',
-            ],
-        () => {
-          tooManyButtonsTestedAlready = true;
-          render(<Ts {...props} actions={badActions} />);
-        }
-      ));
   }
 
   it('renders children', async () => {
@@ -193,24 +189,6 @@ const commonTests = (Ts, name, props, testActions) => {
     expect(document.querySelector(`.${blockClass}__header`)).not.toBeNull();
     screen.getByRole('button', { name: closeIconDescription });
   });
-
-  if (testActions) {
-    it('requires closeIconDescription when there are no actions', async () =>
-      expectMultipleError(
-        // prop-types only reports the first occurrence of each distinct error,
-        // which creates an unfortunate dependency between test runs
-        closeIconDescriptionTestedAlready
-          ? [required('closeIconDescription', name)]
-          : [
-              required('closeIconDescription', name),
-              required('closeIconDescription', 'TearsheetShell'),
-            ],
-        () => {
-          render(<Ts {...props} />);
-          closeIconDescriptionTestedAlready = true;
-        }
-      ));
-  }
 
   it('renders description', async () => {
     render(<Ts {...{ ...props, closeIconDescription, description }} />);
@@ -263,40 +241,6 @@ const commonTests = (Ts, name, props, testActions) => {
     });
 
     it('should return focus to the launcher button', async () => {
-      const mainText = 'Main content 1';
-      const inputId = 'stacked-input-1';
-
-      // eslint-disable-next-line react/prop-types
-      const DummyComponent = ({ open }) => {
-        const buttonRef = React.useRef();
-
-        return (
-          <>
-            <Button ref={buttonRef}>Open</Button>
-            <Ts
-              {...{ ...props, closeIconDescription }}
-              {...{
-                open: open,
-              }}
-              hasCloseIcon={true}
-              onClose={onCloseReturnsTrue}
-              open={open}
-              selectorPrimaryFocus={`#${inputId}`}
-              launcherButtonRef={buttonRef}
-            >
-              <div className="tearsheet-stories__dummy-content-block">
-                {mainText}
-                <TextInput
-                  id={inputId}
-                  data-testid={inputId}
-                  labelText="Enter an important value here"
-                />
-              </div>
-            </Ts>
-          </>
-        );
-      };
-
       const { rerender, getByText, getByTestId } = render(
         <DummyComponent open={true} />
       );
@@ -318,8 +262,21 @@ const commonTests = (Ts, name, props, testActions) => {
 
       rerender(<DummyComponent open={false} />);
 
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
       expect(launchButtonEl).toHaveFocus();
+    });
+
+    it('should call onBlur only once', async () => {
+      const { getByTestId } = render(<DummyComponent open={true} />);
+
+      const inputEl = getByTestId(inputId);
+      const closeButton = screen.getByRole('button', {
+        name: closeIconDescription,
+      });
+
+      expect(inputEl).toHaveFocus();
+      await act(() => userEvent.click(closeButton));
+      expect(onBlur).toHaveBeenCalledTimes(1);
     });
   }
 
@@ -380,29 +337,11 @@ const initialDefaultPortalTargetBody = pkg.isFeatureEnabled(
 );
 
 describe(componentName, () => {
-  const { ResizeObserver } = window;
-
   beforeAll(() => {
-    window.ResizeObserver = jest.fn().mockImplementation(() => ({
-      observe: jest.fn(),
-      unobserve: jest.fn(),
-      disconnect: jest.fn(),
-    }));
     pkg.feature['default-portal-target-body'] = false;
-    window.matchMedia = jest.fn().mockImplementation((query) => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: jest.fn(), // Deprecated
-      removeListener: jest.fn(), // Deprecated
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
-    }));
   });
 
   afterAll(() => {
-    window.ResizeObserver = ResizeObserver;
     pkg.feature['default-portal-target-body'] = initialDefaultPortalTargetBody;
   });
 
@@ -416,8 +355,8 @@ describe(componentName, () => {
   it('renders influencer', async () => {
     render(<Tearsheet {...{ influencer }} />);
     expect(document.querySelector(`.${blockClass}__influencer`)).not.toBeNull();
-    const influencerElt = screen.getByText(influencerFragment).parentElement;
-    expect(influencerElt).not.toHaveClass(`${blockClass}__influencer--right`);
+    const influencerElt =
+      screen.getByText(influencerFragment).parentElement.parentElement;
     expect(influencerElt).not.toHaveClass(`${blockClass}__influencer--wide`);
   });
 
@@ -425,12 +364,14 @@ describe(componentName, () => {
     render(<Tearsheet {...{ influencer }} influencerPosition="right" />);
     const influencerElt =
       screen.getByText(influencerFragment).parentElement.parentElement;
-    expect(influencerElt).toHaveClass(`${blockClass}__main`);
+    const mainElt = influencerElt.parentElement;
+    expect(mainElt).toHaveClass(`${blockClass}__main`);
   });
 
   it('responds to influencerWidth', async () => {
     render(<Tearsheet {...{ influencer }} influencerWidth="wide" />);
-    const influencerElt = screen.getByText(influencerFragment).parentElement;
+    const influencerElt =
+      screen.getByText(influencerFragment).parentElement.parentElement;
     expect(influencerElt).toHaveClass(`${blockClass}__influencer--wide`);
   });
 
@@ -447,29 +388,17 @@ describe(componentName, () => {
         index === 0
           ? tabLabel1
           : index === 1
-          ? tabLabel2
-          : index === 2
-          ? tabLabel3
-          : tabLabel4;
+            ? tabLabel2
+            : index === 2
+              ? tabLabel3
+              : tabLabel4;
       expect(tab.textContent).toEqual(tabContent);
     });
   });
 });
 
 describe(componentNameNarrow, () => {
-  const { ResizeObserver } = window;
-
-  beforeAll(() => {
-    window.ResizeObserver = jest.fn().mockImplementation(() => ({
-      observe: jest.fn(),
-      unobserve: jest.fn(),
-      disconnect: jest.fn(),
-    }));
-    pkg.feature['default-portal-target-body'] = false;
-  });
-
   afterAll(() => {
-    window.ResizeObserver = ResizeObserver;
     pkg.feature['default-portal-target-body'] = initialDefaultPortalTargetBody;
   });
 
@@ -477,20 +406,8 @@ describe(componentNameNarrow, () => {
 });
 
 describe(componentNameCreateNarrow, () => {
-  const { ResizeObserver } = window;
-
   beforeAll(() => {
-    window.ResizeObserver = jest.fn().mockImplementation(() => ({
-      observe: jest.fn(),
-      unobserve: jest.fn(),
-      disconnect: jest.fn(),
-    }));
     pkg.feature['default-portal-target-body'] = false;
-  });
-
-  afterAll(() => {
-    window.ResizeObserver = ResizeObserver;
-    pkg.feature['default-portal-target-body'] = initialDefaultPortalTargetBody;
   });
 
   commonTests(

@@ -1,24 +1,23 @@
 /**
- * Copyright IBM Corp. 2021, 2021
+ * Copyright IBM Corp. 2021, 2025
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
  */
 
+import '../../global/js/utils/props-helper';
+
 // Import portions of React that are needed.
 import React, { ForwardedRef, ReactNode } from 'react';
 
+// Carbon and package components we use.
+import { ButtonProps, Form } from '@carbon/react';
 // Other standard imports.
 import PropTypes from 'prop-types';
-import cx from 'classnames';
-
-import { getDevtoolsProps } from '../../global/js/utils/devtools';
-import { pkg /*, carbon */ } from '../../settings';
-
-// Carbon and package components we use.
-import { Form } from '@carbon/react';
 import { SidePanel } from '../SidePanel';
-import '../../global/js/utils/props-helper';
+import cx from 'classnames';
+import { getDevtoolsProps } from '../../global/js/utils/devtools';
+import { pkg } from '../../settings';
 import uuidv4 from '../../global/js/utils/uuidv4';
 
 // The block part of our conventional BEM class names (blockClass__E--M).
@@ -27,7 +26,7 @@ const componentName = 'EditSidePanel';
 
 // NOTE: the component SCSS is not imported here: it is rolled up separately.
 
-interface EditSidePanelProps {
+export interface EditSidePanelProps {
   /**
    * Sets the body content of the create side panel
    */
@@ -129,7 +128,9 @@ interface EditSidePanelProps {
 }
 
 /**
+ * **This component is deprecated.** <br>
  * Use with medium complexity edits if the user needs page context.
+ * @deprecated
  */
 export let EditSidePanel = React.forwardRef(
   (
@@ -160,12 +161,12 @@ export let EditSidePanel = React.forwardRef(
     }: EditSidePanelProps,
     ref: ForwardedRef<HTMLDivElement>
   ) => {
-    const actions = [
+    const actions: ButtonProps<React.ElementType>[] = [
       {
         label: primaryButtonText,
         onClick: (event) => {
           event.preventDefault();
-          onRequestSubmit && onRequestSubmit();
+          onRequestSubmit?.();
         },
         kind: 'primary',
         disabled: disableSubmit,
@@ -224,6 +225,12 @@ export let EditSidePanel = React.forwardRef(
     );
   }
 );
+
+/**@ts-ignore*/
+EditSidePanel.deprecated = {
+  level: 'warn',
+  details: `This component is deprecated and will be removed in the next major version.`,
+};
 
 // Return a placeholder if not released and not enabled by feature flag
 EditSidePanel = pkg.checkComponentEnabled(EditSidePanel, componentName);
@@ -308,7 +315,7 @@ EditSidePanel.propTypes = {
    * This prop is required when using the `slideIn` variant of the side panel.
    */
   /**@ts-ignore*/
-  selectorPageContent: PropTypes.string.isRequired.if(({ slideIn }) => slideIn),
+  selectorPageContent: PropTypes.string,
 
   /**
    * Specifies which DOM element in the form should be focused.

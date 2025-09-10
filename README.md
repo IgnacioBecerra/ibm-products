@@ -1,7 +1,7 @@
 # Carbon for IBM Products
 
 > Carbon for IBM Products is an open source implementation of the closed source
-> [IBM Software pattern asset library (PAL)](https://pages.github.ibm.com/cdai-design/pal/).
+> [IBM Software pattern asset library (PAL)](https://pages.github.ibm.com/carbon/ibm-products/).
 > These PAL designs build on the foundation of IBM’s open source Carbon Design
 > System and React implementation to offer components and patterns beyond the
 > typical component library. Carbon for IBM Products was previously known as
@@ -14,6 +14,7 @@
 [![Netlify status](https://img.shields.io/netlify/e8cd9972-0fc8-4c51-a911-e9a930ca6605)](https://app.netlify.com/sites/carbon-for-ibm-products/deploys)
 [![GitHub Lerna version](https://img.shields.io/github/lerna-json/v/carbon-design-system/ibm-products)](https://lerna.js.org)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](https://github.com/carbon-design-system/ibm-products/blob/master/.github/CONTRIBUTING.md)
+[![codecov](https://codecov.io/gh/carbon-design-system/ibm-products/graph/badge.svg?token=TKEL92HSUK)](https://codecov.io/gh/carbon-design-system/ibm-products)
 
 ## 🚀 Getting started
 
@@ -53,14 +54,15 @@ published on npm.
 ### Version support
 
 Carbon 11 support is introduced in Carbon for IBM Products
-<https://github.com/carbon-design-system/ibm-products/labels/v2>
+<https://github.com/carbon-design-system/ibm-products/labels/version%3A%202>
 
 | Package name           | Carbon package      | React version |
 | ---------------------- | ------------------- | ------------- |
 | `@carbon/ibm-products` | **`@carbon/react`** | 18, 17, 16    |
 
 The following packages support Carbon 10 and are considered
-<https://github.com/carbon-design-system/ibm-products/labels/v1> packages.
+<https://github.com/carbon-design-system/ibm-products/labels/version%3A%201>
+packages.
 
 | Package name                                                                                     | Carbon package                                                                                                                                                   | React version |
 | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
@@ -73,6 +75,50 @@ see the Carbon
 [`@carbon/upgrade`](https://github.com/carbon-design-system/carbon/blob/main/packages/upgrade/README.md))
 and the Carbon for IBM Products
 [v2 migration guide](https://github.com/carbon-design-system/ibm-products/blob/main/docs/guides/v2.md).
+
+### Installation
+
+Using npm:</br> `npm install @carbon/ibm-products`
+
+If you prefer Yarn:</br> `yarn add @carbon/ibm-products`
+
+#### Styles
+
+The `@carbon/ibm-products` package provides several options for importing the
+package styles:
+
+_// Include all the styles, including Carbon and experimental styles_</br>
+`@use '@carbon/ibm-products/css/index.min.css';`
+
+_// Include only styles from @carbon/ibm-products_</br>
+`@use '@carbon/ibm-products/css/index-without-carbon.css';`
+
+_// Include only styles from @carbon/ibm-products, excluding experimental
+styles_</br>
+`@use '@carbon/ibm-products/css/index-without-carbon-released-only.css';`
+
+_// Include all styles from carbon_</br>
+`@use '@carbon/ibm-products/css/index-full-carbon.css';`
+
+To include the styles for a specific component:
+
+_// Bring in the styles for one component_</br>
+`@use '@carbon/ibm-products/scss/components/AboutModal';`
+
+You can also leverage the Carbon for IBM Products styles independently of the
+React package using the
+[@carbon/ibm-products-styles](https://github.com/carbon-design-system/ibm-products/tree/main/packages/ibm-products-styles)
+package.
+
+#### Usage
+
+```
+import { AboutModal } from '@carbon/ibm-products';
+
+const App = () => {
+  return <AboutModal />;
+};
+```
 
 ## 🙌 Contributing
 
@@ -151,6 +197,13 @@ Thanks goes to these wonderful people
     <tr>
       <td align="center" valign="top" width="20%"><a href="https://github.com/anamikaanu96"><img src="https://avatars.githubusercontent.com/u/47971732?v=4?s=100" width="100px;" alt="Anamika T S"/><br /><sub><b>Anamika T S</b></sub></a><br /><a href="https://github.com/carbon-design-system/ibm-products/commits?author=anamikaanu96" title="Code">💻</a></td>
       <td align="center" valign="top" width="20%"><a href="https://github.com/szinta"><img src="https://avatars.githubusercontent.com/u/53395955?v=4?s=100" width="100px;" alt="Sinta Augustine"/><br /><sub><b>Sinta Augustine</b></sub></a><br /><a href="https://github.com/carbon-design-system/ibm-products/commits?author=szinta" title="Code">💻</a></td>
+      <td align="center" valign="top" width="20%"><a href="https://github.com/AustinGitHub"><img src="https://avatars.githubusercontent.com/u/10100397?v=4?s=100" width="100px;" alt="Austin"/><br /><sub><b>Austin</b></sub></a><br /><a href="https://github.com/carbon-design-system/ibm-products/commits?author=AustinGitHub" title="Code">💻</a></td>
+      <td align="center" valign="top" width="20%"><a href="https://github.com/amal-k-joy"><img src="https://avatars.githubusercontent.com/u/153802538?v=4?s=100" width="100px;" alt="Amal K Joy"/><br /><sub><b>Amal K Joy</b></sub></a><br /><a href="https://github.com/carbon-design-system/ibm-products/commits?author=amal-k-joy" title="Code">💻</a></td>
+      <td align="center" valign="top" width="20%"><a href="https://github.com/annawen1"><img src="https://avatars.githubusercontent.com/u/54281166?v=4?s=100" width="100px;" alt="Anna Wen"/><br /><sub><b>Anna Wen</b></sub></a><br /><a href="https://github.com/carbon-design-system/ibm-products/commits?author=annawen1" title="Code">💻</a> <a href="#infra-annawen1" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="20%"><a href="https://github.com/ariellalgilmore"><img src="https://avatars.githubusercontent.com/u/20210594?v=4?s=100" width="100px;" alt="Ariella Gilmore"/><br /><sub><b>Ariella Gilmore</b></sub></a><br /><a href="https://github.com/carbon-design-system/ibm-products/commits?author=ariellalgilmore" title="Code">💻</a></td>
+      <td align="center" valign="top" width="20%"><a href="https://github.com/wkeese"><img src="https://avatars.githubusercontent.com/u/69599?v=4?s=100" width="100px;" alt="Bill Keese"/><br /><sub><b>Bill Keese</b></sub></a><br /><a href="https://github.com/carbon-design-system/ibm-products/commits?author=wkeese" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>

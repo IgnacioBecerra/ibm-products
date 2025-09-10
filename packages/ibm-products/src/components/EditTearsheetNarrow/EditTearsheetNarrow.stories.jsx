@@ -7,7 +7,7 @@
 
 import React, { useState } from 'react';
 // TODO: import action to handle events if required.
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 import {
   Button,
   Dropdown,
@@ -22,19 +22,35 @@ import { CreateTearsheetNarrow } from '../CreateTearsheetNarrow';
 import styles from '../CreateTearsheetNarrow/_storybook-styles.scss?inline';
 import { StoryDocsPage } from '../../global/js/utils/StoryDocsPage';
 import { SlugSample, slugArgTypes } from '../../global/js/story-parts/slug';
+import { Annotation } from '../../../.storybook/Annotation';
 
 export default {
-  title: 'IBM Products/Patterns/Edit and update/EditTearsheetNarrow',
+  title: 'Deprecated/Edit and update/EditTearsheetNarrow',
   component: EditTearsheetNarrow,
   tags: ['autodocs'],
   parameters: {
     styles,
     docs: {
       page: () => (
-        <StoryDocsPage altGuidelinesHref="https://pages.github.ibm.com/cdai-design/pal/patterns/edit/usage#tearsheet-edit" />
+        <StoryDocsPage altGuidelinesHref="https://pages.github.ibm.com/carbon/ibm-products/patterns/edit-and-update/usage/#tearsheet-edit" />
       ),
     },
   },
+  decorators: [
+    (story) => (
+      <Annotation
+        type="deprecation-notice"
+        text={
+          <div>
+            This component is deprecated and will be removed in the next major
+            version.
+          </div>
+        }
+      >
+        {story()}
+      </Annotation>
+    ),
+  ],
   argTypes: {
     ...slugArgTypes(),
   },
@@ -71,7 +87,7 @@ const Template = ({ slug, ...args }) => {
     retentionTime <= 0 ||
     quantity <= 0;
   return (
-    <div>
+    <>
       <style>{`.${defaultStoryProps.className} { opacity: 0 }`};</style>
       <Button onClick={() => setOpen(!open)}>
         {open ? 'Close EditTearsheetNarrow' : 'Open EditTearsheetNarrow'}
@@ -148,7 +164,7 @@ const Template = ({ slug, ...args }) => {
           onChange={(event) => setQuantity(event.imaginaryTarget.value)}
         />
       </CreateTearsheetNarrow>
-    </div>
+    </>
   );
 };
 
@@ -169,7 +185,7 @@ const WithValidationTemplate = ({ slug, ...args }) => {
     retentionTime <= 0 ||
     quantity <= 0;
   return (
-    <div>
+    <>
       <style>{`.${defaultStoryProps.className} { opacity: 0 }`};</style>
       <Button onClick={() => setOpen(!open)}>
         {open ? 'Close EditTearsheetNarrow' : 'Open EditTearsheetNarrow'}
@@ -265,7 +281,7 @@ const WithValidationTemplate = ({ slug, ...args }) => {
           />
         </FormGroup>
       </CreateTearsheetNarrow>
-    </div>
+    </>
   );
 };
 

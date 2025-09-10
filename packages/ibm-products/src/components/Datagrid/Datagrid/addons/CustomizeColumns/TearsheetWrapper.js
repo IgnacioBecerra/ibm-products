@@ -9,7 +9,7 @@ import PropTypes from 'prop-types';
 import CustomizeColumnsTearsheet from './CustomizeColumnsTearsheet';
 import { InlineEditContext } from '../InlineEdit/InlineEditContext';
 
-const TearsheetWrapper = ({ instance }) => {
+const TearsheetWrapper = ({ instance, launcherButtonRef }) => {
   const {
     onSaveColumnPrefs,
     isTearsheetOpen,
@@ -38,21 +38,24 @@ const TearsheetWrapper = ({ instance }) => {
       {...labels}
       isOpen={isTearsheetOpen}
       setIsTearsheetOpen={setIsTearsheetOpen}
+      launcherButtonRef={launcherButtonRef}
       columnDefinitions={instance.allColumns}
       originalColumnDefinitions={instance.columns}
       onSaveColumnPrefs={(updatedColDefs) => {
-        const hiddenIds = updatedColDefs
-          .filter((colDef) => !colDef.isVisible)
-          .map((colDef) => colDef.id);
-        instance.setHiddenColumns(hiddenIds);
-        if (typeof instance.setColumnOrder === 'function') {
-          instance.setColumnOrder(updatedColDefs.map((colDef) => colDef.id));
-        } else {
-          // eslint-disable-next-line no-console
-          console.warn(
-            "Column order can not be updated. Did you forget to add 'useColumnOrder' in 'useDatagrid'"
-          );
-        }
+        setTimeout(() => {
+          const hiddenIds = updatedColDefs
+            .filter((colDef) => !colDef.isVisible)
+            .map((colDef) => colDef.id);
+          instance.setHiddenColumns(hiddenIds);
+          if (typeof instance.setColumnOrder === 'function') {
+            instance.setColumnOrder(updatedColDefs.map((colDef) => colDef.id));
+          } else {
+            // eslint-disable-next-line no-console
+            console.warn(
+              "Column order can not be updated. Did you forget to add 'useColumnOrder' in 'useDatagrid'"
+            );
+          }
+        }, 0);
         if (typeof onSaveColumnPrefs === 'function') {
           onSaveColumnPrefs(updatedColDefs);
         }

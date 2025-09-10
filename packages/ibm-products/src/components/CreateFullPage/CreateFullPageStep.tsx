@@ -1,5 +1,5 @@
 /**
- * Copyright IBM Corp. 2021, 2023
+ * Copyright IBM Corp. 2021, 2025
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
@@ -18,7 +18,7 @@ import React, {
 import PropTypes from 'prop-types';
 import cx from 'classnames';
 import { pkg } from '../../settings';
-import { Column, FormGroup, Grid } from '@carbon/react';
+import { Column, FormGroup, Grid, Heading, Section } from '@carbon/react';
 import { StepsContext, StepNumberContext } from './CreateFullPage';
 import { usePreviousValue, useRetrieveStepData } from '../../global/js/hooks';
 import pconsole from '../../global/js/utils/pconsole';
@@ -50,7 +50,7 @@ interface CreateFullPageStepBaseProps extends PropsWithChildren {
   /**
    * This optional prop will render your form content inside of a fieldset html element
    */
-  hasFieldset: boolean;
+  hasFieldset?: boolean;
 
   /**
    * This prop is used to help track dynamic steps. If this value is `false` then the step is not included in the visible steps or the ProgressIndicator
@@ -82,6 +82,11 @@ interface CreateFullPageStepBaseProps extends PropsWithChildren {
   onNext?: () => void | Promise<any>;
 
   /**
+   * Optional function to be called when you move to the previous step.
+   */
+  onPrevious?: () => void;
+
+  /**
    * Sets the optional secondary label on the progress step component
    */
   secondaryLabel?: string;
@@ -97,17 +102,28 @@ interface CreateFullPageStepBaseProps extends PropsWithChildren {
   title: ReactNode;
 }
 
+// Try to specify the hasFieldset and fieldsetLegendText Typescript requirements.
+// Basically, fieldsetLegendText should only be specified when hasFieldset is true.
+// And usually, hasFieldset won't be specified at all unless it's being set to true.
 type CreateFullPageStepFieldsetProps =
   | {
-      hasFieldset: false;
+      // fieldsetLegendText should not be specified unless hasFieldset is true, but
+      // not sure how to do that in Typescript.
       fieldsetLegendText?: string;
     }
   | {
-      hasFieldset?: true;
+      hasFieldset: false;
+
+      // fieldsetLegendText should not be specified unless hasFieldset is true, but
+      // not sure how to do that in Typescript.
+      fieldsetLegendText?: string;
+    }
+  | {
+      hasFieldset: true;
       fieldsetLegendText: string;
     };
 
-type CreateFullPageStepProps = CreateFullPageStepBaseProps &
+export type CreateFullPageStepProps = CreateFullPageStepBaseProps &
   CreateFullPageStepFieldsetProps;
 
 export let CreateFullPageStep = forwardRef(
@@ -127,6 +143,7 @@ export let CreateFullPageStep = forwardRef(
       hasFieldset,
       fieldsetLegendText,
       onNext,
+      onPrevious,
       onMount,
       secondaryLabel,
 
@@ -173,8 +190,9 @@ export let CreateFullPageStep = forwardRef(
       if (stepNumber === stepsContext?.currentStep) {
         stepsContext.setIsDisabled(disableSubmit as boolean);
         stepsContext?.setOnNext(onNext); // needs to be updated here otherwise there could be stale state values from only initially setting onNext
+        stepsContext?.setOnPrevious(onPrevious);
       }
-    }, [stepsContext, stepNumber, disableSubmit, onNext]);
+    }, [stepsContext, stepNumber, disableSubmit, onNext, onPrevious]);
 
     const span = { span: 50 }; // Half.
 
@@ -196,7 +214,7 @@ export let CreateFullPageStep = forwardRef(
     };
 
     return stepsContext ? (
-      <section
+      <Section
         {
           // Pass through any other property values as HTML attributes.
           ...rest
@@ -212,12 +230,12 @@ export let CreateFullPageStep = forwardRef(
         <Grid>
           <Column {...span}>
             <Grid>
-              <Column className={`${blockClass}-title`} as="h5" {...span}>
+              <Column className={`${blockClass}-title`} as={Heading} {...span}>
                 {title}
               </Column>
 
               {subtitle && (
-                <Column className={`${blockClass}-subtitle`} as="h6" {...span}>
+                <Column className={`${blockClass}-subtitle`} as="p" {...span}>
                   {subtitle}
                 </Column>
               )}
@@ -237,7 +255,7 @@ export let CreateFullPageStep = forwardRef(
         ) : (
           children
         )}
-      </section>
+      </Section>
     ) : (
       pconsole.warn(
         `You have tried using a ${componentName} component outside of a CreateFullPage. This is not allowed. ${componentName}s should always be children of the CreateFullPage`
@@ -271,21 +289,17 @@ CreateFullPageStep.propTypes = {
   /**
    * This will conditionally disable the submit button in the multi step CreateFullPage
    */
-  /**@ts-ignore */
   disableSubmit: PropTypes.bool,
 
   /**
    * This is the legend text that appears above a fieldset html element for accessibility purposes. It is required when the optional `hasFieldset` prop is provided to a FullPageStep.
    */
   /**@ts-ignore */
-  fieldsetLegendText: PropTypes.string.isRequired.if(
-    ({ hasFieldset }) => hasFieldset === true
-  ),
+  fieldsetLegendText: PropTypes.string,
 
   /**
    * This optional prop will render your form content inside of a fieldset html element
    */
-  /**@ts-ignore */
   hasFieldset: PropTypes.bool,
 
   /**
@@ -316,6 +330,11 @@ CreateFullPageStep.propTypes = {
    * This function can _optionally_ return a promise that is either resolved or rejected and the CreateFullPage will handle the submitting state of the next button.
    */
   onNext: PropTypes.func,
+
+  /**
+   * Optional function to be called when you move to the previous step.
+   */
+  onPrevious: PropTypes.func,
 
   /**
    * Sets the optional secondary label on the progress step component

@@ -7,6 +7,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import { stackblitzPrefillConfig } from '../../../../previewer/codePreviewer';
 
 import {
   Title,
@@ -18,8 +19,8 @@ import {
   AnchorMdx,
   useOf,
   Markdown,
-} from '@storybook/blocks';
-import { paramCase } from 'change-case';
+} from '@storybook/addon-docs/blocks';
+import * as changeCase from 'change-case';
 
 import {
   codeSandboxHref,
@@ -37,7 +38,9 @@ export const CustomBlocks = ({ blocks }) => {
     }
     return (
       <div key={`block-index--${index}`}>
-        {block.title && <h3 id={paramCase(block.title)}>{block.title}</h3>}
+        {block.title && (
+          <h3 id={changeCase.kebabCase(block.title)}>{block.title}</h3>
+        )}
         {block.subTitle && <h4>{block.subTitle}</h4>}
         {block.image}
         {block.description && typeof block.description === 'string' ? (
@@ -97,6 +100,7 @@ export const StoryDocsPage = ({
   blocks,
   omitCodedExample,
   omitUnreferencedStories,
+  deprecationNotice,
 }) => {
   const { csfFile } = useOf('meta', ['meta']);
 
@@ -124,22 +128,24 @@ export const StoryDocsPage = ({
       {guidelinesHref ? (
         guidelinesHref && Array.isArray(guidelinesHref) ? (
           guidelinesHref.map(({ href, label }, index) => (
-            <>
+            <React.Fragment key={href}>
               {index > 0 && ' | '}
-              <AnchorMdx key={href} href={href}>
-                {label}
-              </AnchorMdx>
-            </>
+              <AnchorMdx href={href}>{label}</AnchorMdx>
+            </React.Fragment>
           ))
         ) : (
           <AnchorMdx href={guidelinesHref}>
-            {altTitle
-              ? `${altTitle} usage guidelines`
-              : storyInfo.guidelinesLinkLabel}
+            {altTitle ? `Usage guidelines` : storyInfo.guidelinesLinkLabel}
           </AnchorMdx>
         )
       ) : null}
 
+      {deprecationNotice && (
+        <>
+          <h2 style={{ marginTop: '16px' }}>Deprecation notice</h2>
+          <Markdown>{deprecationNotice}</Markdown>
+        </>
+      )}
       <h2 style={{ marginTop: guidelinesHref ? '16px' : '' }}>
         Table of contents
       </h2>
@@ -147,13 +153,17 @@ export const StoryDocsPage = ({
         {['Overview', 'Coded examples', 'Example usage', 'Component API'].map(
           (item) => (
             <li key={item}>
-              <AnchorMdx href={`#${paramCase(item)}`}>{item}</AnchorMdx>
+              <AnchorMdx href={`#${changeCase.kebabCase(item)}`}>
+                {item}
+              </AnchorMdx>
               {processedBlocks && item === 'Example usage' ? (
                 <ul>
                   {processedBlocks.map((block) => {
                     return block?.title ? (
                       <li key={block.title}>
-                        <AnchorMdx href={`#${paramCase(block.title)}`}>
+                        <AnchorMdx
+                          href={`#${changeCase.kebabCase(block.title)}`}
+                        >
                           {block.title}
                         </AnchorMdx>
                       </li>
@@ -290,6 +300,10 @@ StoryDocsPage.propTypes = {
       }),
     })
   ),
+  /**
+   * Designates a special top level area for important notices or messaging like deprecation
+   */
+  deprecationNotice: PropTypes.string,
   /**
    * Set to true if no published example exists (all components and patterns should have an example)
    */

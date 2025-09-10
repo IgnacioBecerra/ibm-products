@@ -6,15 +6,15 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import cx from 'classnames';
-import clamp from 'lodash/clamp';
 import { purple50, gray20, gray70 } from '@carbon/colors';
 
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
 import { pkg } from '../../settings';
 import { Themes } from './Checklist.types';
+import { clamp } from '../../global/js/utils/clamp';
 
 const blockClass = `${pkg.prefix}--checklist__chart`;
 const componentName = 'ChecklistChart';
@@ -35,14 +35,24 @@ export let ChecklistChart = React.forwardRef(
     const circleColor = theme === Themes.light ? gray20 : gray70; // $ui-03 (-ish)
     const progressColor = purple50;
 
+    useEffect(() => {
+      const ele = document.getElementsByClassName(`${blockClass}`);
+      setTimeout(() => {
+        for (const el of ele) {
+          if (el instanceof HTMLElement) {
+            el.style.setProperty(
+              'background-image',
+              `conic-gradient(${progressColor} ${numDegrees}deg, ${circleColor} ${numDegrees}deg 360deg)`
+            );
+            el.style.setProperty('border-radius', '50%');
+          }
+        }
+      }, 0);
+    });
     return (
       <div
         {...rest}
         className={cx(blockClass, className)}
-        style={{
-          backgroundImage: `conic-gradient(${progressColor} ${numDegrees}deg, ${circleColor} ${numDegrees}deg 360deg)`,
-          borderRadius: '50%',
-        }}
         ref={ref}
         role="img"
         {...getDevtoolsProps(componentName)}

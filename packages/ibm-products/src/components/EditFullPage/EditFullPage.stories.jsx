@@ -6,7 +6,7 @@
  */
 import React, { useState } from 'react';
 import { carbon } from '../../settings';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 import { CreateFullPage } from '../CreateFullPage';
 import { CreateFullPageStep } from '../CreateFullPage/CreateFullPageStep';
 import { pkg } from '../../settings';
@@ -14,6 +14,7 @@ import { pkg } from '../../settings';
 import { EditFullPage } from '.';
 
 import styles from '../CreateFullPage/_storybook-styles.scss?inline';
+import { Annotation } from '../../../.storybook/Annotation';
 
 const storyClass = 'create-full-page-stories';
 const blockClass = `${pkg.prefix}--create-full-page`;
@@ -30,11 +31,12 @@ import {
   Column,
   Grid,
   DefinitionTooltip,
+  usePrefix,
 } from '@carbon/react';
 import DocsPage from './EditFullPage.docs-page';
 
 export default {
-  title: 'IBM Products/Patterns/Edit and update/EditFullPage',
+  title: 'Deprecated/Edit and update/EditFullPage',
   component: EditFullPage,
   tags: ['autodocs'],
   parameters: {
@@ -44,7 +46,27 @@ export default {
     controls: { sort: 'requiredFirst' },
   },
   decorators: [
-    (story) => <div className={`${storyClass}__viewport`}>{story()}</div>,
+    (story) => (
+      <div className={`${storyClass}__viewport`}>
+        {/* fullPage component styles */}
+        <style>{`
+      .${pkg.prefix}--custom-annotation { height: 100% }
+      .${pkg.prefix}--custom-annotation > .${pkg.prefix}--annotation__content { height: calc(100% - 1.6rem); padding: 0 }
+      `}</style>
+        <Annotation
+          className={`${pkg.prefix}--custom-annotation`}
+          type="deprecation-notice"
+          text={
+            <div>
+              This component is deprecated and will be removed in the next major
+              version.
+            </div>
+          }
+        >
+          {story()}
+        </Annotation>
+      </div>
+    ),
   ],
 };
 
@@ -70,10 +92,11 @@ const Template = ({ ...args }) => {
   const [simulatedDelay] = useState(750);
   const [shouldIncludeAdditionalStep, setShouldIncludeAdditionalStep] =
     useState(false);
+  const carbonPrefix = usePrefix();
 
   return (
     <>
-      <style>{`.${carbon.prefix}--modal { opacity: 0; }`};</style>
+      <style>{`.${carbonPrefix}--modal { opacity: 0; }`};</style>
       <CreateFullPage {...args}>
         <CreateFullPageStep
           className={`${storyClass}__step-fieldset--no-label`}
@@ -138,6 +161,8 @@ const Template = ({ ...args }) => {
                   </DefinitionTooltip>
                 </div>
                 <Toggle
+                  labelText="Simulate error"
+                  hideLabel
                   id="simulated-error-toggle"
                   size="sm"
                   onToggle={(event) => setShouldReject(event)}
@@ -259,10 +284,11 @@ const TemplateWithSections = ({ ...args }) => {
   const [shouldReject, setShouldReject] = useState(false);
   const [isInvalid, setIsInvalid] = useState(false);
   const [simulatedDelay] = useState(750);
+  const carbonPrefix = usePrefix();
 
   return (
     <>
-      <style>{`.${carbon.prefix}--modal { opacity: 0; }`};</style>
+      <style>{`.${carbonPrefix}--modal { opacity: 0; }`};</style>
       <CreateFullPage className={`${blockClass}`} {...args}>
         <CreateFullPageStep
           title="Partition"
@@ -330,6 +356,8 @@ const TemplateWithSections = ({ ...args }) => {
                     </DefinitionTooltip>
                   </div>
                   <Toggle
+                    labelText="Simulate error"
+                    hideLabel
                     id="simulated-error-toggle"
                     size="sm"
                     onToggle={(event) => setShouldReject(event)}

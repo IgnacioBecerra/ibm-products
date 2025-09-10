@@ -1,38 +1,41 @@
 //
-// Copyright IBM Corp. 2020, 2021
+// Copyright IBM Corp. 2020, 2025
 //
 // This source code is licensed under the Apache-2.0 license found in the
 // LICENSE file in the root directory of this source tree.
 //
 
-import React, {
-  useState,
-  useRef,
-  forwardRef,
-  useEffect,
-  ReactNode,
-} from 'react';
 import {
   Button,
   ComposedModal,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  TextInput,
-  RadioButton,
-  RadioButtonGroup,
   FormGroup,
   Loading,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
   PasswordInput,
+  RadioButton,
+  RadioButtonGroup,
+  TextInput,
+  unstable_FeatureFlags as FeatureFlags,
+  usePrefix,
 } from '@carbon/react';
-import cx from 'classnames';
-import { ErrorFilled, CheckmarkFilled } from '@carbon/react/icons';
-import PropTypes from 'prop-types';
+import { CheckmarkFilled, ErrorFilled } from '@carbon/react/icons';
+import React, {
+  ReactNode,
+  forwardRef,
+  useEffect,
+  useRef,
+  RefObject,
+  useState,
+} from 'react';
 
+import PropTypes from 'prop-types';
+import cx from 'classnames';
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
-import uuidv4 from '../../global/js/utils/uuidv4';
 import { pkg } from '../../settings';
 import { usePortalTarget } from '../../global/js/hooks/usePortalTarget';
+import uuidv4 from '../../global/js/utils/uuidv4';
 
 const componentName = 'ExportModal';
 
@@ -49,7 +52,8 @@ type PreformattedExtensions = {
   extension?: string;
   description?: string;
 };
-interface RemoveModalProps extends React.ComponentProps<typeof ComposedModal> {
+export interface ExportModalProps
+  extends React.ComponentProps<typeof ComposedModal> {
   /**
    * Body content for the modal
    */
@@ -143,6 +147,10 @@ interface RemoveModalProps extends React.ComponentProps<typeof ComposedModal> {
    */
   title: string;
   /**
+   * Reference to trigger button
+   */
+  triggerButtonRef?: RefObject<any>;
+  /**
    * array of valid extensions the file can have
    */
   validExtensions: readonly any[];
@@ -179,18 +187,21 @@ export let ExportModal = forwardRef(
       successMessage,
       successful,
       title,
+      triggerButtonRef,
       validExtensions = defaults.validExtensions,
 
       // Collect any other property values passed in.
       ...rest
-    }: React.PropsWithChildren<RemoveModalProps>,
+    }: React.PropsWithChildren<ExportModalProps>,
     ref
   ) => {
+    const blockClass = `${pkg.prefix}--export-modal`;
     const [name, setName] = useState('');
     const [dirtyInput, setDirtyInput] = useState(false);
     // by default (if it exists) use the first extension in the extension array
     const [extension, setExtension] = useState('');
     const renderPortalUse = usePortalTarget(portalTargetIn);
+    const carbonPrefix = usePrefix();
 
     useEffect(() => {
       setName(filename);
@@ -202,6 +213,15 @@ export let ExportModal = forwardRef(
         setExtension(preformattedExtensions?.[0]?.extension);
       }
     }, [filename, preformattedExtensions, open]);
+
+    useEffect(() => {
+      if (successful) {
+        const button: HTMLButtonElement | null = document.querySelector(
+          `.${blockClass} .${carbonPrefix}--modal-close-button button`
+        );
+        button?.focus();
+      }
+    }, [successful, blockClass, carbonPrefix]);
 
     const onNameChangeHandler = (evt) => {
       setName(evt.target.value);
@@ -219,7 +239,7 @@ export let ExportModal = forwardRef(
       const returnName = extension
         ? `${filename}.${extension.toLocaleLowerCase()}`
         : name;
-      onRequestSubmit && onRequestSubmit(returnName);
+      onRequestSubmit?.(returnName);
     };
 
     const hasInvalidExtension = () => {
@@ -236,7 +256,6 @@ export let ExportModal = forwardRef(
       return false;
     };
 
-    const blockClass = `${pkg.prefix}--export-modal`;
     const internalId = useRef(uuidv4());
     const primaryButtonDisabled = loading || !name || hasInvalidExtension();
     const submitted = loading || error || successful;
@@ -251,103 +270,111 @@ export let ExportModal = forwardRef(
       onBlur: onBlurHandler,
       ['data-modal-primary-focus']: true,
     };
-
     return renderPortalUse(
-      <ComposedModal
-        {...rest}
-        className={cx(blockClass, className)}
-        aria-label={title}
-        size="sm"
-        preventCloseOnClickOutside
-        {...{ open, ref, onClose, ...getDevtoolsProps(componentName) }}
-      >
-        <ModalHeader
-          className={`${blockClass}__header`}
-          closeModal={onClose}
-          title={title}
-        />
-        <ModalBody className={`${blockClass}__body-container`}>
-          {!submitted && (
-            <>
-              {body && <p className={`${blockClass}__body`}>{body}</p>}
-              {preformattedExtensions.length ? (
-                <FormGroup legendText={preformattedExtensionsLabel}>
-                  <RadioButtonGroup
-                    orientation="vertical"
-                    onChange={onExtensionChangeHandler}
-                    valueSelected={extension}
-                    name="extensions"
-                  >
-                    {preformattedExtensions.map((o) => (
-                      <RadioButton
-                        key={o.extension}
-                        id={o.extension}
-                        value={o.extension}
-                        labelText={`${o.extension} (${o.description})`}
-                        data-modal-primary-focus
+      <FeatureFlags enableExperimentalFocusWrapWithoutSentinels>
+        <ComposedModal
+          {...rest}
+          className={cx(blockClass, className)}
+          aria-label={title}
+          size="sm"
+          preventCloseOnClickOutside
+          launcherButtonRef={triggerButtonRef}
+          {...{ open, ref, onClose, ...getDevtoolsProps(componentName) }}
+        >
+          <ModalHeader
+            className={`${blockClass}__header`}
+            closeModal={onClose}
+            title={title}
+          />
+          <ModalBody className={`${blockClass}__body-container`}>
+            {!submitted && (
+              <>
+                {body && <p className={`${blockClass}__body`}>{body}</p>}
+                {preformattedExtensions.length ? (
+                  <FormGroup legendText={preformattedExtensionsLabel}>
+                    <RadioButtonGroup
+                      orientation="vertical"
+                      onChange={onExtensionChangeHandler}
+                      valueSelected={extension}
+                      name="extensions"
+                      aria-label="extensions"
+                    >
+                      {preformattedExtensions.map((o) => (
+                        <RadioButton
+                          key={o.extension}
+                          id={o.extension}
+                          value={o.extension}
+                          labelText={`${o.extension} (${o.description})`}
+                          data-modal-primary-focus
+                        />
+                      ))}
+                    </RadioButtonGroup>
+                  </FormGroup>
+                ) : (
+                  <div className={`${blockClass}__input-container`}>
+                    {inputType === 'text' ? (
+                      <TextInput {...commonInputProps} />
+                    ) : (
+                      <PasswordInput
+                        {...commonInputProps}
+                        showPasswordLabel={showPasswordLabel}
+                        hidePasswordLabel={hidePasswordLabel}
+                        tooltipPosition="left"
                       />
-                    ))}
-                  </RadioButtonGroup>
-                </FormGroup>
-              ) : (
-                <div className={`${blockClass}__input-container`}>
-                  {inputType === 'text' ? (
-                    <TextInput {...commonInputProps} />
-                  ) : (
-                    <PasswordInput
-                      {...commonInputProps}
-                      showPasswordLabel={showPasswordLabel}
-                      hidePasswordLabel={hidePasswordLabel}
-                      tooltipPosition="left"
-                    />
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+            <div aria-live="polite" className={`${blockClass}__messaging`}>
+              {loading && (
+                <>
+                  <Loading
+                    aria-live="off"
+                    description=""
+                    small
+                    withOverlay={false}
+                  />
+                  <p>{loadingMessage}</p>
+                </>
               )}
-            </>
+              {successful && (
+                <>
+                  <CheckmarkFilled
+                    size={16}
+                    className={`${blockClass}__checkmark-icon`}
+                  />
+                  <p>{successMessage}</p>
+                </>
+              )}
+              {error && (
+                <>
+                  <ErrorFilled
+                    size={16}
+                    className={`${blockClass}__error-icon`}
+                  />
+                  <p>{errorMessage}</p>
+                </>
+              )}
+            </div>
+          </ModalBody>
+          {!submitted && (
+            <ModalFooter className={`${blockClass}__footer`}>
+              <Button type="button" kind="secondary" onClick={onClose}>
+                {secondaryButtonText}
+              </Button>
+              <Button
+                type="submit"
+                kind="primary"
+                onClick={onSubmitHandler}
+                disabled={primaryButtonDisabled}
+              >
+                {primaryButtonText}
+              </Button>
+            </ModalFooter>
           )}
-          <div className={`${blockClass}__messaging`}>
-            {loading && (
-              <>
-                <Loading small withOverlay={false} />
-                <p>{loadingMessage}</p>
-              </>
-            )}
-            {successful && (
-              <>
-                <CheckmarkFilled
-                  size={16}
-                  className={`${blockClass}__checkmark-icon`}
-                />
-                <p>{successMessage}</p>
-              </>
-            )}
-            {error && (
-              <>
-                <ErrorFilled
-                  size={16}
-                  className={`${blockClass}__error-icon`}
-                />
-                <p>{errorMessage}</p>
-              </>
-            )}
-          </div>
-        </ModalBody>
-        {!submitted && (
-          <ModalFooter className={`${blockClass}__footer`}>
-            <Button type="button" kind="secondary" onClick={onClose}>
-              {secondaryButtonText}
-            </Button>
-            <Button
-              type="submit"
-              kind="primary"
-              onClick={onSubmitHandler}
-              disabled={primaryButtonDisabled}
-            >
-              {primaryButtonText}
-            </Button>
-          </ModalFooter>
-        )}
-      </ComposedModal>
+        </ComposedModal>
+      </FeatureFlags>
     );
   }
 );
@@ -456,6 +483,10 @@ ExportModal.propTypes = {
    * The text displayed at the top of the modal
    */
   title: PropTypes.string.isRequired,
+  /**
+   * Sets the trigger button ref
+   */
+  triggerButtonRef: PropTypes.any,
   /**
    * array of valid extensions the file can have
    */

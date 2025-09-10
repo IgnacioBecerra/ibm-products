@@ -1,6 +1,11 @@
-import { useState, useLayoutEffect, useEffect, useCallback } from 'react';
+/**
+ * Copyright IBM Corp. 2024
+ *
+ * This source code is licensed under the Apache-2.0 license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
 
-export const ScrollDirection = { X: 'X', Y: 'Y' };
+import { useState, useLayoutEffect, useEffect, useCallback } from 'react';
 
 export const ScrollStates = {
   // No scrolling required because content fits within container.
@@ -14,40 +19,6 @@ export const ScrollStates = {
 };
 
 // FUNCTIONS
-
-export const getScrollState = (element, scrollDirection) => {
-  // console.log('getScrollState - element: ', element);
-  // console.log('getScrollState - scrollDirection: ', scrollDirection);
-  // console.log('-------------------------------------------------');
-  switch (scrollDirection) {
-    case ScrollDirection.X: {
-      if (element.scrollWidth === element.clientWidth) {
-        return ScrollStates.NONE;
-      }
-      if (element.scrollLeft === 0) {
-        return ScrollStates.INITIAL;
-      }
-      if (element.scrollLeft + element.clientWidth === element.scrollWidth) {
-        return ScrollStates.END;
-      }
-      return ScrollStates.STARTED;
-    }
-
-    case ScrollDirection.Y:
-    default: {
-      if (element.scrollHeight === element.clientHeight) {
-        return ScrollStates.NONE;
-      }
-      if (element.scrollTop === 0) {
-        return ScrollStates.INITIAL;
-      }
-      if (element.scrollTop + element.clientHeight === element.scrollHeight) {
-        return ScrollStates.END;
-      }
-      return ScrollStates.STARTED;
-    }
-  }
-};
 
 export const useIsOverflow = (ref) => {
   const [isHorizontallyScrollable, setIsHorizontallyScrollable] = useState();

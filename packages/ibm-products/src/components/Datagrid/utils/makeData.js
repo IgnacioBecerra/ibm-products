@@ -8,7 +8,7 @@
 import React from 'react';
 import namor from 'namor';
 import { inlineEditSelectItems } from './getInlineEditColumns';
-import { ExampleSlug } from './ExampleSlug';
+import { ExampleAILabel } from './ExampleAILabel';
 
 const getRandomInteger = (min, max, decimalPlaces) => {
   const roundedMin = Math.ceil(min);
@@ -56,8 +56,8 @@ const getPasswordStrength = () => {
   return chance > 0.66
     ? 'critical'
     : chance > 0.33
-    ? 'minor-warning'
-    : 'normal';
+      ? 'minor-warning'
+      : 'normal';
 };
 
 const renderDocLink = () => {
@@ -68,14 +68,14 @@ const renderDocLink = () => {
       chance > 0.66
         ? 'https://carbondesignsystem.com/'
         : chance > 0.33
-        ? 'https://pages.github.ibm.com/cdai-design/pal/'
-        : 'https://ibm-products.carbondesignsystem.com/',
+          ? 'https://pages.github.ibm.com/carbon/ibm-products/'
+          : 'https://ibm-products.carbondesignsystem.com/',
     text:
       chance > 0.66
         ? 'Carbon Design System'
         : chance > 0.33
-        ? 'Carbon for IBM Products PAL'
-        : 'Carbon for IBM Products storybook',
+          ? 'Carbon for IBM Products PAL'
+          : 'Carbon for IBM Products storybook',
   };
   return docLinkObj;
 };
@@ -95,7 +95,14 @@ const newPerson = (index, config) => {
   return {
     disabledColumn: namor.generate({ words: 1, numbers: 0 }),
     firstName: namor.generate({ words: 1, numbers: 0 }),
-    lastName: namor.generate({ words: 1, numbers: 0 }),
+    lastName:
+      index === 1 && config?.includeNonEditableCell && config?.column
+        ? {
+            value: '\u2014',
+            isStaticCell: true,
+            columnId: config?.column,
+          }
+        : namor.generate({ words: 1, numbers: 0 }),
     age: Math.floor(Math.random() * 30),
     visits: Math.floor(Math.random() * 100),
     progress: Math.floor(Math.random() * 100),
@@ -103,14 +110,14 @@ const newPerson = (index, config) => {
       statusChance > 0.66
         ? 'relationship'
         : statusChance > 0.33
-        ? 'complicated'
-        : 'single',
+          ? 'complicated'
+          : 'single',
     role:
       roleChance > 0.66
         ? 'developer'
         : roleChance > 0.33
-        ? 'designer'
-        : 'researcher',
+          ? 'designer'
+          : 'researcher',
     joined: getRandomDateJoined(),
 
     someone1: namor.generate({ words: 1, numbers: 0 }),
@@ -137,21 +144,23 @@ const newPerson = (index, config) => {
       initialChartTypeIndex === 0
         ? inlineEditSelectItems[0]
         : initialChartTypeIndex === 1
-        ? inlineEditSelectItems[1]
-        : inlineEditSelectItems[2],
+          ? inlineEditSelectItems[1]
+          : inlineEditSelectItems[2],
+    key: false,
     activeSince:
       activeChance > 0.66
         ? activeSinceDate
         : activeChance > 0.33
-        ? yesterdayDate
-        : '23/05/2020',
+          ? yesterdayDate
+          : '23/05/2020',
     bonus: `$\r${getRandomInteger(100, 500, 2)}`,
     passwordStrength: getPasswordStrength(),
     doc_link: renderDocLink(),
-    slug: config?.enableAIRow &&
+    aiLabel: config?.enableAIRow &&
       (index === 1 || index === 3 || index === 4) && (
-        <ExampleSlug align={config?.slugAlign} />
+        <ExampleAILabel align={config?.aiLabelAlign} />
       ),
+    id: config?.id ? `${config?.id}__${index}` : `row_${index}`,
   };
 };
 

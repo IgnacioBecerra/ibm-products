@@ -20,13 +20,13 @@ $block-class-modal: #{$_block-class}-modal;
 @include block-wrap($_block-class) {
   &.#{$_block-class} {
     display: block;
-    width: 100%;
+    inline-size: 100%;
   }
 
   .#{$_block-class}__space {
     position: relative;
     display: block;
-    width: 100%;
+    inline-size: 100%;
     white-space: nowrap;
   }
 
@@ -66,7 +66,7 @@ $block-class-modal: #{$_block-class}-modal;
 
   .#{$block-class-overflow}--hidden {
     overflow: hidden;
-    max-width: 0;
+    max-inline-size: 0;
     visibility: hidden;
   }
 }
@@ -80,51 +80,26 @@ $block-class-modal: #{$_block-class}-modal;
 
   .#{$block-class-modal}__container {
     @include breakpoint(md) {
-      height: 90%;
-      max-height: 450px;
+      block-size: 90%;
+      max-block-size: 450px;
     }
   }
 
   .#{$block-class-modal}__search {
-    margin-top: $spacing-05;
-    margin-bottom: 0;
-  }
-
-  &.#{$block-class-modal} .#{$block-class-modal}__fade {
-    position: relative;
-    margin-right: $spacing-05;
-    margin-left: $spacing-05;
-  }
-
-  .#{$block-class-modal}__body {
-    padding-bottom: $spacing-06;
+    margin-block: $spacing-05 0;
   }
 
   .#{$block-class-modal}__header {
-    padding-right: 0;
-    margin-right: $spacing-05;
-  }
-
-  &.#{$block-class-modal} .#{$block-class-modal}__fade::after {
-    position: absolute;
-    top: calc(-1 * #{$spacing-11});
-    left: 0;
-    width: 100%;
-    height: $spacing-07;
-    background: linear-gradient(to bottom, transparent, $layer-01);
-    content: '';
+    margin-inline-end: $spacing-05;
+    padding-inline-end: 0;
   }
 }
 
 @include block-wrap('#{$block-class-overflow}__tagset-popover') {
   &.#{$block-class-overflow}__tagset-popover {
     // removes the min width in Carbon
-    min-width: initial;
-    text-align: left;
-  }
-
-  .#{$block-class-overflow}__popover-trigger {
-    font-family: inherit;
+    min-inline-size: initial;
+    text-align: start;
   }
 
   .#{$block-class-overflow}__show-all-tags-link.#{$carbon-prefix}--link:visited {
@@ -145,8 +120,8 @@ $block-class-modal: #{$_block-class}-modal;
   }
 
   .#{$block-class-overflow}__show-all-tags-link {
-    margin-top: $spacing-03;
     color: $link-inverse;
+    margin-block-start: $spacing-03;
   }
 
   .#{$block-class-overflow}__tag-item.#{$block-class-overflow}__tag-item--tag
@@ -161,13 +136,13 @@ $block-class-modal: #{$_block-class}-modal;
 
     display: block;
     overflow: hidden;
-    min-width: initial;
-    min-height: initial;
     padding: 0;
     border-radius: 0;
     margin: 0;
     background-color: inherit;
     color: inherit;
+    min-block-size: initial;
+    min-inline-size: initial;
     text-overflow: ellipsis;
     white-space: nowrap;
   }

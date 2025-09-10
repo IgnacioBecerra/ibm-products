@@ -5,16 +5,16 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-// Import portions of React that are needed.
-import React from 'react';
+import { BEACON_KIND } from '../Coachmark';
 
 // Other standard imports.
 import PropTypes from 'prop-types';
+// Import portions of React that are needed.
+import React from 'react';
 import cx from 'classnames';
-import { BEACON_KIND, useCoachmark } from '../Coachmark';
-
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
-import { pkg /*, carbon */ } from '../../settings';
+import { pkg } from '../../settings';
+import { ButtonProps, Button } from '@carbon/react';
 
 // The block part of our conventional BEM class names (blockClass__E--M).
 const blockClass = `${pkg.prefix}--coachmark-beacon`;
@@ -24,7 +24,13 @@ const defaults = {
   kind: 'default',
 };
 
-interface CoachmarkBeaconProps {
+export interface CoachmarkButtonProps extends ButtonProps<React.ElementType> {
+  onClick?(): void;
+  onDoubleClick?(): void;
+  tabIndex?: number;
+  ['aria-bool']?: boolean;
+}
+export interface CoachmarkBeaconProps {
   /**
    * Optional class name for this component.
    */
@@ -39,6 +45,10 @@ interface CoachmarkBeaconProps {
    * The aria label.
    */
   label: string;
+  /**
+   * button props
+   */
+  buttonProps?: CoachmarkButtonProps;
 }
 
 /**
@@ -47,20 +57,14 @@ interface CoachmarkBeaconProps {
 export let CoachmarkBeacon = React.forwardRef<
   HTMLDivElement,
   CoachmarkBeaconProps
->(({ label, className, kind = defaults.kind, ...rest }, ref) => {
-  const coachmark = useCoachmark();
-  if (!coachmark) {
-    return (
-      <div>
-        CoachmarkBeacon is to be use exclusively within the target prop of
-        Coachmark
-      </div>
-    );
-  }
-  const overlayPositionStyle = {
-    top: coachmark.positionTune?.y ?? 0,
-    left: coachmark.positionTune?.x ?? 0,
-  };
+>((props, ref) => {
+  const {
+    label,
+    className,
+    kind = defaults.kind,
+    buttonProps,
+    ...rest
+  } = props;
   return (
     <span
       {
@@ -69,18 +73,16 @@ export let CoachmarkBeacon = React.forwardRef<
       }
       className={cx(blockClass, `${blockClass}-${kind}`, className)}
       ref={ref}
-      style={overlayPositionStyle}
       {...getDevtoolsProps(componentName)}
       role="tooltip"
     >
       <button
-        tabIndex={0}
         type="button"
-        {...coachmark.buttonProps}
-        aria-label={label}
+        {...buttonProps}
         className={`${blockClass}__target`}
       >
-        <svg className={`${blockClass}__center`}>
+        <svg className={`${blockClass}__center`} aria-label={label}>
+          <title>{label}</title>
           <circle r={1} cx={38} cy={38} />
         </svg>
       </button>
@@ -99,6 +101,18 @@ CoachmarkBeacon.displayName = componentName;
 // in alphabetical order (for consistency).
 // See https://www.npmjs.com/package/prop-types#usage.
 CoachmarkBeacon.propTypes = {
+  /**
+   * button props
+   */
+  buttonProps: PropTypes.shape({
+    /**@ts-ignore*/
+    ...Button.propTypes,
+    /**@ts-ignore*/
+    onClick: PropTypes.func,
+    onDoubleClick: PropTypes.func,
+    tabIndex: PropTypes.number,
+    ['aria-expanded']: PropTypes.bool,
+  }),
   /**
    * Optional class name for this component.
    */

@@ -6,24 +6,28 @@
  */
 
 import React, {
-  forwardRef,
   MutableRefObject,
   ReactNode,
+  forwardRef,
+  useCallback,
   useEffect,
   useRef,
   useState,
-  useCallback,
 } from 'react';
-import cx from 'classnames';
+import { useClickOutsideElement, useWindowEvent } from './utils/hooks';
+
+import { COACHMARK_OVERLAY_KIND } from './utils/enums';
+import { CoachmarkContext, CoachmarkContextType } from './utils/context';
+import { CoachmarkOverlay } from './CoachmarkOverlay';
 import PropTypes from 'prop-types';
 import { createPortal } from 'react-dom';
-import { CoachmarkOverlay } from './CoachmarkOverlay';
-import { CoachmarkContext } from './utils/context';
-import { COACHMARK_OVERLAY_KIND } from './utils/enums';
-import { useClickOutsideElement, useWindowEvent } from './utils/hooks';
+import cx from 'classnames';
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
-import { pkg /*, carbon */ } from '../../settings';
-import { throttle } from 'lodash';
+import { pkg } from '../../settings';
+import { throttle } from '../../global/js/utils/throttle';
+import { Popover, PopoverAlignment, PopoverContent } from '@carbon/react';
+import { useIsomorphicEffect } from '../../global/js/hooks';
+
 // The block part of our conventional BEM class names (blockClass__E--M).
 const blockClass = `${pkg.prefix}--coachmark`;
 const overlayBlockClass = `${blockClass}-overlay`;
@@ -34,9 +38,11 @@ const defaults = {
   onClose: () => {},
   overlayKind: 'tooltip',
   theme: 'light',
+  isOpenByDefault: false,
+  closeIconDescription: '',
 };
 
-interface CoachmarkProps {
+export interface CoachmarkProps {
   /**
    * Where to render the Coachmark relative to its target.
    * Applies only to Floating and Tooltip Coachmarks.
@@ -55,7 +61,11 @@ interface CoachmarkProps {
     | 'top'
     | 'top-left'
     | 'top-right';
-
+  /**
+   * Auto aligns the coachmark based on screen boundaries
+   * Applies only to Tooltip Coachmarks.
+   */
+  autoAlign?: boolean;
   /**
    * Coachmark should use a single CoachmarkOverlayElements component as a child.
    * @see CoachmarkOverlayElements
@@ -71,18 +81,22 @@ interface CoachmarkProps {
    */
   onClose?: () => void;
   /**
+   *  @deprecated
    * Optional class name for the Coachmark Overlay component.
    */
   overlayClassName?: string;
 
   /**
+   *  @deprecated
    * What kind or style of Coachmark to render.
    */
   overlayKind?: 'tooltip' | 'floating' | 'stacked';
-
-  overlayRef?: MutableRefObject<HTMLElement | null>;
-
   /**
+   *  @deprecated
+   */
+  overlayRef?: MutableRefObject<HTMLElement | null>;
+  /**
+   *  @deprecated
    * By default, the Coachmark will be appended to the end of `document.body`.
    * The Coachmark will remain persistent as the user navigates the app until
    * the user closes the Coachmark.
@@ -93,18 +107,30 @@ interface CoachmarkProps {
    * element is hidden or component is unmounted, the Coachmark will disappear.
    */
   portalTarget?: string;
+
   /**
    * Fine tune the position of the target in pixels. Applies only to Beacons.
    */
-  positionTune?: { x: number; y: number } | object;
+  positionTune?: { x: number; y: number };
   /**
+   * @deprecated
    * The optional button or beacon that the user will click to show the Coachmark.
    */
   target: React.ReactNode;
   /**
+   * @deprecated
    * Determines the theme of the component.
    */
   theme?: 'light' | 'dark';
+  /**
+   * Determines if the coachmark is open by default.
+   * Does nothing if `overlayKind=stacked`.
+   */
+  isOpenByDefault?: boolean;
+  /**
+   * Tooltip text and aria label for the Close button icon.
+   */
+  closeIconDescription?: string;
 }
 
 /**
@@ -117,17 +143,19 @@ export let Coachmark = forwardRef<HTMLElement, CoachmarkProps>(
   (
     {
       align = defaults.align,
+      autoAlign,
       children,
       className,
       onClose = defaults.onClose,
       overlayClassName,
       overlayKind = defaults.overlayKind,
       overlayRef,
-      portalTarget,
       positionTune,
+      portalTarget,
       target,
       theme = defaults.theme,
-
+      isOpenByDefault = defaults.isOpenByDefault,
+      closeIconDescription = defaults.closeIconDescription,
       // Collect any other property values passed in.
       ...rest
     },
@@ -135,17 +163,28 @@ export let Coachmark = forwardRef<HTMLElement, CoachmarkProps>(
   ) => {
     const isBeacon = overlayKind === COACHMARK_OVERLAY_KIND.TOOLTIP;
     const isStacked = overlayKind === COACHMARK_OVERLAY_KIND.STACKED;
-    const portalNode = portalTarget
-      ? document.querySelector(portalTarget) ?? document.querySelector('body')
-      : document.querySelector('body');
-    const [isOpen, setIsOpen] = useState(isStacked);
+    const [isOpen, setIsOpen] = useState(isStacked || isOpenByDefault);
     const [shouldResetPosition, setShouldResetPosition] = useState(false);
     const [targetRect, setTargetRect] = useState();
     const [targetOffset, setTargetOffset] = useState({ x: 0, y: 0 });
-    const overlayBackupRef = useRef();
-    const backupRef = useRef();
+    const overlayBackupRef = useRef(undefined);
+    const backupRef = useRef(undefined);
     const _coachmarkRef = ref || backupRef;
     const _overlayRef = overlayRef || overlayBackupRef;
+
+    const portalNode = useRef<Element | DocumentFragment | null>(null);
+    const popoverRef = useRef<HTMLDivElement>(null);
+
+    let targetName;
+    if (React.isValidElement(target) && typeof target.type !== 'string') {
+      targetName = target.type as { displayName?: string };
+    }
+    useIsomorphicEffect(() => {
+      portalNode.current = portalTarget
+        ? (document?.querySelector(portalTarget) ??
+          document?.querySelector('body'))
+        : document?.querySelector('body');
+    }, [portalTarget]);
 
     const closeOverlay = () => {
       setIsOpen(false);
@@ -193,7 +232,7 @@ export let Coachmark = forwardRef<HTMLElement, CoachmarkProps>(
       }
     };
 
-    const contextValue = {
+    const contextValue: CoachmarkContextType = {
       buttonProps: {
         'aria-expanded': isOpen,
         tabIndex: 0,
@@ -207,8 +246,10 @@ export let Coachmark = forwardRef<HTMLElement, CoachmarkProps>(
       },
       targetRect: targetRect,
       targetOffset: targetOffset,
-      align: align,
+      align: align as PopoverAlignment,
       positionTune: positionTune,
+      isOpen: isOpen,
+      closeIconDescription,
     };
     const handleResize = throttle(() => {
       closeOverlay();
@@ -222,6 +263,24 @@ export let Coachmark = forwardRef<HTMLElement, CoachmarkProps>(
         setIsOpen(true);
       }
     }, [shouldResetPosition]);
+
+    useIsomorphicEffect(() => {
+      const overlayPositionStyle = {
+        top: `${(positionTune?.y ?? 0) - 16}px`,
+        left: `${(positionTune?.x ?? 0) - 16}px`,
+      };
+      if (
+        popoverRef.current &&
+        popoverRef.current.style &&
+        overlayPositionStyle
+      ) {
+        const combinedStyle = {
+          position: 'absolute',
+          ...overlayPositionStyle,
+        };
+        Object.assign(popoverRef.current.style, combinedStyle);
+      }
+    }, [popoverRef, positionTune]);
 
     // On unmount:
     // - DO NOT "Close()" the coachmark.
@@ -252,25 +311,65 @@ export let Coachmark = forwardRef<HTMLElement, CoachmarkProps>(
           }
           {...getDevtoolsProps(componentName)}
         >
-          {target}
-          {isOpen &&
-            createPortal(
-              <CoachmarkOverlay
-                ref={_overlayRef as MutableRefObject<HTMLDivElement | null>}
-                fixedIsVisible={false}
-                kind={overlayKind}
-                onClose={handleClose}
-                theme={theme}
-                className={cx(
-                  overlayClassName,
-                  `${overlayBlockClass}--is-visible`
+          {overlayKind !== 'tooltip' ? (
+            <>
+              {targetName?.displayName === 'CoachmarkBeacon'
+                ? React.cloneElement(target as React.ReactElement<any>, {
+                    buttonProps: contextValue.buttonProps,
+                  })
+                : target}
+              {isOpen &&
+                portalNode?.current &&
+                createPortal(
+                  <CoachmarkOverlay
+                    ref={_overlayRef as MutableRefObject<HTMLDivElement | null>}
+                    fixedIsVisible={false}
+                    kind={overlayKind}
+                    onClose={handleClose}
+                    theme={theme}
+                    className={cx(
+                      overlayClassName,
+                      `${overlayBlockClass}--is-visible`
+                    )}
+                  >
+                    {children}
+                  </CoachmarkOverlay>,
+                  // Default to `document.body` when `portalNode` is `null`
+                  portalNode?.current
                 )}
-              >
-                {children}
-              </CoachmarkOverlay>,
-              // Default to `document.body` when `portalNode` is `null`
-              portalNode || document.body
-            )}
+            </>
+          ) : (
+            <Popover
+              highContrast
+              caret
+              ref={popoverRef}
+              align={align as PopoverAlignment}
+              autoAlign={autoAlign}
+              open={isOpen}
+            >
+              {targetName?.displayName === 'CoachmarkBeacon'
+                ? React.cloneElement(target as React.ReactElement<any>, {
+                    buttonProps: contextValue.buttonProps,
+                  })
+                : target}
+              <PopoverContent>
+                {isOpen && (
+                  <CoachmarkOverlay
+                    ref={_overlayRef as MutableRefObject<HTMLDivElement | null>}
+                    fixedIsVisible={false}
+                    kind={overlayKind}
+                    onClose={handleClose}
+                    theme={theme}
+                    className={cx(overlayClassName, {
+                      [`${overlayBlockClass}--is-visible`]: isOpen,
+                    })}
+                  >
+                    {children}
+                  </CoachmarkOverlay>
+                )}
+              </PopoverContent>
+            </Popover>
+          )}
         </div>
       </CoachmarkContext.Provider>
     );
@@ -280,7 +379,8 @@ export let Coachmark = forwardRef<HTMLElement, CoachmarkProps>(
 const overlayRefType =
   typeof HTMLElement === 'undefined'
     ? PropTypes.object
-    : PropTypes.instanceOf(HTMLElement);
+    : // eslint-disable-next-line ssr-friendly/no-dom-globals-in-module-scope
+      PropTypes.instanceOf(HTMLElement);
 
 // Return a placeholder if not released and not enabled by feature flag
 Coachmark = pkg.checkComponentEnabled(Coachmark, componentName);
@@ -288,6 +388,46 @@ Coachmark = pkg.checkComponentEnabled(Coachmark, componentName);
 // The display name of the component, used by React. Note that displayName
 // is used in preference to relying on function.name.
 Coachmark.displayName = componentName;
+
+export const deprecatedProps = {
+  /**
+   * **Deprecated**
+   * Optional class name for the Coachmark Overlay component.
+   */
+  overlayClassName: PropTypes.string,
+
+  /**
+   * **Deprecated**
+   * What kind or style of Coachmark to render.
+   */
+  overlayKind: PropTypes.oneOf(['tooltip', 'floating', 'stacked']),
+
+  overlayRef: PropTypes.shape({
+    current: overlayRefType as PropTypes.Validator<HTMLElement | null>,
+  }),
+  /**
+   * **Deprecated**
+   * By default, the Coachmark will be appended to the end of `document.body`.
+   * The Coachmark will remain persistent as the user navigates the app until
+   * the user closes the Coachmark.
+   *
+   * Alternatively, the app developer can tightly couple the Coachmark to a DOM
+   * element or other component by specifying a CSS selector. The Coachmark will
+   * remain visible as long as that element remains visible or mounted. When the
+   * element is hidden or component is unmounted, the Coachmark will disappear.
+   */
+  portalTarget: PropTypes.string,
+  /**
+   * **Deprecated**
+   * The optional button or beacon that the user will click to show the Coachmark.
+   */
+  target: PropTypes.node,
+  /**
+   * **Deprecated**
+   * Determines the theme of the component.
+   */
+  theme: PropTypes.oneOf(['light', 'dark']),
+};
 
 // The types and DocGen commentary for the component props,
 // in alphabetical order (for consistency).
@@ -312,6 +452,11 @@ Coachmark.propTypes = {
     'top-left',
     'top-right',
   ]),
+  /**
+   * Auto aligns the coachmark based on screen boundaries
+   * Applies only to Tooltip Coachmarks.
+   */
+  autoAlign: PropTypes.bool,
 
   /**
    * Coachmark should use a single CoachmarkOverlayElements component as a child.
@@ -324,47 +469,28 @@ Coachmark.propTypes = {
   className: PropTypes.string,
 
   /**
+   * Tooltip text and aria label for the Close button icon.
+   */
+  closeIconDescription: PropTypes.string,
+
+  /**
+   * Determines if the coachmark is open by default.
+   * Does nothing if `overlayKind=stacked`.
+   */
+  isOpenByDefault: PropTypes.bool,
+
+  /**
    * Function to call when the Coachmark closes.
    */
   onClose: PropTypes.func,
   /**
-   * Optional class name for the Coachmark Overlay component.
-   */
-  overlayClassName: PropTypes.string,
-
-  /**
-   * What kind or style of Coachmark to render.
-   */
-  overlayKind: PropTypes.oneOf(['tooltip', 'floating', 'stacked']),
-
-  overlayRef: PropTypes.shape({
-    current: overlayRefType as PropTypes.Validator<HTMLElement | null>,
-  }),
-
-  /**
-   * By default, the Coachmark will be appended to the end of `document.body`.
-   * The Coachmark will remain persistent as the user navigates the app until
-   * the user closes the Coachmark.
-   *
-   * Alternatively, the app developer can tightly couple the Coachmark to a DOM
-   * element or other component by specifying a CSS selector. The Coachmark will
-   * remain visible as long as that element remains visible or mounted. When the
-   * element is hidden or component is unmounted, the Coachmark will disappear.
-   */
-  portalTarget: PropTypes.string,
-  /**
    * Fine tune the position of the target in pixels. Applies only to Beacons.
    */
+  // @ts-ignore
   positionTune: PropTypes.shape({
     x: PropTypes.number,
     y: PropTypes.number,
   }),
-  /**
-   * The optional button or beacon that the user will click to show the Coachmark.
-   */
-  target: PropTypes.node,
-  /**
-   * Determines the theme of the component.
-   */
-  theme: PropTypes.oneOf(['light', 'dark']),
+
+  ...deprecatedProps,
 };

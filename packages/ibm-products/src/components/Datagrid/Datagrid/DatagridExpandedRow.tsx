@@ -12,7 +12,6 @@ import { DataGridState } from '../types';
 
 const blockClass = `${pkg.prefix}--datagrid`;
 
-// eslint-disable-next-line react/prop-types
 const DatagridExpandedRow =
   (ExpandedRowContentComponent: JSXElementConstructor<any>) =>
   (datagridState: DataGridState) => {
@@ -37,6 +36,9 @@ const DatagridExpandedRow =
       <tr
         className={cx(`${blockClass}__expanded-row`, {
           [`${blockClass}__slug--row`]: isValidElement(row?.original?.slug),
+          [`${blockClass}__ai-label--row`]: isValidElement(
+            row?.original?.aiLabel
+          ),
         })}
         onMouseEnter={(event) => toggleParentHoverClass(event, 'enter')}
         onMouseLeave={(event) => toggleParentHoverClass(event)}
@@ -44,8 +46,10 @@ const DatagridExpandedRow =
         <td className={`${blockClass}__expanded-row-cell-wrapper`}>
           <div
             className={`${blockClass}__expanded-row-content`}
-            style={{
-              height: expandedContentHeight && expandedContentHeight,
+            ref={(el) => {
+              if (el && el.style && expandedContentHeight) {
+                el.style.height = `${expandedContentHeight}px`;
+              }
             }}
           >
             <ExpandedRowContentComponent key={key} {..._state} />

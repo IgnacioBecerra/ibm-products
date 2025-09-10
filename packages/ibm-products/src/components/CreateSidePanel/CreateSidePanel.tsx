@@ -16,7 +16,7 @@ import { pkg } from '../../settings';
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
 
 // Carbon and package components we use.
-import { Form } from '@carbon/react';
+import { ButtonProps, Form } from '@carbon/react';
 import { SidePanel } from '../SidePanel';
 import uuidv4 from '../../global/js/utils/uuidv4';
 
@@ -128,7 +128,7 @@ export let CreateSidePanel = React.forwardRef(
     }: PropsWithChildren<CreateSidePanelProps>,
     ref: React.Ref<HTMLDivElement>
   ) => {
-    const actions = [
+    const actions: ButtonProps<React.ElementType>[] = [
       {
         label: primaryButtonText,
         onClick: (event) => {
@@ -181,7 +181,13 @@ export let CreateSidePanel = React.forwardRef(
           >
             {formDescription}
           </p>
-          <Form className={`${blockClass}__form`} aria-labelledby={formTitleId}>
+          <Form
+            className={`${blockClass}__form`}
+            aria-labelledby={formTitleId}
+            onSubmit={(e: React.FormEvent<HTMLFormElement>) =>
+              e.preventDefault()
+            }
+          >
             {children}
           </Form>
         </SidePanel>

@@ -11,53 +11,43 @@ import React, {
   ReactNode,
   forwardRef,
 } from 'react';
-import PropTypes from 'prop-types';
-import { Card } from '../Card';
 
-import { getDevtoolsProps } from '../../global/js/utils/devtools';
-import { prepareProps } from '../../global/js/utils/props-helper';
-import { pkg } from '../../settings';
 import { CarbonIconType } from '@carbon/icons-react/lib/CarbonIcon';
+import { Card } from '../Card';
+import PropTypes from 'prop-types';
+import { getDevtoolsProps } from '../../global/js/utils/devtools';
+import { pkg } from '../../settings';
+import { prepareProps } from '../../global/js/utils/props-helper';
+import { ActionIcon } from '../Card/Card';
 
 const componentName = 'ProductiveCard';
 
-type ActionIcon = {
-  id?: string;
-  icon?: CarbonIconType;
-  onKeyDown?(): void;
-  onClick?(): void;
-  iconDescription?: string;
-  href?: string;
-};
 type overflowAction = {
   id?: string;
   itemText?: string;
-  onClick?: () => void;
-  onKeydown?: () => void;
+  onClick?: (event: MouseEvent) => void;
+  onKeyDown?: (event: KeyboardEvent) => void;
 };
 type PlacementType = 'top' | 'bottom';
 type ClickZoneType = 'one' | 'two' | 'three';
-interface ProductiveCardProps extends PropsWithChildren {
+export interface ProductiveCardProps extends PropsWithChildren {
   /**
-   * Icons that are displayed on card. Refer to design documentation for implementation guidelines. Note- href will supersede onClick
+   * Icons that are displayed on the card. Refer to design documentation for implementation guidelines. Note: href is deprecated. Set link.href for href functionality. If you are setting link object, href is a required property. link object supports all anchor element properties. Precedence: link.href > href. If link.href or href is set => anchor element, else button.
    */
   actionIcons?: ActionIcon[];
+  /**
+   * Optional prop that allows you to pass any component.
+   */
+  decorator?: ReactNode | boolean;
 
   /**
    * Determines if the action icons are on the top or bottom of the card
    */
   actionsPlacement?: PlacementType;
   /**
-   * Content that shows in the body of the card
-   */
-  // children: PropTypes.node,
-  /**
    * Optional user provided class
    */
   className?: string;
-
-  children: ReactNode;
-
   /**
    * Designates which zones of the card are clickable. Refer to design documentation for implementation guidelines
    */
@@ -74,7 +64,13 @@ interface ProductiveCardProps extends PropsWithChildren {
   /**
    * Provides the callback for a clickable card
    */
-  onClick?: () => void;
+  onClick?: (event: MouseEvent) => void;
+
+  /**
+   * Provides the callback for keydown events on the card
+   */
+  onKeyDown?: (event: KeyboardEvent) => void;
+
   /**
    * Function that's called from the primary button or action icon
    */
@@ -88,9 +84,14 @@ interface ProductiveCardProps extends PropsWithChildren {
    */
   overflowActions?: overflowAction[];
   /**
-   * Aria label prop required for OverflowMenu
+   * Sets the text for the OverflowMenu aria label and the OverflowMenu trigger button tooltip.
+   * Overrides `iconDescription` prop.
    */
   overflowAriaLabel?: string;
+  /**
+   * Determines if the primary button is enabled or not
+   */
+  primaryButtonDisabled?: boolean;
   /**
    * Optionally specify an href for your Button to become an <a> element
    */
@@ -126,6 +127,7 @@ interface ProductiveCardProps extends PropsWithChildren {
   /**
    * **Experimental:** For all cases a `Slug` component can be provided.
    * Clickable tiles only accept a boolean value of true and display a hollow slug.
+   * @deprecated please use the `decorator` prop
    */
   slug?: ReactNode | boolean;
 
@@ -138,11 +140,19 @@ interface ProductiveCardProps extends PropsWithChildren {
    * Determines title size
    */
   titleSize?: 'default' | 'large';
+
+  /**
+   * Sets the text for the OverflowMenu trigger button tooltip and OverflowMenu aria label,
+   * gets overridden by the `overflowAriaLabel` prop.
+   *
+   * @deprecated Please use the `overflowAriaLabel` prop instead.
+   */
+  iconDescription?: string;
 }
 
 export let ProductiveCard = forwardRef(
   (
-    { actionsPlacement = 'top', ...rest }: ProductiveCardProps,
+    { actionsPlacement = 'top', children, ...rest }: ProductiveCardProps,
     ref: ForwardedRef<HTMLDivElement>
   ) => {
     const validProps = prepareProps(rest, [
@@ -155,9 +165,16 @@ export let ProductiveCard = forwardRef(
     ]);
     return (
       <Card
-        {...{ ...validProps, actionsPlacement, ref, productive: true }}
+        {...{
+          ...validProps,
+          actionsPlacement,
+          ref,
+          productive: true,
+        }}
         {...getDevtoolsProps(componentName)}
-      />
+      >
+        {children}
+      </Card>
     );
   }
 );
@@ -167,7 +184,7 @@ ProductiveCard = pkg.checkComponentEnabled(ProductiveCard, componentName);
 
 ProductiveCard.propTypes = {
   /**
-   * Icons that are displayed on card. Refer to design documentation for implementation guidelines
+   * Icons that are displayed on the card. Refer to design documentation for implementation guidelines. Note: href is deprecated. Set link.href for href functionality. If you are setting link object, href is a required property. link object supports all anchor element properties. Precedence: link.href > href. If link.href or href is set => anchor element, else button.
    */
   /**@ts-ignore */
   actionIcons: PropTypes.arrayOf(
@@ -177,7 +194,13 @@ ProductiveCard.propTypes = {
       onKeyDown: PropTypes.func,
       onClick: PropTypes.func,
       iconDescription: PropTypes.string,
+      /**
+       * @deprecated please use the `link.href` instead
+       */
       href: PropTypes.string,
+      link: PropTypes.shape({
+        href: PropTypes.string.isRequired,
+      }),
     })
   ),
   /**
@@ -197,6 +220,10 @@ ProductiveCard.propTypes = {
    */
   clickZone: PropTypes.oneOf(['one', 'two', 'three']),
   /**
+   * Optional prop that allows you to pass any component.
+   */
+  decorator: PropTypes.oneOfType([PropTypes.node, PropTypes.bool]),
+  /**
    * Optional header description
    */
   description: PropTypes.oneOfType([
@@ -204,6 +231,13 @@ ProductiveCard.propTypes = {
     PropTypes.object,
     PropTypes.node,
   ]),
+  /**
+   * Sets the text for the OverflowMenu trigger button tooltip and OverflowMenu aria label,
+   * gets overridden by the `overflowAriaLabel` prop.
+   *
+   * @deprecated Please use the `overflowAriaLabel` prop instead.
+   */
+  iconDescription: PropTypes.string,
   /**
    * Optional label for the top of the card
    */
@@ -237,9 +271,14 @@ ProductiveCard.propTypes = {
     })
   ),
   /**
-   * Aria label prop required for OverflowMenu
+   * Sets the text for the OverflowMenu aria label and the OverflowMenu trigger button tooltip.
+   * Overrides `iconDescription` prop.
    */
   overflowAriaLabel: PropTypes.string,
+  /**
+   * Determines if the primary button is enabled or not
+   */
+  primaryButtonDisabled: PropTypes.bool,
   /**
    * Optionally specify an href for your Button to become an <a> element
    */

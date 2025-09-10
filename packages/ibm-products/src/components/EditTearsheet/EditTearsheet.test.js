@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, waitFor } from '@testing-library/react';
 import { carbon, pkg } from '../../settings';
 import { EditTearsheet } from './EditTearsheet';
 import { EditTearsheetForm } from './EditTearsheetForm';
@@ -61,6 +61,7 @@ const renderEditTearsheet = ({ ...rest } = {}) =>
       <EditTearsheetForm
         title={form1Title}
         fieldsetLegendText={form1Title}
+        fieldsetLegendId={form1Title}
         description={form1Description}
         subtitle={form1Subtitle}
       >
@@ -68,15 +69,23 @@ const renderEditTearsheet = ({ ...rest } = {}) =>
         <button type="button" disabled>
           Test
         </button>
-        <input type="text" />
+        <input aria-label="step1-input" type="text" />
       </EditTearsheetForm>
       <EditTearsheetForm title={form2Title} hasFieldset={false}>
         form 2 content
       </EditTearsheetForm>
-      <EditTearsheetForm title={form3Title} fieldsetLegendText={form3Title}>
+      <EditTearsheetForm
+        title={form3Title}
+        fieldsetLegendText={form3Title}
+        fieldsetLegendId={form3Title}
+      >
         form 3 content
       </EditTearsheetForm>
-      <EditTearsheetForm title={form4Title} fieldsetLegendText={form4Title}>
+      <EditTearsheetForm
+        title={form4Title}
+        fieldsetLegendText={form4Title}
+        fieldsetLegendId={form4Title}
+      >
         form 4 content
       </EditTearsheetForm>
     </EditTearsheet>
@@ -95,41 +104,27 @@ const initialDefaultPortalTargetBody = pkg.isFeatureEnabled(
 );
 
 describe(componentName, () => {
-  const { ResizeObserver } = window;
-
   beforeEach(() => {
-    window.ResizeObserver = jest.fn().mockImplementation(() => ({
-      observe: jest.fn(),
-      unobserve: jest.fn(),
-      disconnect: jest.fn(),
-    }));
-    window.IntersectionObserver = jest.fn().mockImplementation(() => ({
-      root: null,
-      rootMargin: '',
-      thresholds: [],
-      disconnect: () => null,
-      observe: () => null,
-      takeRecords: () => [],
-      unobserve: () => null,
-    }));
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
     jest.useFakeTimers();
     pkg.feature['default-portal-target-body'] = false;
-    window.matchMedia = jest.fn().mockImplementation((query) => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: jest.fn(), // Deprecated
-      removeListener: jest.fn(), // Deprecated
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
-    }));
+
+    //todo: remove once carbon fixes issue on side nav
+    jest.spyOn(console, 'error').mockImplementation((msg) => {
+      if (
+        typeof msg === 'string' &&
+        msg.includes('Received `true` for a non-boolean attribute `inert`')
+      ) {
+        return;
+      }
+      console.warn(msg); // or optionally call the original
+    });
   });
 
   afterEach(() => {
-    window.ResizeObserver = ResizeObserver;
     jest.useRealTimers();
     pkg.feature['default-portal-target-body'] = initialDefaultPortalTargetBody;
+    console.error.mockRestore();
   });
 
   it('renders the EditTearsheet component', async () => {
@@ -153,9 +148,14 @@ describe(componentName, () => {
   });
 
   it('has no accessibility violations', async () => {
-    const { container } = renderEditTearsheet({ ...defaultProps });
-    expect(() => container.toBeAccessible());
-    expect(() => container.toHaveNoAxeViolations());
+    renderEditTearsheet({ ...defaultProps });
+    const tearsheetElement = document.querySelector(
+      `.${editTearsheetBlockClass}`
+    );
+    await expect(tearsheetElement).toBeAccessible(componentName);
+    jest.useRealTimers();
+    await expect(tearsheetElement).toHaveNoAxeViolations();
+    jest.useFakeTimers();
   });
 
   it('adds additional props to the containing node', async () => {
@@ -185,7 +185,7 @@ describe(componentName, () => {
     );
     const editTearsheet = document.querySelector(`.${carbon.prefix}--modal`);
     expect(editTearsheet).toHaveClass('is-visible');
-    const closeButton = screen.getByTitle('Close');
+    const closeButton = screen.getByLabelText('Close');
     await act(() => click(closeButton));
     expect(editTearsheet).not.toHaveClass('is-visible');
   });
@@ -206,6 +206,29 @@ describe(componentName, () => {
 
     await act(() => click(submitButton));
     expect(onRequestSubmitFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('disables submit when submit button is clicked until onRequestSubmit processing completes', async () => {
+    const onRequestSubmitLong = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    };
+    render(
+      <EditTearsheet
+        {...{ ...defaultProps }}
+        onRequestSubmit={onRequestSubmitLong}
+        open
+      />
+    );
+
+    const editTearsheet = document.querySelector(`.${carbon.prefix}--modal`);
+    expect(editTearsheet).toHaveClass('is-visible');
+    const submitButton = screen.getByText('Save');
+    expect(submitButton.disabled).toEqual(false);
+
+    await act(() => click(submitButton));
+    expect(submitButton.disabled).toBeTruthy();
+    //wait up to a sec until state expected to change
+    await waitFor(() => expect(submitButton.disabled).toEqual(false));
   });
 
   it('applies className to the root node', async () => {

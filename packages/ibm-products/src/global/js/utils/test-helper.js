@@ -82,6 +82,7 @@ export const scssCompile = (file, compressed = false) =>
  * This function should be called after tests in order not to pollute other
  * tests with the installed mocks.
  */
+// eslint-disable-next-line ssr-friendly/no-dom-globals-in-module-scope
 const hep = HTMLElement.prototype;
 export const mockHTMLElement = (options) => {
   const originals = {};
@@ -115,8 +116,8 @@ const makeMatcher = (arg) =>
   typeof arg === 'string'
     ? expect.stringContaining(arg)
     : arg instanceof RegExp
-    ? expect.stringMatching(arg)
-    : arg;
+      ? expect.stringMatching(arg)
+      : arg;
 
 // a utility function used by expectWarn/Error to convert a single argument
 // match or an array of argument matches to an array of expect matchers
@@ -129,7 +130,7 @@ const makeMatcherArray = (args) =>
  * A helper function to enable a test to expect a single call to
  * console.warn, for example when intentionally using a deprecated prop
  * or supplying invalid parameters for the purposes of the test.
- * @param {string|regex|function|[]} message the expected parameters for the call to
+ * @param {string | regex | Function | []} message the expected parameters for the call to
  * console.warn, which must be called exactly once. A single string or regex or an
  * expect matcher can be used to match a single-argument call to console.warn (most common),
  * while an array of strings and/or regex and/or expect matchers can be used to match a
@@ -137,11 +138,12 @@ const makeMatcherArray = (args) =>
  * argument.
  * @param {Function} test the test function to call, during which the call to
  * console.warn will be expected.
+ * @param {number} calls by default the test assumes warn will be called a single time, but it's possible it'll be called more than once
  */
-export const expectWarn = (message, test) => {
+export const expectWarn = (message, test, calls = 1) => {
   const warn = jest.spyOn(console, 'warn').mockImplementation(jest.fn());
   const result = test();
-  expect(warn).toBeCalledTimes(1);
+  expect(warn).toBeCalledTimes(calls);
   // expect(warn).toHaveBeenCalledWith(...makeMatcherArray(message));
   warn.mockRestore();
   return result;
@@ -225,7 +227,7 @@ export const expectLogging = async ({ errors, warnings }, test) => {
  * A helper function to enable a test to expect a single call to
  * console.error, for example when intentionally omitting a required prop
  * or supplying an invalid prop type or value for the purposes of the test.
- * @param {string|regex|function|[]} message the expected parameters for the call to
+ * @param {string | regex | Function | []} message the expected parameters for the call to
  * console.error, which must be called exactly once. A single string or regex or an
  * expect matcher can be used to match a single-argument call to console.error (most common),
  * while an array of strings and/or regex and/or expect matchers can be used to match a

@@ -28,9 +28,10 @@ import {
 } from '@carbon/react/icons';
 import { pkg /*, carbon */ } from '../../settings';
 import { StoryDocsPage } from '../../global/js/utils/StoryDocsPage';
+import { Annotation } from '../../../.storybook/Annotation';
 
 export default {
-  title: 'IBM Products/Patterns/Edit and update/EditUpdateCards',
+  title: 'Deprecated/Edit and update/EditUpdateCards',
   component: EditUpdateCards,
   tags: ['autodocs'],
   // TODO: Define argTypes for props not represented by standard JS types.
@@ -41,10 +42,25 @@ export default {
     styles,
     docs: {
       page: () => (
-        <StoryDocsPage altGuidelinesHref="https://pages.github.ibm.com/cdai-design/pal/patterns/edit/usage#other-edit-behaviors" />
+        <StoryDocsPage altGuidelinesHref="https://pages.github.ibm.com/carbon/ibm-products/patterns/edit-and-update/usage/#other-edit-behaviors" />
       ),
     },
   },
+  decorators: [
+    (story) => (
+      <Annotation
+        type="deprecation-notice"
+        text={
+          <div>
+            This component is deprecated and will be removed in the next major
+            version.
+          </div>
+        }
+      >
+        {story()}
+      </Annotation>
+    ),
+  ],
 };
 
 const defaultStoryProps = {
@@ -237,8 +253,8 @@ const Template = (args) => {
             editMode && !loading
               ? null
               : editMode && loading
-              ? actionIconsLoading
-              : actionIcons
+                ? actionIconsLoading
+                : actionIcons
           }
           previewChildren={preview}
           editChildren={edit}

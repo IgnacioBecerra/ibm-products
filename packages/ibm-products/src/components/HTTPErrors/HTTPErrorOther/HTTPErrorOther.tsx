@@ -77,11 +77,17 @@ export let HTTPErrorOther = React.forwardRef(
         {...getDevtoolsProps(componentName)}
       >
         <HTTPErrorContent {...{ description, errorCodeLabel, title, links }} />
-        <HTTPErrorSvgOther className={`${blockClass}__image`} />
+        <HTTPErrorSvgOther title={title} className={`${blockClass}__image`} />
       </div>
     );
   }
 );
+
+/**@ts-ignore*/
+HTTPErrorOther.deprecated = {
+  level: 'warn',
+  details: `${componentName} is deprecated. Please migrate to FullPageError by running npx @carbon/upgrade migrate ibm-products-update-http-errors --write`,
+};
 
 // Return a placeholder if not released and not enabled by feature flag
 HTTPErrorOther = pkg.checkComponentEnabled(HTTPErrorOther, componentName);

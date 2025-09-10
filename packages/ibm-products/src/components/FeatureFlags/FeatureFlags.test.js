@@ -1,5 +1,5 @@
 /**
- * Copyright IBM Corp. 2024, 2024
+ * Copyright IBM Corp. 2024, 2025
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
@@ -10,11 +10,7 @@ import * as GlobalFeatureFlags from '@carbon/feature-flags';
 import { render } from '@testing-library/react';
 import { FeatureFlags, useFeatureFlags, useFeatureFlag } from '.';
 
-GlobalFeatureFlags.merge({
-  test: 123,
-});
-
-describe('FeatureFlags', () => {
+describe('FeatureFlags base tests', () => {
   it('should default to the global feature flag scope', () => {
     GlobalFeatureFlags.add('enable-feature-flags-test', true);
 
@@ -36,8 +32,8 @@ describe('FeatureFlags', () => {
     expect(checkFlags).toHaveBeenLastCalledWith(true);
     expect(checkFlag).toHaveBeenLastCalledWith(true);
   });
-
-  it('should provide access to the feature flags for a scope', () => {
+  it('should provide access to the feature flags for a scope through deprecated flags prop', () => {
+    consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     const checkFlags = jest.fn();
     const checkFlag = jest.fn();
 
@@ -72,6 +68,45 @@ describe('FeatureFlags', () => {
     expect(checkFlag).toHaveBeenLastCalledWith({
       a: true,
       b: false,
+    });
+    consoleSpy.mockRestore();
+  });
+
+  it('should provide access to the feature flags for a scope', () => {
+    const checkFlags = jest.fn();
+    const checkFlag = jest.fn();
+
+    function TestComponent() {
+      const featureFlags = useFeatureFlags();
+      const enableTestFlagB = useFeatureFlag('enable-test-flag-b');
+      const enableTestFlagA = useFeatureFlag('enable-test-flag-a');
+
+      checkFlags({
+        enableTestFlagB: featureFlags.enabled('enable-test-flag-b'),
+        enableTestFlagA: featureFlags.enabled('enable-test-flag-a'),
+      });
+
+      checkFlag({
+        enableTestFlagB,
+        enableTestFlagA,
+      });
+
+      return null;
+    }
+
+    render(
+      <FeatureFlags enableTestFlagB>
+        <TestComponent />
+      </FeatureFlags>
+    );
+
+    expect(checkFlags).toHaveBeenLastCalledWith({
+      enableTestFlagB: true,
+      enableTestFlagA: false,
+    });
+    expect(checkFlag).toHaveBeenLastCalledWith({
+      enableTestFlagB: true,
+      enableTestFlagA: false,
     });
   });
 
@@ -81,95 +116,93 @@ describe('FeatureFlags', () => {
 
     function TestComponent() {
       const featureFlags = useFeatureFlags();
-      const a = useFeatureFlag('a');
-      const b = useFeatureFlag('b');
+      const enableTestFlagB = useFeatureFlag('enable-test-flag-b');
+      const enableTestFlagA = useFeatureFlag('enable-test-flag-a');
 
       checkFlags({
-        a: featureFlags.enabled('a'),
-        b: featureFlags.enabled('b'),
+        enableTestFlagB: featureFlags.enabled('enable-test-flag-b'),
+        enableTestFlagA: featureFlags.enabled('enable-test-flag-a'),
       });
 
       checkFlag({
-        a,
-        b,
+        enableTestFlagB,
+        enableTestFlagA,
       });
 
       return null;
     }
 
     const { rerender } = render(
-      <FeatureFlags flags={{ a: true, b: false }}>
+      <FeatureFlags enableTestFlagB>
         <TestComponent />
       </FeatureFlags>
     );
 
     expect(checkFlags).toHaveBeenLastCalledWith({
-      a: true,
-      b: false,
+      enableTestFlagB: true,
+      enableTestFlagA: false,
     });
     expect(checkFlag).toHaveBeenLastCalledWith({
-      a: true,
-      b: false,
+      enableTestFlagB: true,
+      enableTestFlagA: false,
     });
 
     rerender(
-      <FeatureFlags flags={{ a: false, b: true }}>
+      <FeatureFlags enableTestFlagA>
         <TestComponent />
       </FeatureFlags>
     );
 
     expect(checkFlags).toHaveBeenLastCalledWith({
-      a: false,
-      b: true,
+      enableTestFlagB: false,
+      enableTestFlagA: true,
     });
     expect(checkFlag).toHaveBeenLastCalledWith({
-      a: false,
-      b: true,
+      enableTestFlagB: false,
+      enableTestFlagA: true,
     });
   });
 
   it('should merge scopes and overwrite duplicate keys', () => {
-    GlobalFeatureFlags.add('global', true);
-
     const checkFlag = jest.fn();
 
     function TestComponent() {
-      const global = useFeatureFlag('global');
-      const local = useFeatureFlag('local');
+      const enableTestFlagB = useFeatureFlag('enable-test-flag-b');
+      const enableTestFlagA = useFeatureFlag('enable-test-flag-a');
 
-      checkFlag({ global, local });
+      checkFlag({ enableTestFlagB, enableTestFlagA });
 
       return null;
     }
 
-    const { rerender } = render(
-      <FeatureFlags flags={{ local: true }}>
+    render(
+      <FeatureFlags enableTestFlagA>
         <TestComponent />
       </FeatureFlags>
     );
 
     expect(checkFlag).toHaveBeenLastCalledWith({
-      global: true,
-      local: true,
+      enableTestFlagB: false,
+      enableTestFlagA: true,
     });
 
     render(
-      <FeatureFlags flags={{ local: true }}>
-        <FeatureFlags flags={{ global: false }}>
+      <FeatureFlags enableTestFlagA>
+        <FeatureFlags enableTestFlagB>
           <TestComponent />
         </FeatureFlags>
       </FeatureFlags>
     );
 
     expect(checkFlag).toHaveBeenLastCalledWith({
-      global: false,
-      local: true,
+      enableTestFlagB: true,
+      enableTestFlagA: false,
     });
 
     render(
-      <FeatureFlags flags={{ local: true }}>
-        <FeatureFlags flags={{ global: false }}>
-          <FeatureFlags flags={{ local: false }}>
+      <FeatureFlags enableTestFlagA>
+        <FeatureFlags enableTestFlagB>
+          <FeatureFlags enableTestFlagA={false} enableTestFlagB={false}>
             <TestComponent />
           </FeatureFlags>
         </FeatureFlags>
@@ -177,23 +210,89 @@ describe('FeatureFlags', () => {
     );
 
     expect(checkFlag).toHaveBeenLastCalledWith({
-      global: false,
-      local: false,
+      enableTestFlagB: false,
+      enableTestFlagA: false,
     });
+  });
 
-    rerender(
-      <FeatureFlags flags={{ local: true }}>
-        <FeatureFlags flags={{ global: false }}>
-          <FeatureFlags flags={{ local: true }}>
-            <TestComponent />
-          </FeatureFlags>
-        </FeatureFlags>
+  it('should handle boolean props and flags object with no overlapping keys', () => {
+    const checkFlags = jest.fn();
+    const checkFlag = jest.fn();
+
+    function TestComponent() {
+      const featureFlags = useFeatureFlags();
+      const enableTestFlagB = useFeatureFlag('enable-test-flag-b'); // true default
+      const enableTestFlagA = useFeatureFlag('enable-test-flag-a'); // false default
+
+      checkFlags({
+        enableTestFlagB: featureFlags.enabled('enable-test-flag-b'),
+        enableTestFlagA: featureFlags.enabled('enable-test-flag-a'),
+      });
+
+      checkFlag({
+        enableTestFlagB,
+        enableTestFlagA,
+      });
+
+      return null;
+    }
+
+    render(
+      <FeatureFlags enableTestFlagA>
+        <TestComponent />
       </FeatureFlags>
     );
 
+    expect(checkFlags).toHaveBeenLastCalledWith({
+      enableTestFlagB: false,
+      enableTestFlagA: true,
+    });
     expect(checkFlag).toHaveBeenLastCalledWith({
-      global: false,
-      local: true,
+      enableTestFlagB: false,
+      enableTestFlagA: true,
+    });
+  });
+
+  it('should handle boolean props correctly when no flags object is provided', () => {
+    const checkFlags = jest.fn();
+    const checkFlag = jest.fn();
+
+    function TestComponent() {
+      const featureFlags = useFeatureFlags();
+      const enableTestFlagB = useFeatureFlag('enable-test-flag-b');
+      const enableTestFlagA = useFeatureFlag('enable-test-flag-a');
+
+      checkFlags({
+        enableTestFlagB: featureFlags.enabled('enable-test-flag-b'),
+        enableTestFlagA: featureFlags.enabled('enable-test-flag-a'),
+      });
+
+      checkFlag({
+        enableTestFlagB,
+        enableTestFlagA,
+      });
+
+      return null;
+    }
+
+    render(
+      <FeatureFlags enableTestFlagB enableTestFlagA={false}>
+        <TestComponent />
+      </FeatureFlags>
+    );
+
+    expect(checkFlags).toHaveBeenLastCalledWith({
+      enableTestFlagB: true,
+      enableTestFlagA: false,
+    });
+    expect(checkFlag).toHaveBeenLastCalledWith({
+      enableTestFlagB: true,
+      enableTestFlagA: false,
     });
   });
 });
+
+// TODO: add flag specific tests
+// describe('FeatureFlags flag specific tests', () => {
+//   it('should support a prop for each feature flag coming from deprecated format', () => {});
+// });

@@ -1,3 +1,4 @@
+/* eslint-disable ssr-friendly/no-dom-globals-in-module-scope */
 /**
  * Copyright IBM Corp. 2024, 2024
  *
@@ -6,7 +7,7 @@
  */
 
 import { handleFilterTagLabelText } from './handleFilterTagLabelText';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 import { getDateFormat } from './getDateFormat';
 
 const filters = [

@@ -1,5 +1,5 @@
 //
-// Copyright IBM Corp. 2020, 2023
+// Copyright IBM Corp. 2020, 2025
 //
 // This source code is licensed under the Apache-2.0 license found in the
 // LICENSE file in the root directory of this source tree.
@@ -19,9 +19,10 @@ import {
   BreadcrumbItem,
   Link,
   OverflowMenu,
-  OverflowMenuItem,
   Tooltip,
   usePrefix,
+  unstable_FeatureFlags as FeatureFlags,
+  MenuItem,
 } from '@carbon/react';
 import { pkg } from '../../settings';
 import { ArrowLeft, OverflowMenuHorizontal } from '@carbon/react/icons';
@@ -42,6 +43,7 @@ const componentName = 'BreadcrumbWithOverflow';
 export let BreadcrumbWithOverflow = ({
   breadcrumbs,
   className,
+  label,
   maxVisible,
   noTrailingSlash,
   overflowAriaLabel,
@@ -58,30 +60,38 @@ export let BreadcrumbWithOverflow = ({
 
   // eslint-disable-next-line react/prop-types
   const BreadcrumbOverflowMenu = ({ overflowItems }) => {
+    const handleClick = (evt, item) => {
+      if (item?.props?.href) {
+        window.location.href = item.props.href;
+      }
+      item?.props?.onClick?.(evt);
+    };
+
     return (
       <BreadcrumbItem key={`breadcrumb-overflow-${internalId.current}`}>
-        <OverflowMenu
-          align={overflowTooltipAlign}
-          aria-label={overflowAriaLabel}
-          iconDescription={overflowAriaLabel} // also needs setting to avoid a11y "Accessible name does not match or contain the visible label text"
-          renderIcon={(props) => (
-            <OverflowMenuHorizontal size={32} {...props} />
-          )}
-          className={`${blockClass}__overflow-menu`}
-          menuOptionsClass={`${blockClass}__overflow-menu-options`}
-        >
-          {
-            // eslint-disable-next-line react/prop-types
-            overflowItems.map((item, index) => (
-              <OverflowMenuItem
-                key={`breadcrumb-overflow-menu-item-${internalId.current}-${index}`}
-                href={item.props.href}
-                onClick={item.props.onClick}
-                itemText={item.props.children}
-              />
-            ))
-          }
-        </OverflowMenu>
+        <FeatureFlags enableV12Overflowmenu>
+          <OverflowMenu
+            role="navigation"
+            aria-label={overflowAriaLabel}
+            label={overflowAriaLabel} // also needs setting to avoid a11y "Accessible name does not match or contain the visible label text"
+            renderIcon={(props) => (
+              <OverflowMenuHorizontal size={32} {...props} />
+            )}
+            className={`${blockClass}__overflow-menu`}
+            tooltipAlignment={overflowTooltipAlign}
+          >
+            {
+              // eslint-disable-next-line react/prop-types
+              overflowItems.map((item, index) => (
+                <MenuItem
+                  key={`breadcrumb-overflow-menu-item-${internalId.current}-${index}`}
+                  onClick={(evt) => handleClick(evt, item)}
+                  label={item.props.children}
+                />
+              ))
+            }
+          </OverflowMenu>
+        </FeatureFlags>
       </BreadcrumbItem>
     );
   };
@@ -95,9 +105,10 @@ export let BreadcrumbWithOverflow = ({
         aria-hidden={true}
         ref={sizingContainerRef}
       >
-        <Breadcrumb>
+        <Breadcrumb aria-label={`${label}-hidden`}>
           <BreadcrumbItem key={`${blockClass}-hidden-overflow-${internalId}`}>
             <OverflowMenu
+              role="navigation"
               aria-label={overflowAriaLabel}
               renderIcon={(props) => (
                 <OverflowMenuHorizontal size={32} {...props} />
@@ -129,7 +140,7 @@ export let BreadcrumbWithOverflow = ({
         </Breadcrumb>
       </div>
     );
-  }, [breadcrumbs, overflowAriaLabel]);
+  }, [breadcrumbs, label, overflowAriaLabel]);
 
   useEffect(() => {
     // updates displayedBreadcrumbItems and overflowBreadcrumbItems based on displayCount and breadcrumbs
@@ -308,6 +319,7 @@ export let BreadcrumbWithOverflow = ({
         {hiddenSizingItems}
 
         <Breadcrumb
+          aria-label={label}
           className={cx(`${blockClass}__breadcrumb-container`, {
             [`${blockClass}__breadcrumb-container-with-items`]:
               displayedBreadcrumbItems.length > 1,
@@ -377,15 +389,17 @@ BreadcrumbWithOverflow.propTypes = {
       /**
        * A string based alternative to the children, required only if children is not of type string
        */
-      title: PropTypes.string.isRequired.if(
-        ({ label }) => typeof label !== 'string'
-      ),
+      title: PropTypes.string,
     })
   ),
   /**
    * className
    */
   className: PropTypes.string,
+  /**
+   * Label for the Breadcrumb component
+   */
+  label: PropTypes.string,
   /**
    * maxVisible: maximum visible breadcrumb-items before overflow is used (values less than 1 are treated as 1)
    */
@@ -397,9 +411,7 @@ BreadcrumbWithOverflow.propTypes = {
   /**
    * overflowAriaLabel label for open close button overflow used for breadcrumb items that do not fit.
    */
-  overflowAriaLabel: PropTypes.string.isRequired.if(
-    ({ breadcrumbs }) => breadcrumbs.length > 1
-  ),
+  overflowAriaLabel: PropTypes.string,
   /**
    * overflowTooltipAlign: align tooltip position
    */

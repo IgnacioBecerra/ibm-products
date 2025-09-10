@@ -1,5 +1,5 @@
 /**
- * Copyright IBM Corp. 2021, 2021
+ * Copyright IBM Corp. 2021, 2024
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
@@ -50,20 +50,12 @@ const initialDefaultPortalTargetBody = pkg.isFeatureEnabled(
 );
 
 describe(componentName, () => {
-  const { ResizeObserver } = window;
-
   beforeAll(() => {
-    window.ResizeObserver = jest.fn().mockImplementation(() => ({
-      observe: jest.fn(),
-      unobserve: jest.fn(),
-      disconnect: jest.fn(),
-    }));
     pkg.feature['default-portal-target-body'] = false;
   });
 
   afterAll(() => {
     jest.restoreAllMocks();
-    window.ResizeObserver = ResizeObserver;
     pkg.feature['default-portal-target-body'] = initialDefaultPortalTargetBody;
   });
 
@@ -76,17 +68,15 @@ describe(componentName, () => {
     expect(screen.getByText(defaultProps.primaryButtonText)).toBeVisible();
   });
 
-  it.skip('has no accessibility violations when closed', async () => {
-    // Currently fails due to https://github.com/carbon-design-system/carbon/issues/14135 regarding focusable button
-    const { container } = renderComponent({ open: false });
-    expect(container).toBeAccessible(componentName);
-    expect(container).toHaveNoAxeViolations();
-  });
-
   it('has no accessibility violations', async () => {
-    const { container } = renderComponent();
-    expect(container).toBeAccessible(componentName);
-    expect(container).toHaveNoAxeViolations();
+    await act(async () => {
+      renderComponent();
+    });
+    const tearsheetElement = document.querySelector(
+      `.${pkg.prefix}--create-tearsheet-narrow`
+    );
+    await expect(tearsheetElement).toBeAccessible(componentName);
+    await expect(tearsheetElement).toHaveNoAxeViolations();
   });
 
   it(`renders children`, async () => {

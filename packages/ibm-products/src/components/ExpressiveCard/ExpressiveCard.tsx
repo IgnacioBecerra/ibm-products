@@ -6,26 +6,18 @@
 //
 
 import React, { PropsWithChildren, ReactNode, forwardRef } from 'react';
-import PropTypes from 'prop-types';
+
 import { CarbonIconType } from '@carbon/icons-react/lib/CarbonIcon';
 import { Card } from '../Card';
-
+import PropTypes from 'prop-types';
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
-import { prepareProps } from '../../global/js/utils/props-helper';
 import { pkg } from '../../settings';
+import { prepareProps } from '../../global/js/utils/props-helper';
+import { ActionIcon } from '../Card/Card';
 
-type ActionIcon = {
-  id?: string;
-  icon?: () => void | object;
-  onKeydown?: () => void;
-  onClick?: () => void;
-  iconDescription?: string;
-  href?: string;
-};
-
-interface ExpressiveCardProps extends PropsWithChildren {
+export interface ExpressiveCardProps extends PropsWithChildren {
   /**
-   * Icons that are displayed on card. Refer to design documentation for implementation guidelines. Note- href will supersede onClick
+   * Icons that are displayed on the card. Refer to design documentation for implementation guidelines. Note: href is deprecated. Set link.href for href functionality. If you are setting link object, href is a required property. link object supports all anchor element properties. Precedence: link.href > href. If link.href or href is set => anchor element, else button.
    */
   actionIcons?: ActionIcon[];
   /**
@@ -36,6 +28,10 @@ interface ExpressiveCardProps extends PropsWithChildren {
    * Optional user provided class
    */
   className?: string;
+  /**
+   * Optional prop that allows you to pass any component.
+   */
+  decorator?: ReactNode | boolean;
   /**
    * Optional header description
    */
@@ -103,6 +99,7 @@ interface ExpressiveCardProps extends PropsWithChildren {
   /**
    * **Experimental:** For all cases a `Slug` component can be provided.
    * Clickable tiles only accept a boolean value of true and display a hollow slug.
+   * @deprecated please use the `decorator` prop
    */
   slug?: ReactNode | boolean;
 
@@ -134,7 +131,7 @@ ExpressiveCard = pkg.checkComponentEnabled(ExpressiveCard, componentName);
 
 ExpressiveCard.propTypes = {
   /**
-   * Icons that are displayed on card. Refer to design documentation for implementation guidelines. Note- href will supersede onClick
+   * Icons that are displayed on the card. Refer to design documentation for implementation guidelines. Note: href is deprecated. Set link.href for href functionality. If you are setting link object, href is a required property. link object supports all anchor element properties. Precedence: link.href > href. If link.href or href is set => anchor element, else button.
    */
   /**@ts-ignore */
   actionIcons: PropTypes.arrayOf(
@@ -144,7 +141,13 @@ ExpressiveCard.propTypes = {
       onKeyDown: PropTypes.func,
       onClick: PropTypes.func,
       iconDescription: PropTypes.string,
+      /**
+       * @deprecated please use the `link.href` instead
+       */
       href: PropTypes.string,
+      link: PropTypes.shape({
+        href: PropTypes.string.isRequired,
+      }),
     })
   ),
   /**
@@ -155,6 +158,10 @@ ExpressiveCard.propTypes = {
    * Optional user provided class
    */
   className: PropTypes.string,
+  /**
+   * Optional prop that allows you to pass any component.
+   */
+  decorator: PropTypes.oneOfType([PropTypes.node, PropTypes.bool]),
   /**
    * Optional header description
    */
@@ -233,6 +240,7 @@ ExpressiveCard.propTypes = {
   /**
    * **Experimental:** For all cases a `Slug` component can be provided.
    * Clickable tiles only accept a boolean value of true and display a hollow slug.
+   * @deprecated please use the `decorator` prop
    */
   slug: PropTypes.oneOfType([PropTypes.node, PropTypes.bool]),
 

@@ -1,26 +1,24 @@
 /**
- * Copyright IBM Corp. 2021, 2024
+ * Copyright IBM Corp. 2021, 2025
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
  */
 
-// Import portions of React that are needed.
-import React, { PropsWithChildren, ReactNode } from 'react';
-
 // Carbon and package components we use.
 import {
-  ComposedModal,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  Form,
   Button,
+  ComposedModal,
+  Form,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
 } from '@carbon/react';
+// Import portions of React that are needed.
+import React, { PropsWithChildren, ReactNode, Ref } from 'react';
 
 import PropTypes from 'prop-types';
 import cx from 'classnames';
-
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
 import { pkg } from '../../settings';
 import { usePortalTarget } from '../../global/js/hooks/usePortalTarget';
@@ -28,19 +26,7 @@ import { usePortalTarget } from '../../global/js/hooks/usePortalTarget';
 const componentName = 'CreateModal';
 const blockClass = `${pkg.prefix}--create-modal`;
 
-// Custom PropType validator which checks and ensures that the children property has no more than 4 nodes
-const isValidChildren =
-  () =>
-  ({ children }) => {
-    if (children && children.length > 4) {
-      throw new Error(
-        'The `CreateModal` component does not take more than 4 nodes as children. This is to ensure that the modal does not overflow. Please remove 1 or more nodes.'
-      );
-    }
-    return;
-  };
-
-interface CreateModalProps extends React.ComponentProps<typeof ComposedModal> {
+export interface CreateModalProps extends PropsWithChildren {
   /**
    * Specify an optional className to be applied to the modal root node
    */
@@ -91,7 +77,7 @@ interface CreateModalProps extends React.ComponentProps<typeof ComposedModal> {
   /**
    * Specifies which DOM element in the form should be focused.
    */
-  selectorPrimaryFocus: ReactNode;
+  selectorPrimaryFocus: string;
 }
 
 /**
@@ -100,11 +86,9 @@ resource. It is triggered by a user’s action, appears on top of the main page
 content, and is persistent until dismissed. The purpose of this modal should be
 immediately apparent to the user, with a clear and obvious path to completion.
  */
-export let CreateModal = React.forwardRef(
-  (
-    {
-      // The component props, in alphabetical order (for consistency).
-
+export let CreateModal = React.forwardRef<HTMLDivElement, CreateModalProps>(
+  (props, ref) => {
+    const {
       className,
       children,
       onRequestClose,
@@ -118,12 +102,8 @@ export let CreateModal = React.forwardRef(
       primaryButtonText,
       disableSubmit,
       selectorPrimaryFocus,
-
-      // Collect any other property values passed in.
       ...rest
-    }: PropsWithChildren<CreateModalProps>,
-    ref
-  ) => {
+    } = props;
     const renderPortalUse = usePortalTarget(portalTargetIn);
 
     return renderPortalUse(
@@ -148,7 +128,13 @@ export let CreateModal = React.forwardRef(
           {description && (
             <p className={`${blockClass}__description`}>{description}</p>
           )}
-          <Form className={`${blockClass}__form`} aria-label={title}>
+          <Form
+            className={`${blockClass}__form`}
+            aria-label={title}
+            onSubmit={(e: React.FormEvent<HTMLFormElement>) =>
+              e.preventDefault()
+            }
+          >
             {children}
           </Form>
         </ModalBody>
@@ -177,8 +163,7 @@ CreateModal.propTypes = {
   /**
    * Children refers to all form items within a form inside of the modal's body.
    */
-  /**@ts-ignore*/
-  children: isValidChildren(),
+  children: PropTypes.node,
   /**
    * Specify an optional className to be applied to the modal root node
    */
@@ -223,7 +208,7 @@ CreateModal.propTypes = {
   /**
    * Specifies which DOM element in the form should be focused.
    */
-  selectorPrimaryFocus: PropTypes.node.isRequired,
+  selectorPrimaryFocus: PropTypes.string.isRequired,
   /**
    * The subtitle of the CreateModal is optional and serves to provide more information about the modal.
    */

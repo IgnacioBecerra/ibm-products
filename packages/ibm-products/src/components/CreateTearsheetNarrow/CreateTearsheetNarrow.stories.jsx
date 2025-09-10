@@ -7,7 +7,7 @@
 
 import React, { useState } from 'react';
 // TODO: import action to handle events if required.
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 import {
   Button,
   Dropdown,
@@ -16,24 +16,62 @@ import {
   FormGroup,
 } from '@carbon/react';
 import { pkg } from '../../settings';
+import { TruncatedText } from '../TruncatedText';
 import { CreateTearsheetNarrow } from '.';
 import styles from './_storybook-styles.scss?inline';
 import { StoryDocsPage } from '../../global/js/utils/StoryDocsPage';
-import { SlugSample, slugArgTypes } from '../../global/js/story-parts/slug';
+import {
+  sampleDecorator,
+  slugArgTypes,
+  decoratorArgTypes,
+} from '../../global/js/story-parts/decorator';
 
 export default {
-  title: 'IBM Products/Patterns/Create flows/CreateTearsheetNarrow',
+  title: 'Patterns/Prebuilt patterns/Create flows/CreateTearsheetNarrow',
   component: CreateTearsheetNarrow,
   tags: ['autodocs'],
   argTypes: {
+    description: {
+      control: {
+        type: 'select',
+        labels: {
+          0: 'With plain String',
+          1: 'With TruncatedText and 1 line',
+          2: 'With TruncatedText and 2 lines',
+        },
+        default: 0,
+      },
+      description:
+        'A description of the flow, displayed in the header area of the tearsheet.\n Note: `TruncatedText` can be passed as a React node to apply custom text formatting, including ellipsis truncation and a definition tooltip when the content is too long.',
+      options: [0, 1, 2],
+      mapping: {
+        0: 'Select the number of partitions you want to create',
+        1: (
+          <TruncatedText
+            lines={1}
+            tooltipDirection="bottom"
+            value="This is a description for the tearsheet, providing an opportunity to describe the flow over a couple of lines in the header of the tearsheet."
+          />
+        ),
+        2: (
+          <TruncatedText
+            lines={2}
+            truncate={true}
+            tooltipDirection="bottom"
+            value="This is a description for the tearsheet, providing an opportunity to describe the flow over a couple of lines in the header of the tearsheet."
+          />
+        ),
+      },
+    },
     children: { control: { disable: true } },
     ...slugArgTypes(),
+    ...decoratorArgTypes(),
   },
   parameters: {
     styles,
     docs: {
       page: () => (
-        <StoryDocsPage altGuidelinesHref="https://pages.github.ibm.com/cdai-design/pal/patterns/creation-flows/usage#narrow-tearsheet" />
+        <StoryDocsPage altGuidelinesHref="https://pages.github.ibm.com/carbon/ibm-products/patterns/create-flows/usage/#narrow-tearsheet" />
       ),
     },
   },
@@ -44,7 +82,7 @@ const createTearsheetNarrowBlockClass = `${pkg.prefix}--create-tearsheet-narrow-
 const defaultStoryProps = {
   title: 'Create partition',
   className: 'test-class-name',
-  description: 'Select the number of partitions you want to create',
+  description: 0,
   formTitle: 'Core configuration',
   formDescription:
     'We recommend you fill out and evaluate these details at a minimum before deploying your topic.',
@@ -54,8 +92,8 @@ const defaultStoryProps = {
   selectorPrimaryFocus: '#tearsheet-narrow-story-text-input--1',
 };
 
-const Template = ({ slug, ...args }) => {
-  const [open, setOpen] = useState(false);
+const Template = ({ slug, decorator, ...args }, context) => {
+  const [open, setOpen] = useState(context.viewMode !== 'docs');
   const [topicName, setTopicName] = useState('');
   const [partitionCount, setPartitionCount] = useState(1);
   const [replicaCount, setReplicaCount] = useState(1);
@@ -80,7 +118,8 @@ const Template = ({ slug, ...args }) => {
         onRequestClose={() => setOpen(false)}
         onRequestSubmit={action('onRequestSubmit action called')}
         disableSubmit={!topicName || numberInputsInvalid}
-        slug={slug && SlugSample()}
+        slug={slug && sampleDecorator(slug)}
+        decorator={decorator && sampleDecorator(decorator)}
         {...args}
       >
         <TextInput
@@ -156,8 +195,8 @@ const Template = ({ slug, ...args }) => {
   );
 };
 
-const WithValidationTemplate = ({ slug, ...args }) => {
-  const [open, setOpen] = useState(false);
+const WithValidationTemplate = ({ slug, decorator, ...args }, context) => {
+  const [open, setOpen] = useState(context.viewMode !== 'docs');
   const [topicName, setTopicName] = useState('');
   const [partitionCount, setPartitionCount] = useState(1);
   const [replicaCount, setReplicaCount] = useState(1);
@@ -187,7 +226,8 @@ const WithValidationTemplate = ({ slug, ...args }) => {
         }}
         onRequestSubmit={action('onRequestSubmit action called')}
         disableSubmit={!topicName || numberInputsInvalid}
-        slug={slug && SlugSample()}
+        slug={slug && sampleDecorator(slug)}
+        decorator={decorator && sampleDecorator(decorator)}
         {...args}
       >
         <FormGroup

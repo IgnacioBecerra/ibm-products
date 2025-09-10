@@ -1,11 +1,11 @@
 /**
- * Copyright IBM Corp. 2022, 2023
+ * Copyright IBM Corp. 2022, 2025
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
  */
 
-import { carbon, pkg } from '../../../../../settings';
+import { pkg } from '../../../../../settings';
 import { handleMultipleKeys } from './handleMultipleKeys';
 import { getCellIdAsObject } from './InlineEditContext/getCellIdAsObject';
 
@@ -19,6 +19,7 @@ export const handleGridKeyPress = ({
   keysPressedList,
   usingMac,
   ref,
+  carbonPrefix,
 }) => {
   const { key } = event;
   const { gridActive, activeCellId, editId } = state;
@@ -70,7 +71,7 @@ export const handleGridKeyPress = ({
   // Checks if the date picker is open
   const datePickerIsActive = () => {
     const focusedCalendarElement = document.querySelector(
-      `.${carbon.prefix}--date-picker__input.flatpickr-input.active`
+      `.${carbonPrefix}--date-picker__input.flatpickr-input.active`
     );
     if (
       focusedCalendarElement ||
@@ -83,7 +84,8 @@ export const handleGridKeyPress = ({
 
   // Stop grid key listener when in edit mode
   const isEditing =
-    (document.activeElement.id === activeCellId &&
+    (focusedCell.getAttribute('data-inline-type') !== 'checkbox' &&
+      document.activeElement.id === activeCellId &&
       document.activeElement.id === editId) ||
     dropdownIsActive() ||
     datePickerIsActive();
@@ -106,6 +108,9 @@ export const handleGridKeyPress = ({
   }
   const isDisabledCell =
     focusedCell.getAttribute('data-disabled') === 'false' ? false : true;
+  const isEditableCell = !event.target.classList.contains(
+    `${blockClass}__inline-edit-button--non-edit`
+  );
   const sharedUpdateParams = {
     oldId: activeCellId,
     instance,
@@ -212,7 +217,7 @@ export const handleGridKeyPress = ({
       case 'F2':
       case 'Enter': {
         // Disabled cells are not allowed to go into edit mode
-        if (isDisabledCell) {
+        if (isDisabledCell || !isEditableCell) {
           return;
         }
         // Only go into edit mode if there is no editId, meaning that we're not already in edit mode
@@ -223,6 +228,13 @@ export const handleGridKeyPress = ({
             setTimeout(() => {
               const dropdownTrigger = focusedCell.querySelector('button');
               dropdownTrigger?.click();
+            }, 1);
+          }
+          if (focusedType === 'checkbox') {
+            setTimeout(() => {
+              const checkboxTrigger = focusedCell.querySelector('input');
+              checkboxTrigger?.click();
+              checkboxTrigger?.focus();
             }, 1);
           }
           if (focusedType === 'date') {

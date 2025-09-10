@@ -12,6 +12,9 @@
  *   PageHeader (PageHeaderTitle, PageHeaderUtils)
  */
 
+// Carbon and package components we use.
+import { Button, Heading, IconButton, Section } from '@carbon/react';
+import { Kind, Kinds, Theme, Themes } from './Checklist.types';
 // Import portions of React that are needed.
 import React, {
   ForwardedRef,
@@ -21,21 +24,15 @@ import React, {
   useState,
 } from 'react';
 
+import { ChecklistChart } from './ChecklistChart';
+import { ChecklistIcon } from './ChecklistIcon';
+import { ChevronUp } from '@carbon/react/icons';
 // Other standard imports.
 import PropTypes from 'prop-types';
 import cx from 'classnames';
-
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
-import uuidv4 from '../../global/js/utils/uuidv4';
 import { pkg } from '../../settings';
-
-// Carbon and package components we use.
-import { Button, IconButton } from '@carbon/react';
-import { ChevronUp } from '@carbon/react/icons';
-
-import { ChecklistIcon } from './ChecklistIcon';
-import { ChecklistChart } from './ChecklistChart';
-import { Kinds, Kind, Theme, Themes } from './Checklist.types';
+import uuidv4 from '../../global/js/utils/uuidv4';
 
 // The block part of our conventional BEM class names (blockClass__E--M).
 const blockClass = `${pkg.prefix}--checklist`;
@@ -63,7 +60,7 @@ type TaskList = {
   tasks: Array<Task>;
 };
 
-interface ChecklistProps {
+export interface ChecklistProps {
   /**
    * Define both `chartLabel` and `chartValue` to show the chart and its label together.
    */
@@ -148,7 +145,6 @@ const defaults = {
   taskLists: [],
   theme: Themes.light,
   toggleLabel: 'Toggle',
-  toggleLabelAlign: 'top',
 };
 
 /**
@@ -173,7 +169,7 @@ export let Checklist = React.forwardRef(
       theme = defaults.theme,
       title,
       toggleLabel = defaults.toggleLabel,
-      toggleLabelAlign = defaults.toggleLabelAlign,
+      toggleLabelAlign = 'top',
       viewAllLabel,
       ...rest
     }: ChecklistProps,
@@ -209,12 +205,13 @@ export let Checklist = React.forwardRef(
     }, [open]);
 
     return (
-      <aside
+      <Section
         {
           // Pass through any other property values as HTML attributes.
           ...rest
         }
         aria-label={checklistAriaLabel}
+        as="aside"
         className={cx(
           blockClass, // Apply the block class to the main HTML element
           className, // Apply any supplied class names to the main HTML element.
@@ -237,12 +234,14 @@ export let Checklist = React.forwardRef(
             )}
 
             <div className={`${blockClass}__titles`}>
-              {title && <h2 className={`${blockClass}__title`}>{title}</h2>}
+              {title && (
+                <Heading className={`${blockClass}__title`}>{title}</Heading>
+              )}
 
               {chartLabelAndValue && (
-                <h3 id={chartLabelId} className={`${blockClass}__chart-label`}>
+                <p id={chartLabelId} className={`${blockClass}__chart-label`}>
                   {chartLabel}
-                </h3>
+                </p>
               )}
             </div>
 
@@ -266,20 +265,20 @@ export let Checklist = React.forwardRef(
 
         <div id={listContainerId} className={`${blockClass}__content-outer`}>
           <div className={`${blockClass}__content-inner`}>
-            <section className={cx(`${blockClass}__body`)}>
+            <div className={cx(`${blockClass}__body`)}>
               {taskLists.map((list, index) => {
                 return (
-                  <div
+                  <Section
                     className={`${blockClass}__list-group`}
                     key={`${list.title}-${index}`}
                   >
                     {list.title && (
-                      <h3
+                      <Heading
                         title={list.title}
                         className={`${blockClass}__list-title`}
                       >
                         {list.title}
-                      </h3>
+                      </Heading>
                     )}
                     <ol className={`${blockClass}__list`}>
                       {list.tasks.map((item, index) => {
@@ -319,10 +318,10 @@ export let Checklist = React.forwardRef(
                         );
                       })}
                     </ol>
-                  </div>
+                  </Section>
                 );
               })}
-            </section>
+            </div>
 
             {viewAllLabel && (
               <footer className={`${blockClass}__footer`}>
@@ -340,7 +339,7 @@ export let Checklist = React.forwardRef(
             )}
           </div>
         </div>
-      </aside>
+      </Section>
     );
   }
 );

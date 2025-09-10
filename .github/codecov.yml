@@ -1,0 +1,48 @@
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+# This is the configuration on how the codecov report layout will look like in PR's
+comment:
+  layout: 'header, diff, flags, components'
+
+component_management:
+  default_rules: # default rules that will be inherited by all components
+    statuses:
+      - type: project # in this case every component that doesn't have a status defined will have a project type one
+        target: auto
+        threshold: 1%
+  individual_components:
+    - component_id: ibm-products # this is an identifier that should not be changed
+      name: ibm-products # this is a display name, and can be changed freely
+      paths:
+        - packages/ibm-products/**
+    - component_id: ibm-products-web-components # this is an identifier that should not be changed
+      name: ibm-products-web-components # this is a display name, and can be changed freely
+      paths:
+        - packages/ibm-products-web-components/**
+
+ignore:
+  - '**/*.deprecated.*'
+  - 'Datagrid/'
+  - 'DecoratorDualButton/'
+  - 'DecoratorLink/'
+  - 'DecoratorSingleButton/'
+  - 'DescriptionList/'
+  - 'EditFullPage/'
+  - 'EditSidePanel/'
+  - 'EditTearsheet/'
+  - 'EditTearsheetNarrow/'
+  - 'EditUpdateCards/'
+  - 'FilterPanel/'
+  - 'FilterSummary/'
+  - 'HttpErrors/'
+  - 'Nav/'
+  - 'StatusIndicator/'
+  - 'UserProfileImage/'
+  - "**/StepFlow/story-assets/**/*"

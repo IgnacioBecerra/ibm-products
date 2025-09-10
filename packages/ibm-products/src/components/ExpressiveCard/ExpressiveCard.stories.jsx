@@ -7,51 +7,70 @@
 
 import React from 'react';
 import styles from './_storybook-styles.scss?inline'; // import index in case more files are added later.
-import { ArrowRight, Cloud, Add } from '@carbon/react/icons';
+import { ArrowRight, Cloud, Add, Information } from '@carbon/react/icons';
 import {
   AspectRatio,
   Column,
   Grid,
   usePrefix,
-  unstable__Slug as Slug,
-  unstable__SlugContent as SlugContent,
+  AILabel,
+  AILabelContent,
+  Toggletip,
+  ToggletipButton,
+  ToggletipContent,
 } from '@carbon/react';
 
 import { ExpressiveCard } from '.';
-// import mdx from './ExpressiveCard.mdx';
-import { action } from '@storybook/addon-actions';
+import DocsPage from './ExpressiveCard.docs-page';
+import { action } from 'storybook/actions';
 
-const sampleSlug = (
-  <Slug className="slug-container" size="xs">
-    <SlugContent>
-      <div>
-        <p className="secondary">AI Explained</p>
-        <h1>84%</h1>
-        <p className="secondary bold">Confidence score</p>
-        <p className="secondary">
-          This is not really Lorem Ipsum but the spell checker did not like the
-          previous text with it&apos;s non-words which is why this unwieldy
-          sentence, should one choose to call it that, here.
-        </p>
-        <hr />
-        <p className="secondary">Model type</p>
-        <p className="bold">Foundation model</p>
-      </div>
-    </SlugContent>
-  </Slug>
-);
+const sampleDecorator = (decorator) => {
+  switch (decorator) {
+    case 1:
+      return (
+        <AILabel className="decorator-container" size="xs">
+          <AILabelContent>
+            <div>
+              <p className="secondary">AI Explained</p>
+              <h1>84%</h1>
+              <p className="secondary bold">Confidence score</p>
+              <p className="secondary">
+                This is not really Lorem Ipsum but the spell checker did not
+                like the previous text with it&apos;s non-words which is why
+                this unwieldy sentence, should one choose to call it that, here.
+              </p>
+              <hr />
+              <p className="secondary">Model type</p>
+              <p className="bold">Foundation model</p>
+            </div>
+          </AILabelContent>
+        </AILabel>
+      );
+    case 2:
+      return (
+        <Toggletip>
+          <ToggletipButton label="Additional information">
+            <Information />
+          </ToggletipButton>
+          <ToggletipContent>
+            <p>Custom content here</p>
+          </ToggletipContent>
+        </Toggletip>
+      );
+    default:
+      return;
+  }
+};
 
 export default {
-  title: 'IBM Products/Components/Cards/ExpressiveCard',
+  title: 'Components/Cards/ExpressiveCard',
   component: ExpressiveCard,
   tags: ['autodocs'],
   parameters: {
     styles,
-    /*
-docs: {
-      page: mdx,
+    docs: {
+      page: DocsPage,
     },
-*/
   },
   argTypes: {
     columnSizeSm: {
@@ -84,11 +103,23 @@ docs: {
         labels: {
           0: 'No AI slug',
           1: 'with AI Slug',
-          2: 'with hollow slug (boolean)',
         },
         default: 0,
       },
-      options: [0, 1, 2],
+      options: [false, true],
+    },
+    decorator: {
+      control: {
+        type: 'select',
+        labels: {
+          0: 'No AI label',
+          1: 'with AI label',
+          2: 'With non AI Label component',
+          3: 'with hollow AI label (boolean)',
+        },
+        default: 0,
+      },
+      options: [0, 1, 2, 3],
     },
   },
   decorators: [
@@ -113,21 +144,34 @@ const defaultProps = {
       action on the card.
     </p>
   ),
-  primaryButtonText: 'Primary',
+  primaryButtonText: 'Read more',
 };
 
 const Template = (opts) => {
-  const { children, columnSizeSm, columnSizeMd, columnSizeLg, slug, ...args } =
-    opts;
+  const {
+    children,
+    columnSizeSm,
+    columnSizeMd,
+    columnSizeLg,
+    decorator,
+    ...args
+  } = opts;
 
   return (
-    <Grid>
-      <Column sm={columnSizeSm} md={columnSizeMd} lg={columnSizeLg}>
-        <ExpressiveCard {...args} slug={slug && (slug === 2 || sampleSlug)}>
-          {children}
-        </ExpressiveCard>
-      </Column>
-    </Grid>
+    <main>
+      <Grid>
+        <Column sm={columnSizeSm} md={columnSizeMd} lg={columnSizeLg}>
+          <ExpressiveCard
+            {...args}
+            decorator={
+              decorator && (decorator === 3 || sampleDecorator(decorator))
+            }
+          >
+            {children}
+          </ExpressiveCard>
+        </Column>
+      </Grid>
+    </main>
   );
 };
 
@@ -138,21 +182,25 @@ const MediaTemplate = (opts) => {
     columnSizeMd,
     columnSizeLg,
     mediaRatio = '1x1',
-    slug,
+    decorator,
     ...args
   } = opts;
   return (
-    <Grid>
-      <Column sm={columnSizeSm} md={columnSizeMd} lg={columnSizeLg}>
-        <ExpressiveCard
-          media={<AspectRatio ratio={mediaRatio}>{mediaRatio}</AspectRatio>}
-          slug={slug && (slug === 2 || sampleSlug)}
-          {...args}
-        >
-          {children}
-        </ExpressiveCard>
-      </Column>
-    </Grid>
+    <main>
+      <Grid>
+        <Column sm={columnSizeSm} md={columnSizeMd} lg={columnSizeLg}>
+          <ExpressiveCard
+            media={<AspectRatio ratio={mediaRatio}>{mediaRatio}</AspectRatio>}
+            decorator={
+              decorator && (decorator === 3 || sampleDecorator(decorator))
+            }
+            {...args}
+          >
+            {children}
+          </ExpressiveCard>
+        </Column>
+      </Grid>
+    </main>
   );
 };
 
@@ -182,15 +230,34 @@ WithMedia.args = {
   ...defaultProps,
 };
 
-export const WithActionIconHref = Template.bind({});
-WithActionIconHref.args = {
+export const WithActionIconButton = Template.bind({});
+WithActionIconButton.args = {
+  ...defaultProps,
+  actionIcons: [
+    {
+      id: '1',
+      icon: (props) => <ArrowRight size={18} {...props} />,
+      iconDescription: 'Visit carbon official site',
+      onClick: action('onClick'),
+    },
+  ],
+  primaryButtonText: '',
+  mediaRatio: null,
+};
+
+export const WithActionIconLink = Template.bind({});
+WithActionIconLink.args = {
   ...defaultProps,
   actionIcons: [
     {
       id: '1',
       icon: (props) => <ArrowRight size={24} {...props} />,
-      href: '#',
-      iconDescription: 'Next',
+      iconDescription: 'Visit carbon official site',
+      link: {
+        href: 'https://carbondesignsystem.com/',
+        target: '_blank',
+        rel: 'noreferrer noopener',
+      },
     },
   ],
   primaryButtonText: '',
@@ -207,7 +274,7 @@ WithPictogram.args = {
 export const WithSecondaryAction = Template.bind({});
 WithSecondaryAction.args = {
   ...defaultProps,
-  secondaryButtonText: 'Secondary',
+  secondaryButtonText: 'Remove',
   secondaryButtonKind: 'ghost',
   mediaRatio: null,
 };
@@ -226,7 +293,7 @@ WithButtonHref.args = {
   ...defaultProps,
   primaryButtonHref: '#',
   secondaryButtonHref: '#',
-  secondaryButtonText: 'Secondary',
+  secondaryButtonText: 'Remove',
   secondaryButtonKind: 'ghost',
 };
 

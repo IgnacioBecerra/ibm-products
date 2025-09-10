@@ -40,10 +40,14 @@ const renderComponent = ({ ...rest } = {}) =>
   );
 
 describe(componentName, () => {
+  beforeEach(() => {
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
   it('renders a component DecoratorDualButton', async () => {
     const { container } = renderComponent();
     const decorator = container.querySelector(`[data-testid="${dataTestId}"]`);
-    expect(decorator);
+    expect(decorator).toBeInTheDocument();
   });
 
   it('renders a component DecoratorDualButton with two buttons', async () => {

@@ -15,13 +15,12 @@ test.describe('CreateSidePanel @avt', () => {
   test('@avt-default-state', async ({ page }) => {
     await visitStory(page, {
       component: 'CreateSidePanel',
-      id: 'ibm-products-patterns-create-flows-createsidepanel--default',
+      id: 'patterns-prebuilt-patterns-create-flows-createsidepanel--default',
       globals: {
         carbonTheme: 'white',
       },
     });
 
-    await page.getByText('Open side panel').click();
     await page
       .locator(`#${pkg.prefix}--side-panel`)
       .screenshot({ animations: 'disabled' });

@@ -5,32 +5,29 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+// Carbon and package components we use.
+import { Button } from '@carbon/react';
+import {
+  TearsheetShell,
+  tearsheetShellWideProps as blocked,
+} from './TearsheetShell';
 // Import portions of React that are needed.
-import React, { ReactNode, PropsWithChildren, ForwardedRef } from 'react';
+import React, {
+  ForwardedRef,
+  PropsWithChildren,
+  ReactNode,
+  RefObject,
+} from 'react';
+import { allPropTypes, prepareProps } from '../../global/js/utils/props-helper';
 
 // Other standard imports.
 import PropTypes from 'prop-types';
-
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
-
-import { allPropTypes, prepareProps } from '../../global/js/utils/props-helper';
-
 import { pkg } from '../../settings';
-
-// Carbon and package components we use.
-import { Button, ButtonProps } from '@carbon/react';
-import { ActionSet } from '../ActionSet';
-
-import {
-  tearsheetHasCloseIcon,
-  TearsheetShell,
-  tearsheetShellWideProps as blocked,
-  CloseIconDescriptionTypes,
-} from './TearsheetShell';
-
 import { portalType } from './TearsheetShell';
+import { TearsheetAction } from './Tearsheet';
 
-interface TearsheetNarrowBaseProps extends PropsWithChildren {
+export interface TearsheetNarrowProps extends PropsWithChildren {
   /**
    * The navigation actions to be shown as buttons in the action area at the
    * bottom of the tearsheet. Each action is specified as an object with
@@ -44,7 +41,7 @@ interface TearsheetNarrowBaseProps extends PropsWithChildren {
    *
    * See https://react.carbondesignsystem.com/?path=/docs/components-button--default#component-api
    */
-  actions?: ButtonProps[];
+  actions?: TearsheetAction[];
 
   /**
    * The aria-label for the tearsheet, which is optional.
@@ -56,6 +53,12 @@ interface TearsheetNarrowBaseProps extends PropsWithChildren {
    * An optional class or classes to be added to the outermost element.
    */
   className?: string;
+
+  /**
+   * The accessibility title for the close icon (if shown).
+   *
+   */
+  closeIconDescription?: string;
 
   /**
    * A description of the flow, displayed in the header area of the tearsheet.
@@ -78,6 +81,11 @@ interface TearsheetNarrowBaseProps extends PropsWithChildren {
   label?: ReactNode;
 
   /**
+   * Provide a ref to return focus to once the tearsheet is closed.
+   */
+  launcherButtonRef?: RefObject<any>;
+
+  /**
    * An optional handler that is called when the user closes the tearsheet (by
    * clicking the close button, if enabled, or clicking outside, if enabled).
    * Returning `false` here prevents the modal from closing.
@@ -92,7 +100,20 @@ interface TearsheetNarrowBaseProps extends PropsWithChildren {
   /**
    * The DOM element that the tearsheet should be rendered within. Defaults to document.body.
    */
-  portalTarget?: ReactNode;
+  portalTarget?: HTMLElement;
+
+  /**
+   * Specify a CSS selector that matches the DOM element that should be
+   * focused when the Modal opens.
+   */
+  selectorPrimaryFocus?: string;
+
+  /**
+   * Specify the CSS selectors that match the floating menus.
+   *
+   * See https://react.carbondesignsystem.com/?path=/docs/components-composedmodal--overview#focus-management
+   */
+  selectorsFloatingMenus?: string[];
 
   /**
    * The main title of the tearsheet, displayed in the header area.
@@ -110,9 +131,6 @@ interface TearsheetNarrowBaseProps extends PropsWithChildren {
    */
   verticalPosition?: 'normal' | 'lower';
 }
-
-type TearsheetNarrowProps = TearsheetNarrowBaseProps &
-  CloseIconDescriptionTypes;
 
 const componentName = 'TearsheetNarrow';
 
@@ -193,8 +211,6 @@ TearsheetNarrow.propTypes = {
    * See https://react.carbondesignsystem.com/?path=/docs/components-button--default#component-api
    */
   actions: allPropTypes([
-    /**@ts-ignore */
-    ActionSet.validateActions(() => 'lg'),
     PropTypes.arrayOf(
       PropTypes.shape({
         ...Button.propTypes,
@@ -208,6 +224,7 @@ TearsheetNarrow.propTypes = {
         label: PropTypes.string,
         loading: PropTypes.bool,
         // we duplicate this Button prop to improve the DocGen here
+        /**@ts-ignore*/
         onClick: Button.propTypes.onClick,
       })
     ),
@@ -227,14 +244,8 @@ TearsheetNarrow.propTypes = {
   /**
    * The accessibility title for the close icon (if shown).
    *
-   * **Note:** This prop is only required if a close icon is shown, i.e. if
-   * there are a no navigation actions and/or hasCloseIcon is true.
    */
-  /**@ts-ignore */
-  closeIconDescription: PropTypes.string.isRequired.if(
-    ({ actions, hasCloseIcon }) => tearsheetHasCloseIcon(actions, hasCloseIcon)
-  ),
-
+  closeIconDescription: PropTypes.string,
   /**
    * A description of the flow, displayed in the header area of the tearsheet.
    */
@@ -246,7 +257,6 @@ TearsheetNarrow.propTypes = {
    * the tearsheet is read-only or has no navigation actions (sometimes called
    * a "passive tearsheet").
    */
-  /**@ts-ignore*/
   hasCloseIcon: PropTypes.bool,
 
   /**
@@ -273,6 +283,20 @@ TearsheetNarrow.propTypes = {
    */
   /**@ts-ignore */
   portalTarget: portalType,
+
+  /**
+   * Specify a CSS selector that matches the DOM element that should be
+   * focused when the Modal opens.
+   */
+  selectorPrimaryFocus: PropTypes.string,
+
+  /**
+   * Specify the CSS selectors that match the floating menus.
+   *
+   * See https://react.carbondesignsystem.com/?path=/docs/components-composedmodal--overview#focus-management
+   */
+  /**@ts-ignore*/
+  selectorsFloatingMenus: PropTypes.arrayOf(PropTypes.string),
 
   /**
    * The main title of the tearsheet, displayed in the header area.

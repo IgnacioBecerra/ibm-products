@@ -6,7 +6,8 @@
 //
 
 import React from 'react';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
+import { StoryDocsPage } from '../../global/js/utils/StoryDocsPage';
 
 import { Bee, Lightning } from '@carbon/react/icons';
 
@@ -29,7 +30,7 @@ const getActions = (num) =>
   }));
 
 export default {
-  title: 'IBM Products/Components/ActionBar',
+  title: 'Utilities/ActionBar',
   component: ActionBar,
   tags: ['autodocs'],
   argTypes: {
@@ -47,6 +48,9 @@ export default {
   },
   parameters: {
     styles,
+    docs: {
+      page: () => <StoryDocsPage altGuidelinesHref="" />,
+    },
   },
   decorators: [(story) => <DisplayBox>{story()}</DisplayBox>],
 };

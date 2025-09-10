@@ -19,13 +19,13 @@ const breadcrumbContent = Array.from(
   { length: 5 },
   (_, index) => `Breadcrumb ${index + 1}`
 );
-
+const myOnClick = jest.fn();
 const breadcrumbItems = breadcrumbContent.map((item) => ({
   href: '/#',
   id: `id-${item.replace(' ', '_')}`,
   key: item,
   label: item,
-  onClick: () => {},
+  onClick: myOnClick,
 }));
 
 const sizes = {
@@ -48,7 +48,6 @@ const TestBreadcrumbWithOverflow = ({ width, ...rest }) => {
 };
 
 describe(BreadcrumbWithOverflow.displayName, () => {
-  const { ResizeObserver } = window;
   let mockElement;
 
   beforeEach(() => {
@@ -87,17 +86,11 @@ describe(BreadcrumbWithOverflow.displayName, () => {
         },
       },
     });
-    window.ResizeObserver = jest.fn().mockImplementation(() => ({
-      observe: jest.fn(),
-      unobserve: jest.fn(),
-      disconnect: jest.fn(),
-    }));
   });
 
   afterEach(() => {
     mockElement.mockRestore();
     jest.restoreAllMocks();
-    window.ResizeObserver = ResizeObserver;
   });
 
   const { click } = fireEvent;
@@ -152,9 +145,10 @@ describe(BreadcrumbWithOverflow.displayName, () => {
     );
 
     // item 2 contains an overflow menu
-    const overflowBtn = screen.getByLabelText(/Open and close/, {
-      selector: `.${blockClass}__overflow-menu`,
-    });
+    const overflowBtn = document.querySelector(
+      `.${blockClass}__overflow-menu button`
+    );
+
     await act(() => click(overflowBtn));
 
     // <ul role='menu' /> but default <ul> role of list used for query
@@ -167,6 +161,8 @@ describe(BreadcrumbWithOverflow.displayName, () => {
     expect(menuItems).toHaveLength(overflowItemsExpected);
     expect(menuItems[0]).toHaveTextContent(breadcrumbContent[1]);
     expect(menuItems[1]).toHaveTextContent(breadcrumbContent[2]);
+    await act(() => click(menuItems[1]));
+    expect(myOnClick).toHaveBeenCalled();
   });
 
   it('Renders just the breadcrumb and last item when very little space', async () => {
@@ -295,6 +291,6 @@ describe(BreadcrumbWithOverflow.displayName, () => {
         ]}
       />
     );
-    expect(screen.getByText('short title'));
+    expect(screen.getByText('short title')).toBeVisible();
   });
 });

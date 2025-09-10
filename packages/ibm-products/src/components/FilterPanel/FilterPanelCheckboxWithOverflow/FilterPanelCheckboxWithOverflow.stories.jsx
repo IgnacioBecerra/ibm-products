@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 
 import uuidv4 from '../../../global/js/utils/uuidv4';
 
@@ -16,11 +16,12 @@ import { FilterPanelCheckboxWithOverflow } from '.';
 import mdx from './FilterPanelCheckboxWithOverflow.mdx';
 
 import styles from '../_storybook-styles.scss?inline';
+import { Annotation } from '../../../../.storybook/Annotation';
 
 const storyClass = 'filter-panel-stories';
 
 export default {
-  title: 'IBM Products/Components/Filter panel/FilterPanelCheckboxWithOverflow',
+  title: 'Deprecated/Filter panel/FilterPanelCheckboxWithOverflow',
   component: FilterPanelCheckboxWithOverflow,
   tags: ['autodocs'],
   argTypes: {
@@ -75,6 +76,21 @@ export default {
       page: mdx,
     },
   },
+  decorators: [
+    (story) => (
+      <Annotation
+        type="deprecation-notice"
+        text={
+          <div>
+            This component is deprecated and will be removed in the next major
+            version.
+          </div>
+        }
+      >
+        {story()}
+      </Annotation>
+    ),
+  ],
 };
 
 const Template = (args) => {

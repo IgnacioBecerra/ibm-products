@@ -15,7 +15,6 @@ import {
   NUMBER,
   PANEL,
   RADIO,
-  SAVED_FILTERS,
 } from '../constants';
 import {
   Checkbox,
@@ -42,10 +41,14 @@ import { getInitialStateFromFilters } from '../utils';
 import { usePreviousValue } from '../../../../../../global/js/hooks';
 import { FilterContext } from '../FilterProvider';
 import { handleCheckboxChange } from '../handleCheckboxChange';
+import uuidv4 from '../../../../../../global/js/utils/uuidv4';
+
+// Use same empty array every time, for benefit of useEffect() etc. dependency checking.
+const emptyArray = [];
 
 const useFilters = ({
   updateMethod,
-  filters = [],
+  filters = emptyArray,
   setAllFilters,
   variation,
   reactTableFiltersState,
@@ -54,7 +57,7 @@ const useFilters = ({
   autoHideFilters,
   isFetching,
 }) => {
-  const { state, dispatch: localDispatch } = useContext(FilterContext);
+  const { state, tableId: contextTableId } = useContext(FilterContext);
   const { savedFilters } = state;
   /** State */
   const [filtersState, setFiltersState] = useState(
@@ -67,13 +70,14 @@ const useFilters = ({
   );
 
   const previousState = usePreviousValue({ panelOpen });
+  const filteredItemsRef = useRef(undefined);
 
   // When using batch actions we have to store the filters to then apply them later
   const prevFiltersRef = useRef(JSON.stringify(filtersState));
   const lastAppliedFilters = useRef(JSON.stringify(reactTableFiltersState));
   const prevFiltersObjectArrayRef = useRef(JSON.stringify(filtersObjectArray));
 
-  const holdingPrevFiltersRef = useRef();
+  const holdingPrevFiltersRef = useRef(undefined);
   const holdingLastAppliedFiltersRef = useRef([]);
   const holdingPrevFiltersObjectArrayRef = useRef([]);
 
@@ -96,30 +100,37 @@ const useFilters = ({
     );
   }, [setAllFilters]);
 
-  const reset = useCallback(() => {
-    // When we reset we want the "initialFilters" to be an empty array
-    const resetFiltersArray = [];
+  const reset = useCallback(
+    (tableId) => {
+      // only reset filters if tableid of the datagrid that triggered "clear filters"
+      // matches the table id stored in its context instance
+      if (tableId === contextTableId) {
+        // When we reset we want the "initialFilters" to be an empty array
+        const resetFiltersArray = [];
 
-    // Get the initial values for the filters
-    const initialFiltersState = getInitialStateFromFilters(
-      filters,
-      variation,
-      resetFiltersArray
-    );
-    const initialFiltersObjectArray = [];
+        // Get the initial values for the filters
+        const initialFiltersState = getInitialStateFromFilters(
+          filters,
+          variation,
+          resetFiltersArray
+        );
+        const initialFiltersObjectArray = [];
 
-    // Set the state to the initial values
-    setFiltersState(initialFiltersState);
-    setFiltersObjectArray(initialFiltersObjectArray);
-    setAllFilters([]);
+        // Set the state to the initial values
+        setFiltersState(initialFiltersState);
+        setFiltersObjectArray(initialFiltersObjectArray);
+        setAllFilters([]);
 
-    // Update their respective refs so everything is in sync
-    prevFiltersRef.current = JSON.stringify(initialFiltersState);
-    prevFiltersObjectArrayRef.current = JSON.stringify(
-      initialFiltersObjectArray
-    );
-    lastAppliedFilters.current = JSON.stringify([]);
-  }, [filters, setAllFilters, variation]);
+        // Update their respective refs so everything is in sync
+        prevFiltersRef.current = JSON.stringify(initialFiltersState);
+        prevFiltersObjectArrayRef.current = JSON.stringify(
+          initialFiltersObjectArray
+        );
+        lastAppliedFilters.current = JSON.stringify([]);
+      }
+    },
+    [filters, setAllFilters, variation, contextTableId]
+  );
 
   const applyFilters = ({ column, value, type }) => {
     // If no end date is selected return because we need the end date to do computations
@@ -153,16 +164,6 @@ const useFilters = ({
     }
 
     setFiltersObjectArray(filterCopy);
-
-    // Dispatch action from local filter context to track filters in order
-    // to keep history if `isFetching` becomes true. If so, react-table
-    // clears all filter history
-    localDispatch({
-      type: SAVED_FILTERS,
-      payload: {
-        savedFilters: filterCopy,
-      },
-    });
 
     if (updateMethod === INSTANT) {
       setAllFilters(filterCopy);
@@ -282,7 +283,7 @@ const useFilters = ({
                 {...components.RadioButtonGroup}
                 valueSelected={
                   filtersState[column]?.value === ''
-                    ? components.DefaultRadioButton?.value ?? 'Any'
+                    ? (components.DefaultRadioButton?.value ?? 'Any')
                     : filtersState[column]?.value
                 }
                 onChange={(selected) => {
@@ -365,10 +366,19 @@ const useFilters = ({
             return null;
           })
           .filter(Boolean);
+        const isEqual = compareFilterItems(filteredItems);
+        if (!isEqual) {
+          filteredItemsRef.current = [...filteredItems];
+        }
+        const getKey = () => {
+          return isEqual ? { key: uuidv4() } : column;
+        };
+
         filter = (
           <MultiSelect
             {...components.MultiSelect}
             selectedItems={filteredItems}
+            key={getKey()}
             onChange={({ selectedItems }) => {
               const allOptions = filtersState[column].value;
               // Find selected items from list of options
@@ -386,6 +396,7 @@ const useFilters = ({
                   return null;
                 })
                 .filter(Boolean);
+              filteredItemsRef.current = [...foundItems];
 
               // Change selected state for those items that have been selected
               allOptions.map((a) => (a.selected = false));
@@ -425,6 +436,20 @@ const useFilters = ({
     }
 
     return <React.Fragment key={column}>{filter}</React.Fragment>;
+  };
+
+  const compareFilterItems = (filteredItems) => {
+    const filteredItemsId = filteredItems.map((item) => item.id) ?? [];
+    const previousFilteredItemsId =
+      filteredItemsRef?.current?.map((item) => item.id) ?? [];
+    const set1 = new Set(filteredItemsId);
+    const set2 = new Set(previousFilteredItemsId);
+    // Check if the sets have the same size (same number of unique elements)
+    if (set1.size !== set2.size) {
+      return false;
+    }
+    // Check if all elements in set1 are also present in set2 (using spread syntax)
+    return [...set1].every((element) => set2.has(element));
   };
 
   /** This useEffect will properly handle the previous filters when the panel closes
@@ -497,6 +522,14 @@ const useFilters = ({
     savedFilters,
     filtersObjectArray,
   ]);
+
+  // This useEffect will update the last applied filters when the react-table filters change, this helps keeps all states in sync
+  useEffect(
+    function reflectLastAppliedFiltersWhenReactTableUpdates() {
+      lastAppliedFilters.current = JSON.stringify(reactTableFiltersState);
+    },
+    [reactTableFiltersState, lastAppliedFilters]
+  );
 
   const cancel = () => {
     // Reverting to previous filters only applies when using batch actions

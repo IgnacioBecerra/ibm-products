@@ -1,10 +1,10 @@
-/*
- * Licensed Materials - Property of IBM
- * 5724-Q36
- * (c) Copyright IBM Corp. 2020
- * US Government Users Restricted Rights - Use, duplication or disclosure
- * restricted by GSA ADP Schedule Contract with IBM Corp.
+/**
+ * Copyright IBM Corp. 2024
+ *
+ * This source code is licensed under the Apache-2.0 license found in the
+ * LICENSE file in the root directory of this source tree.
  */
+
 import React from 'react';
 import cx from 'classnames';
 import { pkg } from '../../settings';
@@ -23,14 +23,15 @@ const useDefaultStringRenderer = (hooks) => {
     </div>
   );
 
-  const HeaderRenderer = (header, slug) => {
+  const HeaderRenderer = (header, slug, aiLabel) => {
     return (
       <div
         className={cx(`${blockClass}__defaultStringRenderer`, {
           [`${blockClass}__defaultStringRenderer--slug`]:
             slug && React.isValidElement(slug),
+          [`${blockClass}__defaultStringRenderer--ai-label`]:
+            aiLabel && React.isValidElement(aiLabel),
         })}
-        title={typeof header === 'string' ? header : ''}
         key={typeof header === 'string' ? header : ''}
       >
         {header}
@@ -43,7 +44,8 @@ const useDefaultStringRenderer = (hooks) => {
       Cell: StringRenderer,
       ...column,
       Header:
-        column.HeaderRenderer || HeaderRenderer(column.Header, column.slug),
+        column.HeaderRenderer ||
+        HeaderRenderer(column.Header, column.slug, column.aiLabel),
     }));
     return [...columnsWithDefaultCells];
   };

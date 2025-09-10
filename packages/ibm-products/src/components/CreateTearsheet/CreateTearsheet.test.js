@@ -1,13 +1,13 @@
 /* eslint-disable react/prop-types */
 /**
- * Copyright IBM Corp. 2021, 2023
+ * Copyright IBM Corp. 2021, 2025
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
  */
 
-import React from 'react';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import React, { act } from 'react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { expectWarn, expectWarnAsync } from '../../global/js/utils/test-helper';
 import { pkg, carbon } from '../../settings';
 import { CreateTearsheet } from './CreateTearsheet';
@@ -49,6 +49,9 @@ const submitButtonText = 'Submit';
 const cancelButtonText = 'Cancel';
 const backButtonText = 'Back';
 const nextButtonText = 'Next';
+const experimentalSecondarySubmitText = 'Secondary submit';
+const experimentalSecondaryLabelText = 'Skip all step';
+const onExperimentalSecondarySubmitClickFn = jest.fn();
 const step3Title = uuidv4();
 const step2Title = uuidv4();
 const step1Title = uuidv4();
@@ -71,6 +74,8 @@ const defaultProps = {
   ariaLabel,
 };
 
+const secondStepButtonId = 'second-step-button';
+
 const renderCreateTearsheet = ({
   rejectOnSubmit = false,
   rejectOnNext = false,
@@ -79,6 +84,12 @@ const renderCreateTearsheet = ({
   onPrevious = onPreviousStepFn,
   finalOnNextFn = finalStepOnNext,
   rejectOnSubmitNext = false,
+  experimentalSecondarySubmit = {
+    labelText: '',
+    disabled: false,
+    hideSecondarySubmit: false,
+    onClick: onExperimentalSecondarySubmitClickFn,
+  },
   ...rest
 }) =>
   render(
@@ -90,15 +101,22 @@ const renderCreateTearsheet = ({
         onNext={rejectOnNext ? onNextStepRejectionFn : onNext}
         title={step1Title}
         fieldsetLegendText={step1Title}
+        fieldsetLegendId={step1Title}
         onMount={onMountFn}
         description={step1Description}
         subtitle={step1Subtitle}
+        experimentalSecondarySubmit={{
+          labelText: experimentalSecondarySubmit.labelText,
+          disabled: experimentalSecondarySubmit.disabled,
+          hideSecondarySubmit: experimentalSecondarySubmit.hideSecondarySubmit,
+          onClick: experimentalSecondarySubmit.onClick,
+        }}
       >
         step 1 content
         <button type="button" disabled>
           Test
         </button>
-        <input type="text" />
+        <input aria-label="step1-input" type="text" />
       </CreateTearsheetStep>
       <CreateTearsheetStep
         title={step2Title}
@@ -106,10 +124,15 @@ const renderCreateTearsheet = ({
         onPrevious={onPrevious}
       >
         step 2 content
+        <button type="button">Second step button one</button>
+        <button id={secondStepButtonId} type="button">
+          Second step button two
+        </button>
       </CreateTearsheetStep>
       <CreateTearsheetStep
         title={step3Title}
         fieldsetLegendText={step3Title}
+        fieldsetLegendId={step3Title}
         onNext={rejectOnSubmitNext ? finalStepOnNextRejectFn : finalOnNextFn}
       >
         step 3 content
@@ -156,37 +179,33 @@ const initialDefaultPortalTargetBody = pkg.isFeatureEnabled(
 );
 
 describe(CreateTearsheet.displayName, () => {
-  const { ResizeObserver } = window;
-
   beforeEach(() => {
-    window.ResizeObserver = jest.fn().mockImplementation(() => ({
-      observe: jest.fn(),
-      unobserve: jest.fn(),
-      disconnect: jest.fn(),
-    }));
-    window.IntersectionObserver = jest.fn().mockImplementation(() => ({
-      root: null,
-      rootMargin: '',
-      thresholds: [],
-      disconnect: () => null,
-      observe: () => null,
-      takeRecords: () => [],
-      unobserve: () => null,
-    }));
     jest.useFakeTimers();
     pkg.feature['default-portal-target-body'] = false;
   });
 
   afterEach(() => {
-    window.ResizeObserver = ResizeObserver;
     jest.useRealTimers();
     pkg.feature['default-portal-target-body'] = initialDefaultPortalTargetBody;
   });
 
   it('has no accessibility violations', async () => {
-    const { container } = renderCreateTearsheet({ ...defaultProps });
-    expect(() => container.toBeAccessible());
-    expect(() => container.toHaveNoAxeViolations());
+    await act(async () => {
+      renderCreateTearsheet({ ...defaultProps, 'data-testid': dataTestId });
+    });
+    try {
+      const tearsheetElement = document.querySelector(
+        `.${prefix}--tearsheet-create`
+      );
+      await expect(tearsheetElement).toBeAccessible(
+        CreateTearsheet.displayName
+      );
+      jest.useRealTimers();
+      await expect(tearsheetElement).toHaveNoAxeViolations();
+      jest.useFakeTimers();
+    } catch (err) {
+      console.log('accessibility test error :', err);
+    }
   });
 
   it('renders the CreateTearsheet component', async () => {
@@ -218,10 +237,10 @@ describe(CreateTearsheet.displayName, () => {
       `.${createTearsheetBlockClass}__content .${carbon.prefix}--form`
     ).children;
     expect(
-      createTearsheetSteps[1].classList.contains(
-        `.${createTearsheetBlockClass}__step__step--visible-section`
+      createTearsheetSteps[1].firstElementChild.classList.contains(
+        `${createTearsheetBlockClass}__step__step--visible-step`
       )
-    );
+    ).toBeTruthy();
   });
 
   it('renders the first step if an invalid initialStep value is provided', async () =>
@@ -241,16 +260,17 @@ describe(CreateTearsheet.displayName, () => {
           `.${createTearsheetBlockClass}__content .${carbon.prefix}--form`
         ).children;
         expect(
-          createTearsheetSteps[0].classList.contains(
-            `.${createTearsheetBlockClass}__step__step--visible-section`
+          createTearsheetSteps[0].firstElementChild.classList.contains(
+            `${createTearsheetBlockClass}__step__step--visible-step`
           )
-        );
+        ).toBeTruthy();
         // The onMount prop will get called here because the first step is rendered
         expect(onMountFn).toHaveBeenCalledTimes(1);
       }
     ));
 
   it('renders the second step if clicking on the next step button with onNext optional function prop and then clicks cancel button', async () => {
+    jest.useFakeTimers();
     renderCreateTearsheet(defaultProps);
     const nextButtonElement = screen.getByText(nextButtonText);
     const cancelButtonElement = screen.getByText(cancelButtonText);
@@ -260,14 +280,46 @@ describe(CreateTearsheet.displayName, () => {
       `.${createTearsheetBlockClass}__content .${carbon.prefix}--form`
     ).children;
     expect(
-      createTearsheetSteps[1].classList.contains(
-        `.${createTearsheetBlockClass}__step__step--visible-section`
+      createTearsheetSteps[1].firstElementChild.classList.contains(
+        `${createTearsheetBlockClass}__step__step--visible-step`
       )
-    );
+    ).toBeTruthy();
+
+    jest.advanceTimersByTime(1000);
 
     expect(onNextStepFn).toHaveBeenCalled();
     await act(() => click(cancelButtonElement));
     expect(onCloseFn).toHaveBeenCalled();
+  });
+
+  it('should focus the specified element on steps greater than the first', async () => {
+    renderCreateTearsheet({
+      ...defaultProps,
+      firstFocusElement: `#${secondStepButtonId}`,
+    });
+    const nextButtonElement = screen.getByText(nextButtonText);
+    await act(() => click(nextButtonElement));
+    setTimeout(() => {
+      const button = screen.getByRole('button', {
+        name: 'Second step button two',
+      });
+      expect(button).toHaveFocus();
+    }, 20);
+  });
+
+  it('should not focus the specified element if an invalid selector is provided', async () => {
+    jest.useFakeTimers();
+    renderCreateTearsheet({
+      ...defaultProps,
+      firstFocusElement: `#invalid-selector`,
+    });
+    const nextButtonElement = screen.getByText(nextButtonText);
+    await act(() => click(nextButtonElement));
+    jest.advanceTimersByTime(1000);
+    const button = screen.getByRole('button', {
+      name: 'Second step button one',
+    });
+    expect(button).toHaveFocus();
   });
 
   it('renders first step with onNext function prop that rejects', async () =>
@@ -281,7 +333,7 @@ describe(CreateTearsheet.displayName, () => {
         });
         const nextButtonElement = screen.getByText(nextButtonText);
         await act(() => click(nextButtonElement));
-
+        jest.advanceTimersByTime(1000);
         expect(onNextStepRejectionFn).toHaveBeenCalled();
       }
     ));
@@ -290,16 +342,21 @@ describe(CreateTearsheet.displayName, () => {
     renderCreateTearsheet(defaultProps);
     const nextButtonElement = screen.getByText(nextButtonText);
     const backButtonElement = screen.getByText(backButtonText);
-    const tearsheetElement = screen.getByRole('dialog', { name: ariaLabel });
+    const tearsheetElement = screen.getByRole('dialog', {
+      name: ariaLabel,
+    });
     const createTearsheetSteps = tearsheetElement.querySelector(
       `.${createTearsheetBlockClass}__content .${carbon.prefix}--form`
     ).children;
-    click(nextButtonElement);
+    await act(() => {
+      /* fire events that update state */
+      click(nextButtonElement);
+    });
     expect(
-      createTearsheetSteps[1].classList.contains(
-        `.${createTearsheetBlockClass}__step__step--visible-section`
+      createTearsheetSteps[1].firstElementChild.classList.contains(
+        `${createTearsheetBlockClass}__step__step--visible-step`
       )
-    );
+    ).toBeTruthy();
     await waitFor(() => expect(onNextStepFn).toHaveBeenCalledTimes(1));
     click(backButtonElement);
     await waitFor(() => expect(onPreviousStepFn).toHaveBeenCalledTimes(1));
@@ -313,15 +370,17 @@ describe(CreateTearsheet.displayName, () => {
       expect(onNextStepFn).toHaveBeenCalled();
     });
     await act(() => click(nextButtonElement));
-    const tearsheetElement = screen.getByRole('dialog', { name: ariaLabel });
-    const tearsheetChildren = tearsheetElement.querySelector(
-      `.${createTearsheetBlockClass}__content  .${carbon.prefix}--form`
+    const tearsheetElement = screen.getByRole('dialog', {
+      name: ariaLabel,
+    });
+    const createTearsheetSteps = tearsheetElement.querySelector(
+      `.${createTearsheetBlockClass}__content .${carbon.prefix}--form`
     ).children;
     expect(
-      tearsheetChildren[2].classList.contains(
-        `.${createTearsheetBlockClass}__step__step--visible-section`
+      createTearsheetSteps[2].firstElementChild.classList.contains(
+        `${createTearsheetBlockClass}__step__step--visible-step`
       )
-    );
+    ).toBeTruthy();
     rerender(
       <CreateTearsheet
         {...defaultProps}
@@ -445,8 +504,8 @@ describe(CreateTearsheet.displayName, () => {
     ));
 
   it('should not render any CreateTearsheet steps when there are no TearsheetStep components included', async () => {
-    const { container } = renderEmptyCreateTearsheet(defaultProps);
-    const createTearsheetSteps = container.querySelectorAll(
+    renderEmptyCreateTearsheet(defaultProps);
+    const createTearsheetSteps = document.querySelectorAll(
       `.${createTearsheetBlockClass}__step`
     );
     expect(Array(...createTearsheetSteps)).toStrictEqual([]);
@@ -464,14 +523,72 @@ describe(CreateTearsheet.displayName, () => {
     const backButtonElement = screen.getByText(backButtonText);
     await act(() => click(backButtonElement));
     expect(onPreviousStepFn).toHaveBeenCalledTimes(1);
-    const tearsheetElement = screen.getByRole('dialog', { name: ariaLabel });
-    const tearsheetChildren = tearsheetElement.querySelector(
-      `.${createTearsheetBlockClass}__content`
+    const tearsheetElement = screen.getByRole('dialog', {
+      name: ariaLabel,
+    });
+    const createTearsheetSteps = tearsheetElement.querySelector(
+      `.${createTearsheetBlockClass}__content .${carbon.prefix}--form`
     ).children;
     expect(
-      tearsheetChildren[0].classList.contains(
-        `.${createTearsheetBlockClass}__step__step--visible-section`
+      createTearsheetSteps[0].firstElementChild.classList.contains(
+        `${createTearsheetBlockClass}__step__step--visible-step`
       )
+    ).toBeTruthy();
+  });
+
+  it('should show experimentalSecondarySubmit button (4th button)', () => {
+    renderCreateTearsheet({
+      ...defaultProps,
+      experimentalSecondarySubmitText,
+    });
+    const button = screen.getByText(experimentalSecondarySubmitText);
+    expect(button).toBeInTheDocument();
+  });
+
+  it('should disabled experimentalSecondarySubmit button', () => {
+    renderCreateTearsheet({
+      ...defaultProps,
+      experimentalSecondarySubmitText,
+      experimentalSecondarySubmit: { disabled: true },
+    });
+    const button = screen.getByText(experimentalSecondarySubmitText);
+    expect(button).toBeDisabled();
+  });
+
+  it('should hide experimentalSecondarySubmit button', () => {
+    renderCreateTearsheet({
+      ...defaultProps,
+      experimentalSecondarySubmitText,
+      experimentalSecondarySubmit: { hideSecondarySubmit: true },
+    });
+    const button = screen.queryByText(experimentalSecondarySubmitText);
+    expect(button).toBeNull();
+  });
+
+  it('should rename experimentalSecondarySubmit button text', () => {
+    renderCreateTearsheet({
+      ...defaultProps,
+      experimentalSecondarySubmitText,
+      experimentalSecondarySubmit: {
+        labelText: experimentalSecondaryLabelText,
+      },
+    });
+
+    const button = screen.getByText(experimentalSecondaryLabelText);
+    expect(button).toBeInTheDocument();
+  });
+  it('should call experimentalSecondarySubmit onClick', async () => {
+    renderCreateTearsheet({
+      ...defaultProps,
+      experimentalSecondarySubmitText,
+      experimentalSecondarySubmit: {
+        onClick: onExperimentalSecondarySubmitClickFn,
+      },
+    });
+    const button = screen.getByText(experimentalSecondarySubmitText);
+    await act(() => click(button));
+    await waitFor(() =>
+      expect(onExperimentalSecondarySubmitClickFn).toHaveBeenCalled()
     );
   });
 
@@ -493,4 +610,44 @@ describe(CreateTearsheet.displayName, () => {
         renderInvalidCreateTearsheet(defaultProps);
       }
     ));
+
+  it('should not throw an error if null is passed as one of the children?', async () => {
+    const children = [
+      <CreateTearsheetStep title="Title 1" key="1" fieldsetLegendText="Title 1">
+        <p>1</p>
+      </CreateTearsheetStep>,
+      null,
+      <CreateTearsheetStep title="Title 2" key="2" fieldsetLegendText="Title 2">
+        <p>2</p>
+      </CreateTearsheetStep>,
+    ];
+
+    render(
+      <CreateTearsheet {...defaultProps} onRequestSubmit={onRequestSubmitFn}>
+        {children}
+      </CreateTearsheet>
+    );
+
+    // Select the next button
+    const nextButtonElement = screen.getByText(nextButtonText);
+
+    await waitFor(() => userEvent.click(nextButtonElement));
+
+    // Make sure the next step is on step 2
+    const influencerSteps = document.querySelector(
+      `.${pkg.prefix}--create-influencer__progress-indicator`
+    );
+
+    expect(
+      influencerSteps.childNodes[0].classList.contains(
+        'cds--progress-step--complete'
+      )
+    ).toBe(true);
+
+    expect(
+      influencerSteps.childNodes[1].classList.contains(
+        'cds--progress-step--current'
+      )
+    ).toBe(true);
+  });
 });

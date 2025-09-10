@@ -1,3 +1,10 @@
+/**
+ * Copyright IBM Corp. 2024
+ *
+ * This source code is licensed under the Apache-2.0 license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 import React from 'react';
 import { StoryDocsPage } from '../../global/js/utils/StoryDocsPage';
 import * as stories from './CreateFullPage.stories';
@@ -5,7 +12,7 @@ import * as stories from './CreateFullPage.stories';
 const DocsPage = () => {
   return (
     <StoryDocsPage
-      altGuidelinesHref="https://pages.github.ibm.com/cdai-design/pal/patterns/creation-flows/usage#full-page"
+      altGuidelinesHref="https://pages.github.ibm.com/carbon/ibm-products/patterns/create-flows/usage/#full-page"
       blocks={[
         {
           description: `There are **2** components that make up a Create Full Page component, which can
@@ -216,6 +223,17 @@ sections, you can utilize the below included class names.
 | \`#{$pkg-prefix}--create-full-page__step-fieldset\`    | fieldset    | \`margin-bottom\` of \`$spacing-05\` to all children elements  |
 | \`#{$pkg-prefix}--create-full-page__section-divider\`  | divider     | Includes a \`1px\` divider line inside the \`main\` content    |
 `,
+        },
+        {
+          title: 'Prevent the modal from closing after submit',
+          description: `In the case that you want to prevent the modal from closing after the user submits you can return an object from \`onRequestSubmit\` and indicate the \`preventClose\` property to \`true\``,
+          source: {
+            code: `
+<CreateFullPage onRequestSubmit={() => ({ preventClose: true })}>
+  ...
+</CreateFullPage>
+`,
+          },
         },
       ]}
     />

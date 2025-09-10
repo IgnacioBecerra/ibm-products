@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { TearsheetNarrow } from '../../../../Tearsheet';
 import Columns from './Columns';
@@ -18,6 +18,7 @@ const blockClass = `${pkg.prefix}--datagrid`;
 const CustomizeColumnsTearsheet = ({
   isOpen,
   setIsTearsheetOpen,
+  launcherButtonRef,
   onSaveColumnPrefs,
   columnDefinitions,
   originalColumnDefinitions,
@@ -36,6 +37,7 @@ const CustomizeColumnsTearsheet = ({
   const [searchText, setSearchText] = useState('');
   const [columnObjects, setColumnObjects] = useState(columnDefinitions);
   const [isDirty, setIsDirty] = useState(false);
+  const prevColumnDefinitions = useRef(undefined);
 
   const onRequestClose = () => {
     setColumnObjects(columnDefinitions);
@@ -52,26 +54,45 @@ const CustomizeColumnsTearsheet = ({
   };
 
   const onCheckboxCheck = (col, value) => {
+    // Update the visibility of columns based on a single column or an array of columns
     const changedDefinitions = columnObjects.map((definition) => {
-      if (
-        ((Array.isArray(col) && col.indexOf(definition) != -1) ||
-          definition.id === col.id) &&
-        definition.canFilter &&
-        !definition.disabled
-      ) {
-        return { ...definition, isVisible: value };
+      // If select all is clicked
+      if (Array.isArray(col)) {
+        return col.includes(definition) &&
+          definition.canFilter &&
+          !definition.disabled
+          ? { ...definition, isVisible: value }
+          : definition;
       }
-      return definition;
+      // If a single checkbox is clicked which is written below as a default return
+      return col.id === definition.id
+        ? { ...definition, isVisible: value }
+        : definition;
     });
 
-    setColumnObjects(changedDefinitions);
-    setDirty();
-  };
+    // Count the number of visible columns excluding certain IDs after 1st mutation
+    const selectedColumnsCount = changedDefinitions.filter(
+      (definition) =>
+        definition.isVisible &&
+        !['datagridSelection', 'actions'].includes(definition.id)
+    ).length;
 
-  const setDirty = () => {
-    if (!isDirty) {
-      setIsDirty(true);
-    }
+    // Ensure special columns are visible if any other columns are visible
+    const finalDefinitions = changedDefinitions.map((definition) => {
+      // If at least 1 column is visible after mutation, we add selection column and actions column (coming from various extensions)
+      if (selectedColumnsCount > 0) {
+        return ['datagridSelection', 'actions'].includes(definition.id)
+          ? { ...definition, isVisible: true }
+          : definition;
+      }
+      // Else we remove selection column and actions column
+      return ['datagridSelection', 'actions'].includes(definition.id)
+        ? { ...definition, isVisible: false }
+        : definition;
+    });
+
+    setColumnObjects(finalDefinitions);
+    setIsDirty(selectedColumnsCount !== 0);
   };
 
   const getVisibleColumnsCount = useCallback(() => {
@@ -81,17 +102,26 @@ const CustomizeColumnsTearsheet = ({
   const string = searchText.trim().toLowerCase();
 
   useEffect(() => {
-    const notFilterableCount = columnObjects.filter(
-      (col) => !col.canFilter
-    ).length;
+    if (prevColumnDefinitions.current !== columnDefinitions) {
+      setColumnObjects(columnDefinitions);
+    }
     const actionCount = columnObjects.filter(
       (col) => col.id === 'actions'
     ).length;
+    const datagridSelectionCount = columnObjects.filter(
+      (col) => col.id === 'datagridSelection'
+    ).length;
     setVisibleColumnsCount(
-      getVisibleColumnsCount() - notFilterableCount - actionCount
+      getVisibleColumnsCount() - actionCount - datagridSelectionCount < 0
+        ? 0
+        : getVisibleColumnsCount() - actionCount - datagridSelectionCount
     );
-    setTotalColumns(columnObjects.length - notFilterableCount - actionCount);
-  }, [getVisibleColumnsCount, columnObjects]);
+
+    setTotalColumns(
+      columnObjects.length - actionCount - datagridSelectionCount
+    );
+    prevColumnDefinitions.current = columnDefinitions;
+  }, [getVisibleColumnsCount, columnObjects, columnDefinitions]);
 
   return (
     <TearsheetNarrow
@@ -99,6 +129,7 @@ const CustomizeColumnsTearsheet = ({
       open={isOpen}
       title={`${customizeTearsheetHeadingLabel} (${visibleColumnsCount}/${totalColumns})`}
       description={instructionsLabel}
+      launcherButtonRef={launcherButtonRef}
       actions={[
         {
           kind: 'secondary',
@@ -119,7 +150,7 @@ const CustomizeColumnsTearsheet = ({
         searchText={searchText}
         setColumnsObject={(cols) => {
           setColumnObjects(cols);
-          setDirty();
+          setIsDirty(true);
         }}
         setSearchText={setSearchText}
         findColumnPlaceholderLabel={findColumnPlaceholderLabel}
@@ -137,7 +168,7 @@ const CustomizeColumnsTearsheet = ({
           onSelectColumn={onCheckboxCheck}
           setColumnsObject={(cols) => {
             setColumnObjects(cols);
-            setDirty();
+            setIsDirty(getVisibleColumnsCount() !== 0);
           }}
           selectAllLabel={selectAllLabel}
           customizeTearsheetHeadingLabel={customizeTearsheetHeadingLabel}

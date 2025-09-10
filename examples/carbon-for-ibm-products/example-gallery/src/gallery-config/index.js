@@ -19,6 +19,8 @@ import imageCoachmarkFixed from './CoachmarkFixed--thumbnail.png';
 import imageCoachmarkOverlayElement from './CoachmarkOverlayElement--thumbnail.png';
 import imageCoachmarkOverlayElements from './CoachmarkOverlayElements--thumbnail.png';
 import imageCoachmarkStack from './CoachmarkStack--thumbnail.png';
+import imageCoachmarkWithAnimatedMedia from './CoachmarkWithAnimatedMedia--thumbnail.png';
+import imageConditionBuilder from './ConditionBuilder--thumbnail.png';
 import imageCreateFullPage from './CreateFullPage--thumbnail.png';
 import imageCreateModal from './CreateModal--thumbnail.png';
 import imageCreateSidePanel from './CreateSidePanel--thumbnail.png';
@@ -35,11 +37,13 @@ import imageExportModal from './ExportModal--thumbnail.png';
 import imageExpressiveCard from './ExpressiveCard--thumbnail.png';
 import imageFilterPanel from './FilterPanel--thumbnail.png';
 import imageFullPageError from './FullPageError--thumbnail.png';
+import imageGetStartedCard from './GetStartedCard--thumbnail.png';
 import imageHTTPErrors from './HTTPErrors--thumbnail.png';
 import imageImportModal from './ImportModal--thumbnail.png';
+import imageInlineTipWithAnimatedMedia from './InlineTipWithAnimatedMedia--thumbnail.png';
 import imageInterstitialScreen from './InterstitialScreen--thumbnail.png';
 import imageInterstitialScreenView from './InterstitialScreenView--thumbnail.png';
-import imageInterstitialScreenViewModule from './InterstitialScreenViewModule--thumbnail.png';
+import imageInterstitialScreenWithAnimatedMedia from './InterstitialScreenWithAnimatedMedia--thumbnail.png';
 import imageNav from './Nav--thumbnail.png';
 import imageNotificationsPanel from './NotificationsPanel--thumbnail.png';
 import imageOptionsTile from './OptionsTile--thumbnail.png';
@@ -75,7 +79,7 @@ const config = [
     thumbnail: `url(${imageAboutModal}`,
   },
   {
-    label: 'Big-Numbers',
+    label: 'Big-Number',
     directory: 'BigNumbers',
     thumbnail: `url(${imageBigNumbers}`,
   },
@@ -114,6 +118,16 @@ const config = [
     label: 'Coachmark-Stack',
     directory: 'CoachmarkStack',
     thumbnail: `url(${imageCoachmarkStack}`,
+  },
+  {
+    label: 'Coachmark-With-Animated-Media',
+    directory: 'CoachmarkWithAnimatedMedia',
+    thumbnail: `url(${imageCoachmarkWithAnimatedMedia}`,
+  },
+  {
+    label: 'Condition-Builder',
+    directory: 'ConditionBuilder',
+    thumbnail: `url(${imageConditionBuilder}`,
   },
   {
     label: 'Create Full Page',
@@ -196,6 +210,11 @@ const config = [
     thumbnail: `url(${imageFullPageError}`,
   },
   {
+    label: 'Get-Started-Card',
+    directory: 'GetStartedCard',
+    thumbnail: `url(${imageGetStartedCard}`,
+  },
+  {
     label: 'HTTP Error',
     directory: 'HTTPErrors',
     thumbnail: `url(${imageHTTPErrors}`,
@@ -204,6 +223,11 @@ const config = [
     label: 'Import Modal',
     directory: 'ImportModal',
     thumbnail: `url(${imageImportModal}`,
+  },
+  {
+    label: 'InlineTip-With-Animated-Media',
+    directory: 'InlineTipWithAnimatedMedia',
+    thumbnail: `url(${imageInlineTipWithAnimatedMedia}`,
   },
   {
     label: 'Interstitial-Screen',
@@ -216,9 +240,9 @@ const config = [
     thumbnail: `url(${imageInterstitialScreenView}`,
   },
   {
-    label: 'Interstitial-Screen-View-Module',
-    directory: 'InterstitialScreenViewModule',
-    thumbnail: `url(${imageInterstitialScreenViewModule}`,
+    label: 'Interstitial-Screen',
+    directory: 'InterstitialScreenWithAnimatedMedia',
+    thumbnail: `url(${imageInterstitialScreenWithAnimatedMedia}`,
   },
   { label: 'Nav', directory: 'Nav', thumbnail: `url(${imageNav}` },
   {

@@ -5,13 +5,13 @@
 // LICENSE file in the root directory of this source tree.
 //
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 import { TYPES as tagTypes } from '../TagSet/constants';
 import { pkg } from '../../settings';
 import { DisplayBox } from '../../global/js/utils/DisplayBox';
 import { TagSet } from '.';
-// import mdx from './TagSet.mdx';
+import { StoryDocsPage } from '../../global/js/utils/StoryDocsPage';
 import styles from './_storybook-styles.scss?inline';
 
 const blockClass = `${pkg.prefix}--tag-set`;
@@ -129,16 +129,52 @@ const overflowAndModalStrings = {
 };
 
 export default {
-  title: 'IBM Products/Components/Tag set/TagSet',
+  title: 'Components/TagSet',
   component: TagSet,
   tags: ['autodocs'],
   parameters: {
-    // docs: { page: mdx },
     styles,
+    percy: {
+      waitForTimeout: 1000,
+    },
+    docs: {
+      page: () => (
+        <StoryDocsPage
+          altGuidelinesHref={[
+            {
+              href: 'https://pages.github.ibm.com/carbon/ibm-products/components/tag-set/usage/',
+              label: 'Usage guidelines',
+            },
+            {
+              href: 'https://carbondesignsystem.com/components/tag/usage/',
+              label: 'Carbon tag usage guidelines',
+            },
+            {
+              href: 'https://react.carbondesignsystem.com/?path=/docs/components-tag--overview',
+              label: 'Carbon tag documentation',
+            },
+          ]}
+        />
+      ),
+    },
   },
   argTypes: {
     containerWidth: {
       control: { type: 'range', min: 20, max: 800, step: 10 },
+    },
+    size: {
+      control: {
+        type: 'select',
+      },
+      options: ['sm', 'md', 'lg'],
+      type: 'string',
+      description:
+        'This prop is only for storybook representation, and does not belong to `tagset` component, the size can be passed to each tag{} in tags[], the overflow tag takes the size of last tag{} in tags[]',
+    },
+    onOverflowClick: {
+      control: { type: 'function' },
+      description:
+        'An optional click handler that overrides the default functionality of displaying all tags in a modal',
     },
     allTagsModalTargetCustomDomNode: {
       control: { type: 'boolean' },
@@ -159,19 +195,23 @@ export default {
 };
 
 const Template = (argsIn) => {
-  const { containerWidth, allTagsModalTargetCustomDomNode, ...args } = {
+  const { containerWidth, allTagsModalTargetCustomDomNode, size, ...args } = {
     ...argsIn,
   };
-  const ref = useRef();
+  if (args.tags) {
+    args.tags = args.tags.map((tag) => ({ ...tag, size }));
+  }
+
+  const ref = useRef(undefined);
   return (
-    <div style={{ width: containerWidth }} ref={ref}>
+    <main style={{ width: containerWidth }} ref={ref}>
       <TagSet
         {...args}
         allTagsModalTarget={
           allTagsModalTargetCustomDomNode ? ref.current : undefined
         }
       />
-    </div>
+    </main>
   );
 };
 
@@ -204,13 +244,20 @@ HundredsOfTags.args = {
 };
 
 const TemplateWithClose = (argsIn) => {
-  const { containerWidth, allTagsModalTargetCustomDomNode, tags, ...args } = {
+  const {
+    containerWidth,
+    allTagsModalTargetCustomDomNode,
+    size,
+    tags,
+    ...args
+  } = {
     ...argsIn,
   };
   const [liveTags, setLiveTags] = useState(
     tags.map((tag) => ({
       ...tag,
       filter: true,
+      size: size,
       onClose: () => handleTagClose(tag.label),
     }))
   );
@@ -219,9 +266,17 @@ const TemplateWithClose = (argsIn) => {
     setLiveTags((prev) => prev.filter((tag) => tag.label !== key));
   };
 
-  const ref = useRef();
+  const ref = useRef(undefined);
+  useEffect(() => {
+    setLiveTags((prevTags) =>
+      prevTags.map((tag) => ({
+        ...tag,
+        size: size,
+      }))
+    );
+  }, [size]);
   return (
-    <div style={{ width: containerWidth }} ref={ref}>
+    <main style={{ width: containerWidth }} ref={ref}>
       <TagSet
         {...args}
         tags={liveTags}
@@ -229,7 +284,7 @@ const TemplateWithClose = (argsIn) => {
           allTagsModalTargetCustomDomNode ? ref.current : undefined
         }
       />
-    </div>
+    </main>
   );
 };
 

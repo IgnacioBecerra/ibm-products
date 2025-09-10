@@ -5,28 +5,28 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+import { Button, OverflowMenu, OverflowMenuItem, Theme } from '@carbon/react';
+// Carbon and package components we use.
+import { Close, Help } from '@carbon/react/icons';
 // Import portions of React that are needed.
 import React, {
-  useMemo,
-  useState,
-  useEffect,
-  PropsWithChildren,
   ForwardedRef,
+  MutableRefObject,
+  PropsWithChildren,
   ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
 } from 'react';
 
 // Other standard imports.
 import PropTypes from 'prop-types';
 import cx from 'classnames';
-import { pkg } from '../../settings';
-
-// Carbon and package components we use.
-import { Close, Help } from '@carbon/react/icons';
-import { Button, OverflowMenu, OverflowMenuItem, Theme } from '@carbon/react';
-import { moderate02 } from '@carbon/motion';
-import { useWebTerminal } from './hooks';
-
 import { getDevtoolsProps } from '../../global/js/utils/devtools';
+import { pkg } from '../../settings';
+import { useWebTerminal } from './hooks';
+import { usePrefersReducedMotion } from '../../global/js/hooks';
 
 // The block part of our conventional BEM class names (blockClass__E--M).
 const componentName = 'WebTerminal';
@@ -42,16 +42,16 @@ const defaults = {
 };
 
 interface Action {
-  renderIcon: () => void;
+  renderIcon?: React.ElementType;
   onClick: () => void;
   iconDescription: string;
 }
 
-interface WebTerminalProps extends PropsWithChildren {
+export interface WebTerminalProps extends PropsWithChildren {
   /**
    * Provide your own terminal component as children to show up in the web terminal
    */
-  children: ReactNode | ReactNode[];
+  children: ReactNode;
   /**
    * An array of actions to be displayed in the web terminal header bar
    */
@@ -70,7 +70,7 @@ interface WebTerminalProps extends PropsWithChildren {
   /**
    * Array of objects for each documentation link. Each documentation link uses the prop types of OverflowMenuItems. See more: https://react.carbondesignsystem.com/?path=/docs/components-overflowmenu--default
    */
-  documentationLinks?: readonly OverflowMenuItem[];
+  documentationLinks?: readonly (typeof OverflowMenuItem)[];
 
   /**
    * Description for the documentation link overflow menu tooltip
@@ -86,6 +86,10 @@ interface WebTerminalProps extends PropsWithChildren {
    * Specifies aria label for Web terminal
    */
   webTerminalAriaLabel?: string;
+}
+
+interface HTMLElementStyled extends HTMLDivElement {
+  style: CSSStyleDeclaration;
 }
 
 /**
@@ -109,17 +113,14 @@ export let WebTerminal = React.forwardRef(
     }: WebTerminalProps,
     ref: ForwardedRef<HTMLDivElement>
   ) => {
+    const localRef = useRef<HTMLDivElement>(null);
+    const webTerminalRef = (ref ??
+      localRef) as MutableRefObject<HTMLElementStyled>;
+
     const { open, closeWebTerminal, openWebTerminal } = useWebTerminal();
 
     const [shouldRender, setRender] = useState(open);
-    const { matches: prefersReducedMotion } =
-      window && window.matchMedia
-        ? window.matchMedia('(prefers-reduced-motion: reduce)')
-        : { matches: true };
-
-    const webTerminalAnimationName = `${
-      open ? 'web-terminal-entrance' : 'web-terminal-exit forwards'
-    } ${moderate02}`;
+    const shouldReduceMotion = usePrefersReducedMotion();
 
     const showDocumentationLinks = useMemo(
       () => documentationLinks.length > 0,
@@ -155,7 +156,7 @@ export let WebTerminal = React.forwardRef(
         If the user prefers reduced motion, we have to manually set render to false
         because onAnimationEnd will never be called.
       */
-      if (prefersReducedMotion) {
+      if (shouldReduceMotion) {
         setRender(false);
       }
       closeWebTerminal?.();
@@ -168,7 +169,7 @@ export let WebTerminal = React.forwardRef(
           ...rest,
           ...getDevtoolsProps(componentName),
         }}
-        ref={ref}
+        ref={webTerminalRef}
         className={cx([
           blockClass,
           className,
@@ -177,9 +178,6 @@ export let WebTerminal = React.forwardRef(
             [`${blockClass}--closed`]: !open,
           },
         ])}
-        style={{
-          animation: !prefersReducedMotion ? webTerminalAnimationName : '',
-        }}
         onAnimationEnd={onAnimationEnd}
       >
         <header
@@ -273,6 +271,7 @@ WebTerminal.propTypes = {
   /**
    * Array of objects for each documentation link. Each documentation link uses the prop types of OverflowMenuItems. See more: https://react.carbondesignsystem.com/?path=/docs/components-overflowmenu--default
    */
+  /**@ts-ignore */
   documentationLinks: PropTypes.arrayOf(
     PropTypes.shape({
       ...OverflowMenuItem.propTypes,

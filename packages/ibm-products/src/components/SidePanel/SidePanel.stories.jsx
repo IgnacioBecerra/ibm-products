@@ -1,5 +1,5 @@
 /**
- * Copyright IBM Corp. 2020, 2024
+ * Copyright IBM Corp. 2020, 2025
  *
  * This source code is licensed under the Apache-2.0 license found in the
  * LICENSE file in the root directory of this source tree.
@@ -7,13 +7,12 @@
 
 import styles from './_storybook-styles.scss?inline';
 import React, { useRef, useState } from 'react';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 import {
   Button,
-  Grid,
-  Column,
   TextArea,
   TextInput,
+  MultiSelect,
   DataTable,
   Table,
   TableHeader,
@@ -25,14 +24,15 @@ import {
   Header,
   HeaderContainer,
   HeaderName,
-  unstable__Slug as Slug,
-  unstable__SlugContent as SlugContent,
+  AILabel,
+  AILabelContent,
 } from '@carbon/react';
 
 import { Copy, TrashCan, Settings } from '@carbon/react/icons';
 import { SidePanel } from './SidePanel';
 import { sidePanelDecorator } from '../../global/decorators/sidePanelDecorator';
-// import mdx from './SidePanel.mdx';
+import DocsPage from './SidePanel.docs-page';
+import { renderTrigger } from '../../global/js/utils/story-helper';
 
 const prefix = 'side-panel-stories__';
 
@@ -46,6 +46,8 @@ const defaultStoryProps = {
     </>
   ),
   id: 'storybook-sidepanel',
+  size: 'md',
+  placement: 'right',
 };
 
 const headerData = [
@@ -90,7 +92,7 @@ const rowData = [
 
 const actions_1 = [
   {
-    label: 'Primary button',
+    label: 'Submit',
     onClick: action('Clicked action button'),
     kind: 'primary',
   },
@@ -114,12 +116,12 @@ const actions_3 = [
 
 const actions_4 = [
   {
-    label: 'Primary button',
+    label: 'Submit',
     onClick: action('Clicked action button'),
     kind: 'primary',
   },
   {
-    label: 'Secondary button',
+    label: 'Cancel',
     onClick: action('Clicked action button'),
     kind: 'secondary',
   },
@@ -132,7 +134,7 @@ const actions_5 = [
     kind: 'ghost',
   },
   {
-    label: 'Primary button',
+    label: 'Submit',
     onClick: action('Clicked action button'),
     kind: 'primary',
   },
@@ -153,12 +155,12 @@ const actions_6 = [
 
 const actions_7 = [
   {
-    label: 'Primary button',
+    label: 'Submit',
     onClick: action('Clicked action button'),
     kind: 'primary',
   },
   {
-    label: 'Secondary button',
+    label: 'Cancel',
     onClick: action('Clicked action button'),
     kind: 'secondary',
   },
@@ -171,12 +173,12 @@ const actions_7 = [
 
 const actions_8 = [
   {
-    label: 'Secondary button',
+    label: 'Cancel',
     onClick: action('Clicked action button'),
     kind: 'secondary',
   },
   {
-    label: 'Secondary button',
+    label: 'Cancel',
     onClick: action('Clicked action button'),
     kind: 'secondary',
   },
@@ -189,21 +191,71 @@ const actions_8 = [
 
 const actions_9 = [
   {
-    label: 'Primary button',
+    label: 'Submit',
     onClick: action('Clicked action button'),
     kind: 'primary',
   },
   {
-    label: 'Secondary button',
+    label: 'Cancel',
     onClick: action('Clicked action button'),
     kind: 'secondary',
   },
   {
-    label: 'Secondary button',
+    label: 'Cancel',
     onClick: action('Clicked action button'),
     kind: 'secondary',
   },
 ];
+
+const toolbarItem_1 = [
+  {
+    leading: true,
+    label: 'Copy',
+    icon: (props) => <Copy size={16} {...props} />,
+    onClick: action('Toolbar button clicked: Copy'),
+    kind: 'primary',
+  },
+];
+
+const toolbarItem_2 = [
+  {
+    leading: true,
+    label: 'Copy',
+    icon: (props) => <Copy size={16} {...props} />,
+    onClick: action('Toolbar button clicked: Copy'),
+    kind: 'primary',
+  },
+  {
+    label: 'Settings',
+    icon: (props) => <Settings size={16} {...props} />,
+    onClick: action('Toolbar button clicked: Settings'),
+    hasIconOnly: true,
+  },
+];
+
+const toolbarItem_3 = [
+  {
+    leading: true,
+    label: 'Copy',
+    icon: (props) => <Copy size={16} {...props} />,
+    onClick: action('Toolbar button clicked: Copy'),
+    kind: 'primary',
+  },
+  {
+    label: 'Settings',
+    icon: (props) => <Settings size={16} {...props} />,
+    onClick: action('Toolbar button clicked: Settings'),
+    hasIconOnly: true,
+  },
+  {
+    label: 'Delete',
+    icon: (props) => <TrashCan size={16} {...props} />,
+    onClick: action('Toolbar button clicked: Delete'),
+    hasIconOnly: true,
+  },
+];
+
+const toolbarActions = [null, toolbarItem_1, toolbarItem_2, toolbarItem_3];
 
 const actionSets = [
   actions_1,
@@ -218,9 +270,9 @@ const actionSets = [
   [],
 ];
 
-const sampleSlug = (
-  <Slug className="slug-container" size="xs">
-    <SlugContent>
+const sampleAILabel = (
+  <AILabel className="aiLabel-container" size="xs" align="left-start">
+    <AILabelContent>
       <div>
         <p className="secondary">AI Explained</p>
         <h1>84%</h1>
@@ -234,8 +286,8 @@ const sampleSlug = (
         <p className="secondary">Model type</p>
         <p className="bold">Foundation model</p>
       </div>
-    </SlugContent>
-  </Slug>
+    </AILabelContent>
+  </AILabel>
 );
 
 // eslint-disable-next-line react/prop-types
@@ -243,7 +295,7 @@ const ChildrenContent = () => {
   const [notesValue, setNotesValue] = useState('');
   return (
     <div className={`${prefix}body-content`}>
-      <h5>Section</h5>
+      <h3 className={`${prefix}body-subheading`}>Section</h3>
       <div className={`${prefix}text-inputs`}>
         <TextInput
           labelText="Input A"
@@ -268,6 +320,21 @@ const ChildrenContent = () => {
           className={`${prefix}text-input`}
         />
       </div>
+      <div className={`${prefix}multi-select-container`}>
+        <MultiSelect
+          data-testid="alert--subtype--transfer--secondary-zones"
+          id="multiselectA"
+          titleText="Multiselect A"
+          label="Select an item"
+          items={[
+            {
+              value: 'all',
+              label: 'Multiselect A',
+            },
+          ]}
+          selectionFeedback="top-after-reopen"
+        />
+      </div>
       <div className={`${prefix}text-area-container`}>
         <span
           className={[
@@ -289,7 +356,9 @@ const ChildrenContent = () => {
           onChange={(event) => setNotesValue(event.target.value)}
         />
       </div>
-      <h5 className={`${prefix}content-subtitle`}>Section</h5>
+      <h3 className={`${prefix}content-subtitle ${prefix}body-subheading`}>
+        Section
+      </h3>
       {renderDataTable()}
     </div>
   );
@@ -301,7 +370,9 @@ const ChildrenContentWithSteps = ({ currentStep, setCurrentStep }) => {
     <>
       {currentStep === 0 && (
         <div className={`${prefix}body-content`}>
-          <h5 className={`${prefix}content-subtitle`}>Main view</h5>
+          <h3 className={`${prefix}content-subtitle ${prefix}body-subheading`}>
+            Main view
+          </h3>
           {renderDataTable()}
           <Button
             kind="tertiary"
@@ -313,7 +384,9 @@ const ChildrenContentWithSteps = ({ currentStep, setCurrentStep }) => {
       )}
       {currentStep === 1 && (
         <div className={`${prefix}body-content`}>
-          <h5 className={`${prefix}content-subtitle`}>Detail view</h5>
+          <h3 className={`${prefix}content-subtitle ${prefix}body-subheading`}>
+            Detail view
+          </h3>
           {renderDataTable()}
         </div>
       )}
@@ -365,19 +438,37 @@ const renderUIShellHeader = () => (
 );
 
 export default {
-  title: 'IBM Products/Components/Side panel/SidePanel',
+  title: 'Components/SidePanel',
   component: SidePanel,
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
     styles,
-    /*
-docs: {
-      page: mdx,
+    docs: {
+      page: DocsPage,
     },
-*/
+  },
+  animateTitle: {
+    control: {
+      type: 'boolean',
+    },
+    default: false,
   },
   argTypes: {
+    actionToolbarButtons: {
+      control: {
+        type: 'select',
+        labels: {
+          0: 'None',
+          1: 'One button',
+          2: 'Two buttons',
+          3: 'Three buttons',
+        },
+        default: 3,
+      },
+      description: 'Sets the action toolbar buttons',
+      options: [0, 1, 2, 3],
+    },
     actions: {
       control: {
         type: 'select',
@@ -397,6 +488,187 @@ docs: {
       },
       options: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
     },
+    aiLabel: {
+      control: {
+        type: 'select',
+        labels: {
+          0: 'No AI Label',
+          1: 'with AI Label',
+        },
+        default: 0,
+      },
+      description:
+        'Optional prop that is intended for any scenario where something is being generated by AI to reinforce AI transparency, accountability, and explainability at the UI level.',
+      options: [0, 1],
+    },
+
+    animateTitle: {
+      control: {
+        type: 'boolean',
+      },
+      default: true,
+      description: 'Determines if the title will animate on scroll',
+    },
+    className: {
+      control: {
+        type: 'text',
+      },
+      default: '',
+      description:
+        'Sets an optional className to be added to the side panel outermost element',
+    },
+    closeIconDescription: {
+      control: {
+        type: 'text',
+      },
+      default: 'Close',
+      description: 'Sets the close button icon description',
+    },
+    closeIconTooltipAlignment: {
+      control: {
+        type: 'text',
+      },
+      default: 'left',
+      description: 'Sets the close button tooltip alignment',
+    },
+    condensedActions: {
+      control: {
+        type: 'boolean',
+      },
+      description:
+        'Determines whether the side panel should render the condensed version (affects action buttons primarily)',
+      default: false,
+    },
+    currentStep: {
+      control: false,
+      description: 'Sets the current step of the side panel',
+    },
+    decorator: {
+      control: {
+        type: 'select',
+        labels: {
+          0: 'No AI Label',
+          1: 'with AI Label',
+        },
+        default: 0,
+      },
+      description:
+        'Optional prop that is intended for any scenario where something is being generated by AI to reinforce AI transparency, accountability, and explainability at the UI level.',
+      options: [0, 1],
+    },
+    hideCloseButton: {
+      control: {
+        type: 'boolean',
+      },
+      default: false,
+      description: 'Show/hide the "X" close button.',
+    },
+    id: {
+      control: {
+        type: 'text',
+      },
+      description: 'Unique identifier',
+      default: 'storybook-sidepanel',
+    },
+    includeOverlay: {
+      control: {
+        type: 'boolean',
+      },
+      default: false,
+      description:
+        'Determines whether the side panel should render with an overlay',
+    },
+    labelText: {
+      control: {
+        type: 'text',
+      },
+      description:
+        'Sets the label text which will display above the title text',
+      default: 'Incident management',
+    },
+    launcherButtonRef: {
+      control: false,
+      description:
+        'Provide a ref to return focus to once the side panel is closed.',
+    },
+    navigationBackIconDescription: {
+      control: {
+        type: 'text',
+      },
+      default: 'Back',
+      description:
+        'Sets the icon description for the navigation back icon button',
+    },
+    onNavigationBack: {
+      control: false,
+      description: 'Changes the current side panel page to the previous page',
+    },
+    onRequestClose: {
+      control: false,
+      description:
+        'Specify a handler for closing the side panel. This handler closes the modal, e.g. changing `open` prop.',
+    },
+    onUnmount: {
+      control: false,
+      description:
+        'Optional function called when the side panel exit animation is complete. This handler can be used for any state cleanup needed before the panel is removed from the DOM.',
+    },
+    open: {
+      control: false,
+      default: true,
+      description: 'Determines whether the side panel should render or not',
+    },
+    placement: {
+      control: {
+        type: 'select',
+        labels: {
+          0: 'Left',
+          1: 'Right',
+        },
+      },
+      options: ['left', 'right'],
+      default: 'right',
+      description: 'Determines if the side panel is on the right or left',
+    },
+    preventCloseOnClickOutside: {
+      control: {
+        type: 'boolean',
+      },
+      default: false,
+      description: 'Prevent closing on click outside of the panel',
+    },
+    selectorPageContent: {
+      control: {
+        type: 'text',
+      },
+      default: '#ibm-products-page-content',
+      description:
+        'This is the selector to the element that contains all of the page content that will shrink if the panel is a slide in. This prop is required when using the `slideIn` variant of the side panel.',
+    },
+    selectorPrimaryFocus: {
+      control: {
+        type: 'text',
+      },
+      default: '#side-panel-story-text-input-a',
+      description:
+        'Specify a CSS selector that matches the DOM element that should be focused when the side panel opens',
+    },
+    size: {
+      control: {
+        type: 'select',
+        labels: {
+          0: 'Extra small (xs)',
+          1: 'Small (sm)',
+          2: 'Medium (md)',
+          3: 'Large (lg)',
+          4: 'Extra large (xl)',
+          5: 'Double xl (2xl)',
+        },
+      },
+      default: 'md',
+      options: ['xs', 'sm', 'md', 'lg', 'xl', '2xl'],
+      description: 'Sets the size of the side panel',
+    },
     slideIn: {
       table: {
         disable: true,
@@ -413,26 +685,73 @@ docs: {
       },
       options: [0, 1],
     },
+    subtitle: {
+      control: {
+        type: 'object',
+      },
+      description: 'Sets the subtitle element',
+    },
+    title: {
+      control: {
+        type: 'text',
+      },
+      default:
+        'Incident management for your application, testing a very long title to see how this behaves with a longer title',
+      description: 'Sets the title text',
+    },
+    jsFlags: {
+      name: 'JS Flags',
+      control: 'check',
+      options: ['enableSidepanelResizer'],
+      description: 'wraps the stories with the selected flag',
+      table: {
+        category: 'Feature Flags',
+      },
+    },
+    // 'SCSS flags': { // scss flags in story controls are impossible (or) we can add a className conditionally through this arg, and add scss flag enabling logic to that class.
+    //   control: 'check',
+    //   options: ['example-scss-flag'],
+    //   description: 'wraps the stories with the selected flag',
+    //   table: {
+    //     category: 'Feature Flags',
+    //   },
+    // },
   },
   decorators: [sidePanelDecorator(renderUIShellHeader, prefix)],
 };
 
 // eslint-disable-next-line react/prop-types
-const SlideOverTemplate = ({ minimalContent, actions, slug, ...args }) => {
-  const [open, setOpen] = useState(false);
-  const testRef = useRef();
+const SlideOverTemplate = (
+  {
+    minimalContent,
+    actions,
+    aiLabel,
+    slug,
+    decorator,
+    jsFlags, // destructuring this here, so it wont get passed to the component
+    actionToolbarButtons,
+    ...args
+  },
+  context
+) => {
+  const [open, setOpen] = useState(context.viewMode !== 'docs');
+  const testRef = useRef(undefined);
+  const buttonRef = useRef(undefined);
+
   return (
     <>
-      <Button onClick={() => setOpen(!open)} className={`${prefix}toggle`}>
-        {open ? 'Close side panel' : 'Open side panel'}
-      </Button>
+      {renderTrigger({ open, setOpen, buttonRef, prefix, name: 'side panel' })}
       <SidePanel
         {...args}
         open={open}
         onRequestClose={() => setOpen(false)}
         actions={actionSets[actions]}
         ref={testRef}
-        slug={slug && sampleSlug}
+        aiLabel={aiLabel && sampleAILabel}
+        slug={slug && sampleAILabel}
+        decorator={decorator && sampleAILabel}
+        launcherButtonRef={buttonRef}
+        actionToolbarButtons={toolbarActions[actionToolbarButtons]}
       >
         {!minimalContent && <ChildrenContent />}
       </SidePanel>
@@ -440,15 +759,93 @@ const SlideOverTemplate = ({ minimalContent, actions, slug, ...args }) => {
   );
 };
 
-// eslint-disable-next-line react/prop-types
-const StepTemplate = ({ actions, slug, ...args }) => {
-  const [open, setOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
+const FirstElementDisabledTemplate = (
+  {
+    minimalContent,
+    actions,
+    aiLabel,
+    slug,
+    decorator,
+    jsFlags, // destructuring this here, so it wont get passed to the component
+    actionToolbarButtons,
+    ...args
+  },
+  context
+) => {
+  const [open, setOpen] = useState(context.viewMode !== 'docs');
+  const testRef = useRef(undefined);
+  const buttonRef = useRef(undefined);
+
   return (
     <>
-      <Button onClick={() => setOpen(!open)} className={`${prefix}toggle`}>
-        {open ? 'Close side panel' : 'Open side panel'}
-      </Button>
+      {renderTrigger({ open, setOpen, buttonRef, prefix, name: 'side panel' })}
+      <SidePanel
+        {...args}
+        open={open}
+        onRequestClose={() => setOpen(false)}
+        actions={actionSets[actions]}
+        ref={testRef}
+        aiLabel={aiLabel && sampleAILabel}
+        slug={slug && sampleAILabel}
+        decorator={decorator && sampleAILabel}
+        launcherButtonRef={buttonRef}
+        actionToolbarButtons={toolbarActions[actionToolbarButtons]}
+      >
+        {!minimalContent && (
+          <div className={`${prefix}body-content`}>
+            <h3 className={`${prefix}body-subheading`}>Section</h3>
+            <div className={`${prefix}text-inputs`}>
+              <TextInput
+                labelText="Input A"
+                id="side-panel-story-text-input-a"
+                className={`${prefix}text-input`}
+                disabled
+              />
+              <TextInput
+                labelText="Input B"
+                id="side-panel-story-text-input-b"
+                className={`${prefix}text-input`}
+              />
+            </div>
+            <div className={`${prefix}text-inputs`}>
+              <TextInput
+                labelText="Input C"
+                id="side-panel-story-text-input-c"
+                className={`${prefix}text-input`}
+              />
+              <TextInput
+                labelText="Input D"
+                id="side-panel-story-text-input-d"
+                className={`${prefix}text-input`}
+              />
+            </div>
+          </div>
+        )}
+      </SidePanel>
+    </>
+  );
+};
+
+// eslint-disable-next-line react/prop-types
+const StepTemplate = (
+  {
+    actions,
+    aiLabel,
+    slug,
+    decorator,
+    jsFlags, // destructuring this here, so it wont get passed to the component
+    actionToolbarButtons,
+    ...args
+  },
+  context
+) => {
+  const [open, setOpen] = useState(context.viewMode !== 'docs');
+  const [currentStep, setCurrentStep] = useState(0);
+  const buttonRef = useRef(undefined);
+
+  return (
+    <>
+      {renderTrigger({ open, setOpen, buttonRef, prefix, name: 'side panel' })}
       <SidePanel
         {...args}
         open={open}
@@ -456,7 +853,11 @@ const StepTemplate = ({ actions, slug, ...args }) => {
         currentStep={currentStep}
         onNavigationBack={() => setCurrentStep((prev) => prev - 1)}
         actions={actionSets[actions]}
-        slug={slug && sampleSlug}
+        aiLabel={aiLabel && sampleAILabel}
+        slug={slug && sampleAILabel}
+        decorator={decorator && sampleAILabel}
+        launcherButtonRef={buttonRef}
+        actionToolbarButtons={toolbarActions[actionToolbarButtons]}
       >
         <ChildrenContentWithSteps
           currentStep={currentStep}
@@ -468,59 +869,44 @@ const StepTemplate = ({ actions, slug, ...args }) => {
 };
 
 // eslint-disable-next-line react/prop-types
-const SlideInTemplate = ({ actions, slug, ...args }) => {
-  const [open, setOpen] = useState(false);
+const SlideInTemplate = (
+  {
+    actions,
+    aiLabel,
+    slug,
+    decorator,
+    jsFlags, // destructuring this here, so it wont get passed to the component
+    actionToolbarButtons,
+    ...args
+  },
+  context
+) => {
+  const [open, setOpen] = useState(context.viewMode !== 'docs');
+  const buttonRef = useRef(undefined);
+
   return (
     <>
-      <Grid id="ibm-products-page-content" className={`${prefix}grid`}>
-        <Column lg={16} md={8} sm={4}>
-          <Button onClick={() => setOpen(!open)} className={`${prefix}toggle`}>
-            {open ? 'Close side panel' : 'Open side panel'}
-          </Button>
-        </Column>
-      </Grid>
+      <div className={`${prefix}story-content`} id="ibm-products-page-content">
+        {renderTrigger({
+          open,
+          setOpen,
+          buttonRef,
+          prefix,
+          name: 'side panel',
+        })}
+      </div>
       <SidePanel
         {...args}
         open={open}
         onRequestClose={() => setOpen(false)}
         actions={actionSets[actions]}
-        slug={slug && sampleSlug}
+        aiLabel={aiLabel && sampleAILabel}
+        slug={slug && sampleAILabel}
+        decorator={decorator && sampleAILabel}
+        launcherButtonRef={buttonRef}
+        actionToolbarButtons={toolbarActions[actionToolbarButtons]}
       >
         <ChildrenContent />
-      </SidePanel>
-    </>
-  );
-};
-
-const ReturnFocusToOpenButtonTemplate = ({
-  minimalContent,
-  actions,
-  slug,
-  ...args
-}) => {
-  const [open, setOpen] = useState(false);
-  const testRef = useRef();
-  const buttonRef = useRef();
-
-  return (
-    <>
-      <Button
-        ref={buttonRef}
-        onClick={() => setOpen(!open)}
-        className={`${prefix}toggle`}
-      >
-        {open ? 'Close side panel' : 'Open side panel'}
-      </Button>
-      <SidePanel
-        {...args}
-        open={open}
-        onRequestClose={() => setOpen(false)}
-        actions={actionSets[actions]}
-        ref={testRef}
-        slug={slug && sampleSlug}
-        launcherButtonRef={buttonRef}
-      >
-        {!minimalContent && <ChildrenContent />}
       </SidePanel>
     </>
   );
@@ -543,29 +929,16 @@ SlideIn.args = {
   labelText: 'Incident management',
 };
 
+SlideIn.argTypes = {
+  jsFlags: {
+    control: false,
+    description: 'Not supported in this story',
+  },
+};
+
 export const WithActionToolbar = SlideOverTemplate.bind({});
 WithActionToolbar.args = {
-  actionToolbarButtons: [
-    {
-      leading: true,
-      label: 'Copy',
-      icon: (props) => <Copy size={16} {...props} />,
-      onClick: action('Toolbar button clicked: Copy'),
-      kind: 'primary',
-    },
-    {
-      label: 'Settings',
-      icon: (props) => <Settings size={16} {...props} />,
-      onClick: action('Toolbar button clicked: Settings'),
-      hasIconOnly: true,
-    },
-    {
-      label: 'Delete',
-      icon: (props) => <TrashCan size={16} {...props} />,
-      onClick: action('Toolbar button clicked: Delete'),
-      hasIconOnly: true,
-    },
-  ],
+  actionToolbarButtons: 3,
   ...defaultStoryProps,
 };
 
@@ -577,6 +950,14 @@ PanelWithSecondStep.args = {
   ...defaultStoryProps,
 };
 
+export const WithAILabel = SlideOverTemplate.bind({});
+WithAILabel.args = {
+  includeOverlay: true,
+  actions: 0,
+  decorator: 1,
+  ...defaultStoryProps,
+};
+
 export const SpecifyElementToHaveInitialFocus = SlideOverTemplate.bind({});
 SpecifyElementToHaveInitialFocus.args = {
   actions: 0,
@@ -584,13 +965,16 @@ SpecifyElementToHaveInitialFocus.args = {
   ...defaultStoryProps,
 };
 
-export const ReturnFocusToOpenButton = ReturnFocusToOpenButtonTemplate.bind({});
-ReturnFocusToOpenButton.args = {
-  ...defaultStoryProps,
-};
-
 export const WithStaticTitle = SlideOverTemplate.bind({});
 WithStaticTitle.args = {
+  ...defaultStoryProps,
+  actions: 0,
+  animateTitle: false,
+  includeOverlay: true,
+};
+
+export const FirstElementDisabled = FirstElementDisabledTemplate.bind({});
+FirstElementDisabled.args = {
   ...defaultStoryProps,
   actions: 0,
   animateTitle: false,
@@ -603,23 +987,7 @@ WithStaticTitleAndActionToolbar.args = {
   actions: 0,
   animateTitle: false,
   includeOverlay: true,
-  actionToolbarButtons: [
-    {
-      label: 'Copy',
-      icon: (props) => <Copy size={16} {...props} />,
-      onClick: action('Action toolbar button clicked: Copy'),
-    },
-    {
-      label: 'Settings',
-      icon: (props) => <Settings size={16} {...props} />,
-      onClick: action('Action toolbar button clicked: Settings'),
-    },
-    {
-      label: 'Delete',
-      icon: (props) => <TrashCan size={16} {...props} />,
-      onClick: action('Action toolbar button clicked: Delete'),
-    },
-  ],
+  actionToolbarButtons: 3,
 };
 
 export const WithoutTitle = SlideOverTemplate.bind({});
@@ -627,5 +995,7 @@ WithoutTitle.args = {
   ...defaultStoryProps,
   actions: 0,
   title: null,
+  subtitle: null,
   includeOverlay: true,
+  'aria-label': 'SidePanel without title',
 };

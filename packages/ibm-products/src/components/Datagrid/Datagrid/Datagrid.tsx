@@ -30,18 +30,15 @@ export interface DatagridProps {
    * The data grid state, much of it being supplied by the useDatagrid hook
    */
   datagridState: DataGridState;
-  /**
-   * Table title
-   */
-  title?: string;
 }
 
 /**
- * The `Datagrid` component is an extension of Carbon's DataTable component. At the most basic level, the `Datagrid` component takes in columns and rows and renders a data table. There is a set of data table extensions which this component provides support for, these can be found [here](https://pages.github.ibm.com/cdai-design/pal/components/data-table/overview/). This component is data driven and allows you to choose what pieces will be included based on the hooks/plugins that are provided.
+ * The `Datagrid` component is an extension of Carbon's DataTable component. At the most basic level, the `Datagrid` component takes in columns and rows and renders a data table. There is a set of data table extensions which this component provides support for, these can be found [here](https://pages.github.ibm.com/carbon/ibm-products/components/datagrid/overview/). This component is data driven and allows you to choose what pieces will be included based on the hooks/plugins that are provided.
+ * @deprecated
  */
 export let Datagrid = React.forwardRef(
   (
-    { datagridState, title, ariaToolbarLabel, ...rest }: DatagridProps,
+    { datagridState, ariaToolbarLabel, ...rest }: DatagridProps,
     ref: ForwardedRef<HTMLDivElement>
   ) => {
     if (!datagridState) {
@@ -65,13 +62,16 @@ export let Datagrid = React.forwardRef(
       datagridState.rows) as DatagridRow[];
 
     const props = {
-      title,
       datagridState,
       ariaToolbarLabel,
     };
 
     return (
-      <FilterProvider filters={state?.filters} filterProps={filterProps}>
+      <FilterProvider
+        filters={state?.filters}
+        filterProps={filterProps}
+        tableId={tableId}
+      >
         <InlineEditProvider>
           <div
             {...rest}
@@ -105,6 +105,12 @@ export let Datagrid = React.forwardRef(
   }
 );
 
+/**@ts-ignore*/
+Datagrid.deprecated = {
+  level: 'warn',
+  details: `For more information, please refer to the migration docs https://github.com/carbon-design-system/tanstack-carbon`,
+};
+
 // Return a placeholder if not released and not enabled by feature flag
 Datagrid = pkg.checkComponentEnabled(Datagrid, componentName);
 
@@ -123,8 +129,4 @@ Datagrid.propTypes = {
    */
   /**@ts-ignore */
   datagridState: PropTypes.object.isRequired,
-  /**
-   * Table title
-   */
-  title: PropTypes.string,
 };

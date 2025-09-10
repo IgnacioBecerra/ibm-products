@@ -5,18 +5,19 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+// Carbon and package components we use.
+import { Button, ButtonSet, InlineLoading } from '@carbon/react';
 // Import portions of React that are needed.
 import React, { ComponentProps, PropsWithChildren } from 'react';
+import { allPropTypes, prepareProps } from '../../global/js/utils/props-helper';
 
+import { ButtonProps } from '@carbon/react';
 // Other standard imports.
 import PropTypes from 'prop-types';
 import cx from 'classnames';
 import { pkg } from '../../settings';
-import { allPropTypes, prepareProps } from '../../global/js/utils/props-helper';
-
-// Carbon and package components we use.
-import { Button, ButtonSet, InlineLoading } from '@carbon/react';
-import { ButtonProps } from '@carbon/react';
+import { ButtonKind } from '@carbon/react';
+import pconsole from '../../global/js/utils/pconsole';
 
 const blockClass = `${pkg.prefix}--action-set`;
 const componentName = 'ActionSet';
@@ -68,6 +69,7 @@ const ActionSetButton = React.forwardRef(
 ActionSetButton.displayName = 'ActionSetButton';
 
 ActionSetButton.propTypes = {
+  /**@ts-ignore*/
   ...Button.PropTypes,
   kind: PropTypes.oneOf([
     'ghost',
@@ -90,14 +92,14 @@ const defaults = {
   size: 'md',
 };
 
-interface ActionSetProps {
+export interface ActionSetProps {
   /**
    * The action buttons to show. Each action is specified as an object
    * representation of a Carbon button.
    *
    * See https://react.carbondesignsystem.com/?path=/docs/components-button--default#component-api
    */
-  actions: ButtonProps[];
+  actions: ButtonProps<React.ElementType>[];
 
   /**
    * The size of buttons to use for the actions. The allowed values are
@@ -118,6 +120,70 @@ interface ActionSetProps {
   size?: ButtonSize;
 }
 
+export const validateActionSetProps = ({ actions, size }) => {
+  if (actions && actions.length) {
+    const problems = [] as string[];
+
+    const stacking = willStack(size, actions.length);
+
+    const countActions = (kind: ButtonKind) =>
+      actions.filter(
+        (action: ButtonProps<React.ElementType>) =>
+          (action.kind || defaultKind) === kind
+      ).length;
+
+    const primaryActions = countActions('primary');
+    const secondaryActions = countActions('secondary');
+    const dangerActions = countActions('danger');
+    const ghostActions = countActions('ghost') + countActions('danger--ghost');
+
+    if (stacking && actions.length > 3) {
+      problems.push(
+        `you cannot have more than three actions in this size of ${componentName}`
+      );
+    }
+
+    if (actions.length > 4) {
+      problems.push(
+        `you cannot have more than four actions in a ${componentName}`
+      );
+    }
+    if (primaryActions > 1) {
+      problems.push(
+        `you cannot have more than one 'primary' action in a ${componentName}`
+      );
+    }
+
+    if (ghostActions > 1) {
+      problems.push(
+        `you cannot have more than one 'ghost' action in a ${componentName}`
+      );
+    }
+
+    if (stacking && actions.length > 1 && ghostActions > 0) {
+      problems.push(
+        `you cannot have a 'ghost' button in conjunction with other action types in this size of ${componentName}`
+      );
+    }
+
+    if (
+      actions.length >
+      primaryActions + secondaryActions + dangerActions + ghostActions
+    ) {
+      problems.push(
+        `you can only have 'primary', 'danger', 'secondary', 'ghost' and 'danger--ghost' buttons in a ${componentName}`
+      );
+    }
+    return problems.length > 0
+      ? pconsole.error(
+          `Invalid prop \`actions\` supplied to \`${componentName}\`: ${problems.join(
+            ', and '
+          )}.`
+        )
+      : null;
+  }
+};
+
 /**
  * An ActionSet presents a set of action buttons, constructed from bundles
  * of prop values and applying some layout rules. When the size is 'sm'
@@ -131,20 +197,15 @@ interface ActionSetProps {
  * right.
  */
 export const ActionSet = React.forwardRef<HTMLDivElement, ActionSetProps>(
-  (
-    {
-      // The component props, in alphabetical order (for consistency).
-
+  (props, ref) => {
+    const {
       actions,
       buttonSize,
       className,
       size = defaults.size as ButtonSize,
-
-      // Collect any other property values passed in.
       ...rest
-    }: ActionSetProps,
-    ref
-  ) => {
+    } = props;
+    validateActionSetProps({ actions, size });
     const buttons = (actions && actions.slice?.(0)) || [];
 
     // We stack the buttons in a sm set, or if there are three or more in a md set.
@@ -158,7 +219,7 @@ export const ActionSet = React.forwardRef<HTMLDivElement, ActionSetProps>(
         'danger--ghost': 2,
         danger: 4,
         primary: 5,
-      }[kind] ?? 3);
+      })[kind] ?? 3;
 
     // order the actions with ghost/ghost-danger buttons first and primary/danger buttons last
     // (or the opposite way if we're stacking)
@@ -221,71 +282,6 @@ ActionSet.displayName = componentName;
  * @returns null if the actions meet the requirements, or an Error object with
  * an explanatory message.
  */
-/**@ts-ignore*/
-ActionSet.validateActions =
-  (sizeFn) => (props, propName, componentName, location, propFullName) => {
-    const name = propFullName || propName;
-    const prop = props[name];
-    const actions = prop && prop?.length;
-    const problems = [] as string[];
-
-    if (actions > 0) {
-      // eslint-disable-next-line react/prop-types
-      const size = sizeFn ? sizeFn(props) : props.size || defaults.size;
-      const stacking = willStack(size, actions);
-
-      const countActions = (kind) =>
-        prop.filter((action) => (action.kind || defaultKind) === kind).length;
-
-      const primaryActions = countActions('primary');
-      const secondaryActions = countActions('secondary');
-      const dangerActions = countActions('danger');
-      const ghostActions =
-        countActions('ghost') + countActions('danger--ghost');
-
-      stacking &&
-        actions > 3 &&
-        problems.push(
-          `you cannot have more than three actions in this size of ${componentName}`
-        );
-
-      actions > 4 &&
-        problems.push(
-          `you cannot have more than four actions in a ${componentName}`
-        );
-
-      primaryActions > 1 &&
-        problems.push(
-          `you cannot have more than one 'primary' action in a ${componentName}`
-        );
-
-      ghostActions > 1 &&
-        problems.push(
-          `you cannot have more than one 'ghost' action in a ${componentName}`
-        );
-
-      stacking &&
-        actions > 1 &&
-        ghostActions > 0 &&
-        problems.push(
-          `you cannot have a 'ghost' button in conjunction with other action types in this size of ${componentName}`
-        );
-
-      actions >
-        primaryActions + secondaryActions + dangerActions + ghostActions &&
-        problems.push(
-          `you can only have 'primary', 'danger', 'secondary', 'ghost' and 'danger--ghost' buttons in a ${componentName}`
-        );
-    }
-
-    return problems.length > 0
-      ? new Error(
-          `Invalid ${location} \`${name}\` supplied to \`${componentName}\`: ${problems.join(
-            ', and '
-          )}.`
-        )
-      : null;
-  };
 
 ActionSet.propTypes = {
   /**
@@ -301,10 +297,9 @@ ActionSet.propTypes = {
    * See https://react.carbondesignsystem.com/?path=/docs/components-button--default#component-api
    */
   actions: allPropTypes([
-    /**@ts-ignore*/
-    ActionSet.validateActions(),
     PropTypes.arrayOf(
       PropTypes.shape({
+        /**@ts-ignore*/
         ...Button.propTypes,
         kind: PropTypes.oneOf([
           'ghost',
@@ -316,6 +311,7 @@ ActionSet.propTypes = {
         label: PropTypes.string,
         loading: PropTypes.bool,
         // we duplicate this Button prop to improve the DocGen here
+        /**@ts-ignore*/
         onClick: Button.propTypes.onClick,
       })
     ),
@@ -327,6 +323,7 @@ ActionSet.propTypes = {
    * the buttons will be set to this size, overriding any 'size' values (if any)
    * supplied in the actions array (if any).
    */
+  /**@ts-ignore*/
   buttonSize: Button.propTypes.size,
 
   /**
