@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/rules-of-hooks */
 /**
  * Copyright IBM Corp. 2025, 2025
  *
@@ -9,14 +8,13 @@ import React, {
   type ComponentType,
   type FunctionComponent,
   useEffect,
-  useLayoutEffect,
   useState,
   useRef,
-  useMemo,
   useCallback,
   RefObject,
   forwardRef,
 } from 'react';
+import { useIsomorphicEffect } from '../../../global/js/hooks';
 import PropTypes from 'prop-types';
 import classnames from 'classnames';
 import {
@@ -27,10 +25,8 @@ import {
   MenuItem,
   MenuItemProps,
   MenuButton,
-  OperationalTag,
   Popover,
   PopoverContent,
-  Tag,
   unstable_Text as Text,
   usePrefix,
   IconButtonProps,
@@ -39,14 +35,13 @@ import {
   BreadcrumbItem,
   BreadcrumbProps,
   Breadcrumb,
+  Section,
+  Heading,
 } from '@carbon/react';
 import { breakpoints } from '@carbon/layout';
 import { blockClass } from '../PageHeaderUtils';
 import { createOverflowHandler as localOverflowHandler } from './overflowHandler';
 import { createOverflowHandler } from '@carbon/utilities';
-import { TYPES } from '@carbon/react/es/components/Tag/Tag';
-import { useOverflowItems } from '../../../global/js/hooks/useOverflowItems';
-import { useId } from '../../../global/js/utils/useId';
 import { ChevronUp } from '@carbon/react/icons';
 import { PageHeaderContext, PageHeaderRefs, usePageHeader } from './context';
 import { getHeaderOffset, scrollableAncestor } from './utils';
@@ -100,6 +95,8 @@ const PageHeader = React.forwardRef<HTMLDivElement, PageHeaderProps>(
     const [fullyCollapsed, setFullyCollapsed] = useState(false);
     const [titleClipped, setTitleClipped] = useState(false);
     const [contentActionsClipped, setContentActionsClipped] = useState(false);
+    const [breadcrumbActionsClipped, setBreadcrumbActionsClipped] =
+      useState(false);
 
     // Intersection Observer setup, tracks if the PageHeaderContent is visible on page.
     // If it is not visible, we should set fully collapsed to true so that the
@@ -153,6 +150,7 @@ const PageHeader = React.forwardRef<HTMLDivElement, PageHeaderProps>(
           entries.forEach((entry) => {
             if (entry.target === refs?.contentActions!.current) {
               setContentActionsClipped(!entry.isIntersecting);
+              setBreadcrumbActionsClipped(entry.isIntersecting);
             }
           });
         },
@@ -200,6 +198,7 @@ const PageHeader = React.forwardRef<HTMLDivElement, PageHeaderProps>(
           setPageActionsInstance,
           titleClipped,
           contentActionsClipped,
+          breadcrumbActionsClipped,
         }}
       >
         <div className={classNames} ref={componentRef} {...other}>
@@ -261,8 +260,8 @@ const PageHeaderBreadcrumbBar = React.forwardRef<
   }: PageHeaderBreadcrumbBarProps,
   ref
 ) {
-  const { pageActionsInstance: globalActions, contentActionsClipped } =
-    usePageHeader();
+  const context = usePageHeader();
+  const { pageActionsInstance: globalActions, contentActionsClipped } = context;
   const classNames = classnames(
     {
       [`${blockClass}__breadcrumb-bar`]: true,
@@ -281,26 +280,33 @@ const PageHeaderBreadcrumbBar = React.forwardRef<
   });
 
   return (
-    <div className={classNames} ref={ref} {...other}>
-      <Grid>
-        <Column lg={16} md={8} sm={4}>
-          <div className={`${blockClass}__breadcrumb-container`}>
-            <div className={`${blockClass}__breadcrumb-wrapper`}>
-              {IconElement && (
-                <div className={`${blockClass}__breadcrumb__icon`}>
-                  <IconElement />
-                </div>
-              )}
-              {children}
+    <PageHeaderContext.Provider
+      value={{
+        ...context,
+        isContentActionsInBreadcrumbBar: true,
+      }}
+    >
+      <div className={classNames} ref={ref} {...other}>
+        <Grid>
+          <Column lg={16} md={8} sm={4}>
+            <div className={`${blockClass}__breadcrumb-container`}>
+              <div className={`${blockClass}__breadcrumb-wrapper`}>
+                {IconElement && (
+                  <div className={`${blockClass}__breadcrumb__icon`}>
+                    <IconElement />
+                  </div>
+                )}
+                {children}
+              </div>
+              <div className={`${blockClass}__breadcrumb__actions`}>
+                <div className={contentActionsClasses}>{contentActions}</div>
+                {pageActions}
+              </div>
             </div>
-            <div className={`${blockClass}__breadcrumb__actions`}>
-              <div className={contentActionsClasses}>{contentActions}</div>
-              {pageActions}
-            </div>
-          </div>
-        </Column>
-      </Grid>
-    </div>
+          </Column>
+        </Grid>
+      </div>
+    </PageHeaderContext.Provider>
   );
 });
 PageHeaderBreadcrumbBar.displayName = 'PageHeaderBreadcrumbBar';
@@ -384,12 +390,12 @@ const PageHeaderContent = React.forwardRef<
     return element.offsetHeight < element.scrollHeight;
   };
 
-  useLayoutEffect(() => {
+  useIsomorphicEffect(() => {
     titleRef.current && isEllipsisActive(titleRef.current);
   }, [title]);
 
   return (
-    <div className={classNames} ref={componentRef} {...other}>
+    <Section as="div" className={classNames} ref={componentRef} {...other}>
       <Grid>
         <Column lg={16} md={8} sm={4}>
           <div className={`${blockClass}__content__title-wrapper`}>
@@ -405,7 +411,7 @@ const PageHeaderContent = React.forwardRef<
                   <DefinitionTooltip definition={title}>
                     <Text
                       ref={titleRef}
-                      as="h4"
+                      as={Heading}
                       className={`${blockClass}__content__title`}
                     >
                       {title}
@@ -414,7 +420,7 @@ const PageHeaderContent = React.forwardRef<
                 ) : (
                   <Text
                     ref={titleRef}
-                    as="h4"
+                    as={Heading}
                     className={`${blockClass}__content__title`}
                   >
                     {title}
@@ -432,7 +438,7 @@ const PageHeaderContent = React.forwardRef<
           {children}
         </Column>
       </Grid>
-    </div>
+    </Section>
   );
 });
 PageHeaderContent.displayName = 'PageHeaderContent';
@@ -498,13 +504,20 @@ const PageHeaderContentPageActions = ({
   actions,
   ...other
 }: PageHeaderContentPageActionsProps) => {
-  const { setRefs, contentActionsClipped } = usePageHeader();
+  const {
+    setRefs,
+    contentActionsClipped,
+    breadcrumbActionsClipped,
+    isContentActionsInBreadcrumbBar: isInBreadcrumbBar,
+  } = usePageHeader();
   const classNames = classnames(
     `${blockClass}__content__page-actions`,
     {
       // Revisit this:
       // May want to only add this class if there are content actions in the breadcrumb bar as well
-      [`${blockClass}__content__page-actions--clipped`]: contentActionsClipped,
+      [`${blockClass}__content__page-actions--clipped`]: isInBreadcrumbBar
+        ? breadcrumbActionsClipped
+        : contentActionsClipped,
     },
     className
   );
@@ -523,7 +536,7 @@ const PageHeaderContentPageActions = ({
 
   // need to set the grid columns width based on the menu button's width
   // to avoid overlapping when resizing
-  useLayoutEffect(() => {
+  useIsomorphicEffect(() => {
     if (menuButtonVisibility && offsetRef.current) {
       const width = offsetRef.current.offsetWidth;
       document.documentElement.style.setProperty(
@@ -534,9 +547,12 @@ const PageHeaderContentPageActions = ({
   }, [menuButtonVisibility]);
 
   useEffect(() => {
-    setRefs((prev) => ({ ...prev, contentActions: containerRef }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (isInBreadcrumbBar) {
+      setRefs((prev) => ({ ...prev, breadcrumbActions: containerRef }));
+    } else {
+      setRefs((prev) => ({ ...prev, contentActions: containerRef }));
+    }
+  }, [isInBreadcrumbBar, setRefs]);
 
   useEffect(() => {
     if (!containerRef.current || !Array.isArray(actions)) {
@@ -743,17 +759,11 @@ PageHeaderHeroImage.propTypes = {
  * PageHeaderTabBar
  * ----------------
  */
-interface TagItem {
-  type: keyof typeof TYPES;
-  text: string;
-  size?: 'sm' | 'md' | 'lg';
-  id: string;
-}
 
 interface PageHeaderTabBarProps {
   children?: React.ReactNode;
   className?: string;
-  tags?: TagItem[];
+  tags?: React.ReactNode;
   scroller?: React.ReactNode;
 }
 
@@ -761,7 +771,7 @@ const PageHeaderTabBar = React.forwardRef<
   HTMLDivElement,
   PageHeaderTabBarProps
 >(function PageHeaderTabBar(
-  { className, children, tags = [], scroller, ...other }: PageHeaderTabBarProps,
+  { className, children, tags, scroller, ...other }: PageHeaderTabBarProps,
   ref
 ) {
   const classNames = classnames(
@@ -779,10 +789,10 @@ const PageHeaderTabBar = React.forwardRef<
     );
 
   // Early return if no tags are provided
-  if (!tags.length) {
+  if (!tags) {
     return (
       <div className={classNames} ref={ref} {...other}>
-        <Grid>
+        <Grid condensed>
           <Column lg={16} md={8} sm={4}>
             {children}
             {renderScroller()}
@@ -792,18 +802,49 @@ const PageHeaderTabBar = React.forwardRef<
     );
   }
 
-  const [openPopover, setOpenPopover] = useState(false);
-  const tagSize = tags[0]?.size || 'md';
-  const instanceId = useId('PageHeaderTabBar');
-  const tagsWithIds = useMemo(() => {
-    return tags.map((tag, index) => ({
-      ...tag,
-      id: tag.id || `tag-${index}-${instanceId}`,
-    }));
-  }, [instanceId, tags]);
+  return (
+    <div className={classNames} ref={ref} {...other}>
+      <Grid condensed>
+        <Column lg={16} md={8} sm={4}>
+          <div
+            className={classnames(`${blockClass}__tab-bar--tablist`, {
+              [`${pkg.prefix}--page-header__tab-bar--with-scroller`]:
+                !!scroller,
+            })}
+          >
+            {children}
+            {tags}
+            {renderScroller()}
+          </div>
+        </Column>
+      </Grid>
+    </div>
+  );
+});
+PageHeaderTabBar.displayName = 'PageHeaderTabBar';
 
-  const tagsContainerRef = useRef<HTMLDivElement>(null);
-  const offsetRef = useRef<HTMLDivElement>(null);
+interface PageHeaderTagOverflowProps {
+  // Maybe scope this more to only accept tag or operational tag children
+  children: React.ReactNode;
+  renderOverflowTag?: (
+    hiddenBreadcrumbs: HTMLElement[],
+    handleOverflowClick: (event: React.MouseEvent) => void,
+    openPopover: boolean
+  ) => React.ReactElement;
+  renderPopoverContent?: (
+    hiddenBreadcrumbs: HTMLElement[]
+  ) => React.ReactElement;
+}
+
+const PageHeaderTagOverflow = React.forwardRef<
+  HTMLDivElement,
+  PageHeaderTagOverflowProps
+>(({ renderOverflowTag, renderPopoverContent, children }, ref) => {
+  const [openPopover, setOpenPopover] = useState(false);
+  const [hiddenTags, setHiddenTags] = useState<HTMLElement[]>([]);
+
+  const localRef = useRef<HTMLDivElement>(null);
+  const tagsContainerRef = (ref || localRef) as RefObject<HTMLDivElement>;
   // To close popover when window resizes
   useEffect(() => {
     const handleResize = () => {
@@ -817,86 +858,58 @@ const PageHeaderTabBar = React.forwardRef<
     };
   }, []);
 
-  // overflow items hook
-  const {
-    visibleItems = [],
-    hiddenItems = [],
-    itemRefHandler = () => {},
-  } = useOverflowItems<TagItem>(
-    tagsWithIds,
-    tagsContainerRef as React.RefObject<HTMLDivElement>,
-    offsetRef as React.RefObject<HTMLDivElement>
-  ) || {
-    visibleItems: [],
-    hiddenItems: [],
-    itemRefHandler: () => {},
-  };
-
   const handleOverflowClick = useCallback((event: React.MouseEvent) => {
     event.stopPropagation();
     setOpenPopover((prev) => !prev);
   }, []);
 
-  // Function to render tags
-  const renderTags = () => (
-    <div className={`${blockClass}__tags`} ref={tagsContainerRef}>
-      {visibleItems.map((tag) => (
-        <Tag
-          key={tag.id}
-          ref={(node) => itemRefHandler(tag.id, node)}
-          type={tag.type}
-          size={tag.size}
-          className={`${blockClass}__tag-item`}
-        >
-          {tag.text}
-        </Tag>
-      ))}
-
-      {hiddenItems.length > 0 && (
-        <Popover
-          open={openPopover}
-          onRequestClose={() => setOpenPopover(false)}
-        >
-          <OperationalTag
-            onClick={handleOverflowClick}
-            aria-expanded={openPopover}
-            text={`+${hiddenItems.length}`}
-            size={tagSize}
-          />
-          <PopoverContent className="tag-popover-content">
-            <div className={`${blockClass}__tags-popover-list`}>
-              {hiddenItems.map((tag) => (
-                <Tag key={tag.id} type={tag.type} size={tag.size}>
-                  {tag.text}
-                </Tag>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
-      )}
-    </div>
-  );
+  useEffect(() => {
+    localOverflowHandler({
+      container: tagsContainerRef.current!,
+      onChange: (_, hidden) => {
+        setHiddenTags(hidden);
+      },
+    });
+    // Don't want ref in dependency array
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <div className={classNames} ref={ref} {...other}>
-      <Grid>
-        <Column lg={16} md={8} sm={4}>
-          <div
-            className={classnames(`${blockClass}__tab-bar--tablist`, {
-              [`${pkg.prefix}--page-header__tab-bar--with-scroller`]:
-                !!scroller,
-            })}
-          >
-            {children}
-            {tags.length > 0 && renderTags()}
-            {renderScroller()}
+    <div
+      ref={tagsContainerRef}
+      className={classnames(
+        `${pkg.prefix}--page-header--tag-overflow-container`,
+        {
+          [`${pkg.prefix}--page-header--tag-overflow-container__has-no-hidden-items`]:
+            !hiddenTags.length,
+        }
+      )}
+    >
+      {children}
+      <Popover
+        open={openPopover}
+        onRequestClose={() => setOpenPopover(false)}
+        data-fixed
+        className={classnames(
+          `${pkg.prefix}--page-header--tag-overflow-popover`,
+          {
+            [`${pkg.prefix}--page-header--tag-overflow-popover__hidden`]:
+              !hiddenTags.length,
+          }
+        )}
+      >
+        {renderOverflowTag?.(hiddenTags, handleOverflowClick, openPopover)}
+        <PopoverContent>
+          <div className={`${blockClass}__tags-popover-list`}>
+            {renderPopoverContent?.(hiddenTags)}
           </div>
-        </Column>
-      </Grid>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 });
-PageHeaderTabBar.displayName = 'PageHeaderTabBar';
+
+PageHeaderTagOverflow.displayName = 'PageHeaderTagOverflow';
 
 interface PageHeaderScrollButtonProps extends IconButtonProps {
   collapseText?: string;
@@ -1131,6 +1144,9 @@ TitleBreadcrumb.displayName = 'PageHeaderTitleBreadcrumb';
 const BreadcrumbOverflow = PageHeaderBreadcrumbOverflow;
 BreadcrumbOverflow.displayName = 'PageHeaderBreadcrumbOverflow';
 
+const TagOverflow = PageHeaderTagOverflow;
+TagOverflow.displayName = 'PageHeaderTagOverflow';
+
 export {
   // direct exports
   PageHeader,
@@ -1143,6 +1159,7 @@ export {
   PageHeaderScrollButton,
   PageHeaderTitleBreadcrumb,
   PageHeaderBreadcrumbOverflow,
+  PageHeaderTagOverflow,
   // namespaced
   Root,
   BreadcrumbBar,
@@ -1154,6 +1171,7 @@ export {
   ScrollButton,
   TitleBreadcrumb,
   BreadcrumbOverflow,
+  TagOverflow,
 };
 export type {
   PageHeaderProps,
@@ -1164,4 +1182,5 @@ export type {
   PageHeaderHeroImageProps,
   PageHeaderTabBarProps,
   PageHeaderScrollButtonProps,
+  PageHeaderTagOverflowProps,
 };

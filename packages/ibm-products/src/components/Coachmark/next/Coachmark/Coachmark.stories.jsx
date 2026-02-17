@@ -6,7 +6,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Coachmark } from './Coachmark';
+import { Coachmark } from '.';
 import mdx from './Coachmark.mdx';
 import styles from './_storybook-styles.scss?inline';
 import { Button, Theme } from '@carbon/react';
@@ -14,7 +14,7 @@ import { CoachmarkBeacon } from './CoachmarkBeacon';
 import { Crossroads } from '@carbon/react/icons';
 
 export default {
-  title: 'Experimental/Onboarding/Coachmark/next',
+  title: 'Preview/Onboarding/Coachmark',
   component: Coachmark,
   tags: ['autodocs', 'Onboarding'],
   argTypes: {
@@ -101,8 +101,9 @@ function useCarbonTheme() {
 }
 
 //Tooltip variant
-const TooltipTemplate = (args) => {
-  const carbonTheme = useCarbonTheme();
+const TooltipTemplate = ({ ...args }, context) => {
+  const sbDocs = context.viewMode !== 'docs';
+  const carbonTheme = sbDocs ? useCarbonTheme() : 'white';
   const [isOpen, setIsOpen] = useState(true);
 
   const handleClose = () => {
@@ -115,32 +116,35 @@ const TooltipTemplate = (args) => {
 
   return (
     <Theme theme={carbonTheme}>
-      <Coachmark
-        position={{ x: 151, y: 155 }}
-        open={isOpen}
-        onClose={handleClose}
-        {...args}
-      >
-        <CoachmarkBeacon
-          label="Show information"
-          buttonProps={{ onClick: handleBeaconClick, id: 'CoachmarkBtn' }}
-        ></CoachmarkBeacon>
-        <Coachmark.Content highContrast={true}>
-          <Coachmark.Content.Header closeIconDescription="Close"></Coachmark.Content.Header>
-          <Coachmark.Content.Body>
-            <h2>Hello World</h2>
-            <p>this is a description test</p>
-            <Button size="sm">Done</Button>
-          </Coachmark.Content.Body>
-        </Coachmark.Content>
-      </Coachmark>
+      <main>
+        <Coachmark
+          position={{ x: 151, y: 155 }}
+          open={isOpen}
+          onClose={handleClose}
+          {...args}
+        >
+          <CoachmarkBeacon
+            label="Show information"
+            buttonProps={{ onClick: handleBeaconClick, id: 'CoachmarkBtn' }}
+          ></CoachmarkBeacon>
+          <Coachmark.Content highContrast={true}>
+            <Coachmark.Content.Header closeIconDescription="Close"></Coachmark.Content.Header>
+            <Coachmark.Content.Body>
+              <h2>Hello World</h2>
+              <p>this is a description test</p>
+              <Button size="sm">Done</Button>
+            </Coachmark.Content.Body>
+          </Coachmark.Content>
+        </Coachmark>
+      </main>
     </Theme>
   );
 };
 
 //Floating variant
-const FloatingTemplate = (args) => {
-  const carbonTheme = useCarbonTheme();
+const FloatingTemplate = ({ ...args }, context) => {
+  const sbDocs = context.viewMode !== 'docs';
+  const carbonTheme = sbDocs ? useCarbonTheme() : 'white';
   const [isOpen, setIsOpen] = useState(true);
 
   const handleClose = () => {
@@ -152,29 +156,36 @@ const FloatingTemplate = (args) => {
   };
   return (
     <Theme theme={carbonTheme}>
-      <Coachmark open={isOpen} onClose={handleClose} floating={true} {...args}>
-        <Button
-          id="CoachmarkBtn"
-          kind="tertiary"
-          size="md"
-          label="Show information"
-          renderIcon={Crossroads}
-          onClick={handleButtonClick}
+      <main>
+        <Coachmark
+          open={isOpen}
+          onClose={handleClose}
+          floating={true}
+          {...args}
         >
-          Show information
-        </Button>
-        <Coachmark.Content highContrast={true}>
-          <Coachmark.Content.Header
-            closeIconDescription="Close"
-            dragIconDescription="Drag"
-          ></Coachmark.Content.Header>
-          <Coachmark.Content.Body>
-            <h2>Hello World</h2>
-            <p>this is a description test</p>
-            <Button size="sm">Done</Button>
-          </Coachmark.Content.Body>
-        </Coachmark.Content>
-      </Coachmark>
+          <Button
+            id="CoachmarkBtn"
+            kind="tertiary"
+            size="md"
+            label="Show information"
+            renderIcon={Crossroads}
+            onClick={handleButtonClick}
+          >
+            Show information
+          </Button>
+          <Coachmark.Content highContrast={true}>
+            <Coachmark.Content.Header
+              closeIconDescription="Close"
+              dragIconDescription="Drag"
+            ></Coachmark.Content.Header>
+            <Coachmark.Content.Body>
+              <h2>Hello World</h2>
+              <p>this is a description test</p>
+              <Button size="sm">Done</Button>
+            </Coachmark.Content.Body>
+          </Coachmark.Content>
+        </Coachmark>
+      </main>
     </Theme>
   );
 };

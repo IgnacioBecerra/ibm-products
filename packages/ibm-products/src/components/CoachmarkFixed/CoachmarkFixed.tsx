@@ -90,8 +90,9 @@ const defaults = {
  * within the UI that may not be intuitive but are important for the
  * user to gain understanding of the product's main value and discover new use cases.
  * This variant allows the a coachmark overlay to be displayed by interacting with the tagline.
+ * @deprecated This component is deprecated.
  */
-export let CoachmarkFixed = React.forwardRef<
+export const CoachmarkFixed = React.forwardRef<
   HTMLDivElement,
   CoachmarkFixedProps
 >(
@@ -249,8 +250,13 @@ export let CoachmarkFixed = React.forwardRef<
   }
 );
 
+/**@ts-ignore*/
+CoachmarkFixed.deprecated = {
+  level: 'warn',
+  details: `${componentName} is deprecated.`,
+};
+
 // Return a placeholder if not released and not enabled by feature flag
-CoachmarkFixed = pkg.checkComponentEnabled(CoachmarkFixed, componentName);
 
 // The display name of the component, used by React. Note that displayName
 // is used in preference to relying on function.name.

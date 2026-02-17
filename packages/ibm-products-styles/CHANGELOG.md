@@ -1,3 +1,100 @@
+## `@carbon/ibm-products-styles@2.80.0-rc.0`
+### Features :rocket:
+- feat: show Close icon at global header actions when expanded (#8933)
+- feat(tearsheetpresence): add tearsheet presence (#8929)
+
+### Bug fixes :bug:
+- fix(preview__PageHeader): resolve content actions responsive issue in < 1010px viewport (#8976)
+- fix(ActionBar): improve overflow items alignment and prevent icon shrinking (#8928)
+- fix: use carbon prefix directly from @carbon/styles package config (#8904)
+
+### Housekeeping :house:
+- chore: remove unwanted style changes (#8997)
+- build(deps): update to Carbon 11 compatible versions to latest (#8991)
+- build(performance): rolldown-vite integration (#8915)
+- build(deps): update to Carbon 11 compatible versions to latest (#8907)
+
+## `@carbon/ibm-products-styles@2.79.0`
+### Bug fixes :bug:
+- fix(#8831): apply icon-primary fill to breadcrumb and page header icons (#8846)
+- fix(checklist): title and chart title do not show tooltip when truncated (#8788)
+
+## `@carbon/ibm-products-styles@2.77.0`
+### Features :rocket:
+- feat: init guide banner component (#8513)
+
+### Bug fixes :bug:
+- fix: rc clean ups
+- fix: remove not needed tags and restore package.json
+- fix: restore all changes after deleting unnecessary tags
+- fix: stabilize npm package with rc
+- fix: restore npm token and add logs
+- fix: add permission for release start
+- fix: skip ci for next rc
+- fix: remove npm token to use OIDC and empty changes for re publish
+- fix: retry publish for rc.2
+
+### Housekeeping :house:
+- chore: retry prerelease publish other packages
+- build(deps): update Carbon 11 compatible versions to latest (#8726)
+
+## `@carbon/ibm-products-styles@2.76.0`
+### Features :rocket:
+- feat(Tearsheet): stacking, unit test, design review changes and fixes (#8563)
+
+### Bug fixes :bug:
+- fix: tearsheet entry and exit animations not working after carbon upgrade (#8674)
+- fix: replace uselayouteffect with isomorphic effect (#8630)
+
+### Housekeeping :house:
+- build(deps): update Carbon 11 compatible versions to latest (#8638)
+
+## `@carbon/ibm-products-styles@2.75.0`
+### Features :rocket:
+- feat: composable tearsheet initial implementation (#8337)
+
+### Bug fixes :bug:
+- fix(Tearsheet): added styles to maintain header and footer button height integrity and hide the body container overflow (#8227)
+- fix(SidePanel): change $border-subtle-02 to $border-subtle-01 (#8586)
+
+### Housekeeping :house:
+- chore(carbon-upgrade): address default tag margin removal (#8550)
+- chore(sass): update to v1.93.2 (#8567)
+
+## `@carbon/ibm-products-styles@2.74.0`
+### Features :rocket:
+- feat(PageHeader): add open in stackblitz config (#8469)
+
+### Bug fixes :bug:
+- fix: include `OptionsTile` style in `_index-released-only.scss` file (#8536)
+- fix(datagrid): pagination row not displaying when filters are used (#8374)
+- fix: remove truncation styling from sidepanel title (#8322)
+
+### Housekeeping :house:
+- chore(PageHeader): use condensed grid for tab bar text alignment (#8491)
+
+## `@carbon/ibm-products-styles@2.72.0`
+### Bug fixes :bug:
+- fix: update popover link in tagset and overflow (#8249)
+
+### Housekeeping :house:
+- refactor(scripts): remove chalk dep (#8321)
+- chore: pin chalk (#8261)
+- refactor(PageHeader): change api for tags prop in tab bar (#8205)
+
+## `@carbon/ibm-products-styles@2.71.0`
+### Features :rocket:
+- feat(sidepanel): utilizes layer in sidepanel (#8025)
+
+### Bug fixes :bug:
+- fix: add wordbreak to sidepanel title (#8230)
+- fix(tagset): restore operational tag styles (#8182)
+
+### Housekeeping :house:
+- chore(deps): update dependency npm-run-all2 to v8 (#8219)
+- chore(deps): replace dependency npm-run-all with npm-run-all2 ^5.0.0 (#7202)
+- build(deps): update to Carbon 11 compatible versions to latest (#8171)
+
 ## `@carbon/ibm-products-styles@2.70.0`
 ### Features :rocket:
 - feat(conditionbuilder): option to disable specific property dynamically (#8105)

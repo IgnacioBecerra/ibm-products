@@ -6,7 +6,6 @@
  */
 
 import { ArrowLeft, Close } from '@carbon/react/icons';
-import '../../feature-flags';
 // Carbon and package components we use.
 import {
   Button,
@@ -255,7 +254,7 @@ const defaults = {
 /**
  * Side panels keep users in-context of a page while performing tasks like navigating, editing, viewing details, or configuring something new.
  */
-const SidePanelBase = React.forwardRef<HTMLDivElement, SidePanelProps>(
+export const SidePanel = React.forwardRef<HTMLDivElement, SidePanelProps>(
   (props, ref) => {
     const {
       actionToolbarButtons,
@@ -321,11 +320,23 @@ const SidePanelBase = React.forwardRef<HTMLDivElement, SidePanelProps>(
     // Title animation on scroll related state
     const [labelTextHeight, setLabelTextHeight] = useState<any>(0);
 
-    const handleEscapeKey = (event) => {
-      if (event.key === 'Escape' && open) {
-        onRequestClose?.();
+    const handleEscapeKey = useCallback(
+      (event) => {
+        if (event.key === 'Escape' && open) {
+          onRequestClose?.();
+        }
+      },
+      [onRequestClose, open]
+    );
+
+    useEffect(() => {
+      if (open && !slideIn) {
+        window.addEventListener('keydown', handleEscapeKey);
+        return () => {
+          window.removeEventListener('keydown', handleEscapeKey);
+        };
       }
-    };
+    }, [handleEscapeKey, open, slideIn]);
 
     useEffect(() => {
       if (!enableResizer) {
@@ -825,18 +836,13 @@ const SidePanelBase = React.forwardRef<HTMLDivElement, SidePanelProps>(
         })}
         ref={titleRef}
       >
-        <Heading
-          className={`${blockClass}__title-text`}
-          title={title}
-          aria-hidden={false}
-        >
+        <Heading className={`${blockClass}__title-text`} aria-hidden={false}>
           {title}
         </Heading>
 
         {doAnimateTitle && !shouldReduceMotion && (
           <Heading
             className={`${blockClass}__collapsed-title-text`}
-            title={title}
             aria-hidden={true}
           >
             {title}
@@ -1078,12 +1084,6 @@ const SidePanelBase = React.forwardRef<HTMLDivElement, SidePanelProps>(
       </>
     ) : null;
   }
-);
-
-// Return a placeholder if not released and not enabled by feature flag
-export const SidePanel = pkg.checkComponentEnabled(
-  SidePanelBase,
-  componentName
 );
 
 const deprecatedProps = {

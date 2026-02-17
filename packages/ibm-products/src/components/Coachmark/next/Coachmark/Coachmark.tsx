@@ -11,7 +11,6 @@ import React, {
   ReactNode,
   RefAttributes,
   RefObject,
-  createContext,
   forwardRef,
   useEffect,
   useRef,
@@ -26,6 +25,8 @@ import { CoachmarkContext, blockClass } from './context';
 import CoachmarkContent, { CoachmarkContentProps } from './CoachmarkContent';
 import { NewPopoverAlignment } from '@carbon/react';
 import { useIsomorphicEffect } from '../../../../global/js/hooks';
+import { ContentHeader, ContentHeaderProps } from './ContentHeader';
+import { ContentBody, ContentBodyProps } from './ContentBody';
 
 // The block part of our conventional BEM class names (blockClass__E--M).
 
@@ -42,7 +43,7 @@ const componentName = 'Coachmark';
 // Default values should be provided when the component needs to make a choice
 // or assumption when a prop is not supplied.
 
-export interface CoachmarkProps {
+export interface CoachmarkPropsNext {
   /**
    * Provide the contents of the Coachmark.
    */
@@ -74,11 +75,15 @@ export interface CoachmarkProps {
   floating?: boolean;
 }
 
+type CoachmarkContentComponent = FC<CoachmarkContentProps> & {
+  Header: FC<ContentHeaderProps>;
+  Body: FC<ContentBodyProps>;
+};
 // Define the type for Coachmark, extending it to include Trigger and Content
 export type CoachmarkComponent = ForwardRefExoticComponent<
-  CoachmarkProps & RefAttributes<HTMLDivElement>
+  CoachmarkPropsNext & RefAttributes<HTMLDivElement>
 > & {
-  Content: FC<CoachmarkContentProps>;
+  Content: CoachmarkContentComponent;
 };
 
 /**
@@ -86,7 +91,7 @@ export type CoachmarkComponent = ForwardRefExoticComponent<
  * within the UI that may not be intuitive but are important for the
  * user to gain understanding of the product's main value and discover new use cases.
  */
-export const Coachmark = forwardRef<HTMLDivElement, CoachmarkProps>(
+export const Coachmark = forwardRef<HTMLDivElement, CoachmarkPropsNext>(
   (props, ref) => {
     const {
       children,
@@ -189,7 +194,8 @@ export const Coachmark = forwardRef<HTMLDivElement, CoachmarkProps>(
   }
 ) as CoachmarkComponent;
 Coachmark.Content = CoachmarkContent;
-
+Coachmark.Content.Header = ContentHeader;
+Coachmark.Content.Body = ContentBody;
 // The display name of the component, used by React. Note that displayName
 // is used in preference to relying on function.name.
 Coachmark.displayName = componentName;
